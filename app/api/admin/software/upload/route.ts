@@ -51,11 +51,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (200MB max)
-    const maxSize = 200 * 1024 * 1024 // 200MB
+    // Validate file size (300MB max)
+    const maxSize = 300 * 1024 * 1024 // 300MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { message: 'File size exceeds 200MB limit' },
+        { message: 'File size exceeds 300MB limit' },
         { status: 400 }
       )
     }

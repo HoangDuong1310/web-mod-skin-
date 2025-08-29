@@ -3,6 +3,8 @@ import { writeFile } from 'fs/promises'
 import path from 'path'
 import { prisma } from '@/lib/prisma'
 
+export const runtime = 'nodejs'
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -34,10 +36,11 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
     }
 
-    // Validate file size (100MB max)
-    const maxSize = 100 * 1024 * 1024
+    // Validate file size (300MB max)
+    const maxSize = 300 * 1024 * 1024
+    console.log('Software upload size (bytes):', file.size)
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 400 })
+      return NextResponse.json({ error: 'File too large (max 300MB)', received: file.size }, { status: 413 })
     }
 
     // Generate safe filename with proper format: product_{productId}_{timestamp}.ext
@@ -46,7 +49,8 @@ export async function POST(
     const filename = `product_${params.id}_${timestamp}.${extension}`
     
     // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), 'uploads/software')
+    const base = process.env.UPLOADS_BASE_PATH || path.join(process.cwd(), 'uploads')
+    const uploadDir = path.join(base, 'software')
     
     try {
       await import('fs').then(fs => fs.promises.mkdir(uploadDir, { recursive: true }))
