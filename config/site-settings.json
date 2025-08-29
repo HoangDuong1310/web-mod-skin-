@@ -1,0 +1,21 @@
+{
+  "siteName": "test",
+  "siteDescription": "một hai ba",
+  "siteUrl": "https://yoursite.com",
+  "siteLogo": "",
+  "favicon": "",
+  "language": "en",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "maintenanceMode": false,
+  "allowRegistration": false,
+  "requireEmailVerification": false,
+  "defaultUserRole": "USER",
+  "contactEmail": "admin@yoursite.com",
+  "supportEmail": "support@yoursite.com",
+  "socialLinks": {
+    "twitter": "",
+    "facebook": "",
+    "instagram": "",
+    "linkedin": ""
+  }
+}

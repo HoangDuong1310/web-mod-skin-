@@ -1,0 +1,58 @@
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { ThemeProvider } from '@/components/shared/theme-provider'
+import { AuthProvider } from '@/components/shared/auth-provider'
+import { AnalyticsScripts } from '@/components/shared/analytics-scripts'
+import { WebsiteStructuredData, OrganizationStructuredData } from '@/components/shared/structured-data'
+import { generateDynamicMetadata, getSEOSettings } from '@/lib/dynamic-seo'
+import { cn } from '@/lib/utils'
+import { Toaster } from 'sonner'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export async function generateMetadata(): Promise<Metadata> {
+  return await generateDynamicMetadata()
+}
+
+interface RootLayoutProps {
+  children: React.ReactNode
+}
+
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const seoSettings = await getSEOSettings()
+  
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={cn(
+        'min-h-screen bg-background font-sans antialiased',
+        inter.className
+      )}>
+        <AnalyticsScripts
+          googleAnalyticsId={seoSettings.googleAnalyticsId}
+          googleSearchConsoleId={seoSettings.googleSearchConsoleId}
+          facebookPixelId={seoSettings.facebookPixelId}
+        />
+        <WebsiteStructuredData
+          siteName={seoSettings.siteName || 'Next.js Full-Stack App'}
+          siteDescription={seoSettings.siteDescription || 'A modern full-stack application'}
+          siteUrl={seoSettings.siteUrl}
+        />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <div className="flex-1">{children}</div>
+            </div>
+            <Toaster richColors position="top-right" />
+          </AuthProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  )
+}
+

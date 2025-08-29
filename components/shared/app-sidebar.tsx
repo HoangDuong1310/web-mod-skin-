@@ -1,0 +1,150 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Session } from 'next-auth'
+import { cn } from '@/lib/utils'
+import { 
+  LayoutDashboard, 
+  Package, 
+  ShoppingCart, 
+  Tags, 
+  FileText, 
+  Users,
+  Settings,
+  BarChart3,
+  MessageSquare,
+  Download,
+  Folder,
+  PenTool
+} from 'lucide-react'
+
+interface AppSidebarProps {
+  session?: Session | null
+}
+
+interface NavigationItem {
+  name: string
+  href: string
+  icon: any
+  subItems?: { name: string; href: string }[]
+}
+
+const adminNavigation: NavigationItem[] = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { 
+    name: 'Software Management', 
+    href: '/dashboard/software', 
+    icon: Package,
+    subItems: [
+      { name: 'All Software', href: '/dashboard/software' },
+      { name: 'Add New', href: '/dashboard/software/new' },
+      { name: 'Categories', href: '/dashboard/categories' }
+    ]
+  },
+  { name: 'Download Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
+  { 
+    name: 'Content', 
+    href: '/dashboard/content', 
+    icon: PenTool,
+    subItems: [
+      { name: 'Blog Posts', href: '/dashboard/blog' },
+      { name: 'Tags', href: '/dashboard/tags' }
+    ]
+  },
+  { name: 'Users', href: '/dashboard/users', icon: Users },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+]
+
+const userNavigation: NavigationItem[] = [
+  { name: 'Browse Software', href: '/products', icon: Package },
+  { name: 'My Downloads', href: '/profile/downloads', icon: Download },
+  { name: 'Categories', href: '/categories', icon: Folder },
+  { name: 'Blog', href: '/blog', icon: FileText },
+]
+
+export function AppSidebar({ session }: AppSidebarProps) {
+  const pathname = usePathname()
+  
+  // Determine which navigation to show
+  const navigation = (session?.user as any)?.role === 'ADMIN' ? adminNavigation : userNavigation
+  const isAdminArea = pathname.startsWith('/dashboard')
+
+  return (
+    <div className="flex w-64 flex-col bg-card border-r">
+      <div className="flex h-16 items-center px-6">
+        <Link href="/" className="flex items-center space-x-2">
+          <span className="text-xl font-bold">
+            Software
+            <span className="text-primary">Hub</span>
+          </span>
+        </Link>
+      </div>
+      
+      {/* Admin/User Badge */}
+      {session?.user && (
+        <div className="px-4 py-2">
+          <div className="text-xs text-muted-foreground">
+            {isAdminArea ? 'Admin Panel' : 'User Panel'}
+          </div>
+        </div>
+      )}
+      
+      <nav className="flex-1 space-y-1 px-4 py-4">
+        {navigation.map((item) => (
+          <div key={item.name}>
+            <Link
+              href={item.href as any}
+              className={cn(
+                'flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                pathname === item.href
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.name}</span>
+            </Link>
+            
+            {/* Sub Items */}
+            {item.subItems && pathname.startsWith(item.href) && (
+              <div className="ml-6 mt-1 space-y-1">
+                {item.subItems.map((subItem) => (
+                  <Link
+                    key={subItem.name}
+                    href={subItem.href as any}
+                    className={cn(
+                      'block rounded-md px-3 py-1 text-xs transition-colors',
+                      pathname === subItem.href
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {subItem.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </nav>
+      
+      {/* User Info */}
+      {session?.user && (
+        <div className="border-t p-4">
+          <div className="flex items-center space-x-3">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{session.user.name}</p>
+              <p className="text-xs text-muted-foreground">{(session.user as any).role}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+

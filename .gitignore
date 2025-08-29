@@ -1,0 +1,48 @@
+# Node
+node_modules/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+
+# Env files
+.env
+.env*.local
+
+# Build / coverage
+coverage/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma (local dev databases)
+prisma/*.db
+prisma/*.db-journal
+
+# Caches / temp
+.cache/
+.tmp/
+.swc/
+
+# IDE
+.vscode/
+.idea/
+
+# Tooling
+Turbo/
+
+# Serena workspace (requested)
+.serena/

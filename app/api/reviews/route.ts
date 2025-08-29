@@ -1,0 +1,324 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+// Rate limiting is disabled for now
+// import { rateLimit } from '@/lib/rate-limit'
+import { createReviewSchema, reviewQuerySchema } from '@/lib/validations'
+
+// GET /api/reviews - Get reviews for a product
+export async function GET(request: NextRequest) {
+  try {
+    // Rate limiting is disabled for now
+    // const identifier = request.ip ?? 'anonymous'
+    // const { success } = await rateLimit.limit(identifier)
+    // if (!success) {
+    //   return NextResponse.json(
+    //     { error: 'Too many requests' },
+    //     { status: 429 }
+    //   )
+    // }
+
+    const { searchParams } = new URL(request.url)
+    const query = Object.fromEntries(searchParams)
+    
+    const {
+      productId,
+      page,
+      limit,
+      rating,
+      sort,
+    } = reviewQuerySchema.parse(query)
+
+    const pageNum = page
+    const limitNum = limit
+    const offset = (pageNum - 1) * limitNum
+
+    // Build where clause
+    const where: any = {
+      productId,
+      isVisible: true,
+      deletedAt: null,
+    }
+
+    if (rating) {
+      where.rating = rating
+    }
+
+    // Build orderBy clause
+    let orderBy: any = { createdAt: 'desc' }
+    switch (sort) {
+      case 'oldest':
+        orderBy = { createdAt: 'asc' }
+        break
+      case 'highest':
+        orderBy = { rating: 'desc' }
+        break
+      case 'lowest':
+        orderBy = { rating: 'asc' }
+        break
+      default:
+        orderBy = { createdAt: 'desc' }
+    }
+
+    // Get reviews with pagination
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy,
+        skip: offset,
+        take: limitNum,
+      }),
+      prisma.review.count({ where }),
+    ])
+
+    // Get rating distribution
+    const ratingStats = await prisma.review.groupBy({
+      by: ['rating'],
+      where: {
+        productId,
+        isVisible: true,
+        deletedAt: null,
+      },
+      _count: {
+        rating: true,
+      },
+    })
+
+    // Calculate average rating
+    const avgRating = await prisma.review.aggregate({
+      where: {
+        productId,
+        isVisible: true,
+        deletedAt: null,
+      },
+      _avg: {
+        rating: true,
+      },
+    })
+
+    return NextResponse.json({
+      reviews: reviews.map(review => ({
+        id: review.id,
+        rating: review.rating,
+        title: review.title,
+        content: review.content,
+        createdAt: review.createdAt,
+        isVerified: review.isVerified,
+        user: review.user ? {
+          name: review.user.name,
+          image: review.user.image,
+        } : null,
+        guestName: review.guestName,
+      })),
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum),
+      },
+      stats: {
+        averageRating: avgRating._avg.rating || 0,
+        totalReviews: total,
+        distribution: ratingStats.reduce((acc, stat) => {
+          acc[stat.rating] = stat._count.rating
+          return acc
+        }, {} as Record<number, number>),
+      },
+    })
+  } catch (error) {
+    console.error('Error fetching reviews:', error)
+    if (error instanceof Error && 'issues' in error) {
+      return NextResponse.json(
+        { error: 'Invalid parameters', details: (error as any).issues },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/reviews - Create a new review
+export async function POST(request: NextRequest) {
+  try {
+    console.log('=== POST /api/reviews ===')
+    
+    // Rate limiting is disabled for now
+    // const identifier = request.ip ?? 'anonymous'
+    // const { success } = await rateLimit.limit(identifier)
+    // if (!success) {
+    //   return NextResponse.json(
+    //     { error: 'Too many requests' },
+    //     { status: 429 }
+    //   )
+    // }
+
+    const session = await getServerSession(authOptions)
+    console.log('Session:', session?.user?.email || 'No session')
+    
+    const body = await request.json()
+    console.log('Request body:', body)
+    
+    // First validate the basic data structure
+    const validation = createReviewSchema.safeParse(body)
+    if (!validation.success) {
+      console.log('Validation errors:', validation.error.issues)
+      return NextResponse.json(
+        { 
+          error: 'Invalid review data',
+          details: validation.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
+        { status: 400 }
+      )
+    }
+    
+    const {
+      productId,
+      rating,
+      title,
+      content,
+      guestName,
+      guestEmail,
+    } = validation.data
+    
+    // Additional validation for guest reviews
+    if (!session?.user?.id) {
+      if (!guestName?.trim()) {
+        return NextResponse.json(
+          { error: 'Guest name is required' },
+          { status: 400 }
+        )
+      }
+      if (!guestEmail?.trim()) {
+        return NextResponse.json(
+          { error: 'Guest email is required' },
+          { status: 400 }
+        )
+      }
+    }
+    
+    console.log('Parsed data:', { productId, rating, title, content, guestName, guestEmail })
+
+    // Verify product exists
+    console.log('Checking if product exists with ID:', productId)
+    const product = await prisma.product.findUnique({
+      where: { id: productId, deletedAt: null },
+    })
+    console.log('Product found:', !!product)
+
+    if (!product) {
+      console.log('Product not found')
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if user already reviewed this product
+    if (session?.user?.id) {
+      const existingReview = await prisma.review.findFirst({
+        where: {
+          productId,
+          userId: session.user.id,
+          deletedAt: null,
+        },
+      })
+
+      if (existingReview) {
+        return NextResponse.json(
+          { error: 'You have already reviewed this product' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Create review
+    const review = await prisma.review.create({
+      data: {
+        productId,
+        rating,
+        title,
+        content,
+        userId: session?.user?.id || null,
+        guestName: !session?.user?.id ? guestName : null,
+        guestEmail: !session?.user?.id ? guestEmail : null,
+        isVerified: !!session?.user?.id, // Verified if user is logged in
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+    })
+
+    // Update product average rating and review count
+    const reviewStats = await prisma.review.aggregate({
+      where: {
+        productId,
+        isVisible: true,
+        deletedAt: null,
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        id: true,
+      },
+    })
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        averageRating: reviewStats._avg.rating || 0,
+        totalReviews: reviewStats._count.id,
+      },
+    })
+
+    return NextResponse.json({
+      review: {
+        id: review.id,
+        rating: review.rating,
+        title: review.title,
+        content: review.content,
+        createdAt: review.createdAt,
+        isVerified: review.isVerified,
+        user: review.user ? {
+          name: review.user.name,
+          image: review.user.image,
+        } : null,
+        guestName: review.guestName,
+      },
+    }, { status: 201 })
+  } catch (error) {
+    console.error('Error creating review:', error)
+    if (error instanceof Error && 'issues' in error) {
+      return NextResponse.json(
+        { error: 'Invalid review data', details: (error as any).issues },
+        { status: 400 }
+      )
+    }
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
