@@ -357,8 +357,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <CardContent className="space-y-4">
                   <DownloadActions 
                     productId={product.id}
-                    hasDownloadUrl={!!product.downloadUrl}
-                    hasExternalUrl={!!product.externalUrl}
+                    hasDownloadUrl={!!(product as any).downloadUrl}
+                    hasExternalUrl={!!(product as any).externalUrl}
                   />
                 </CardContent>
               </Card>
