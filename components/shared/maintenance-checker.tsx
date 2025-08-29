@@ -8,24 +8,37 @@ import MaintenancePage from '@/app/maintenance/page'
 export function MaintenanceChecker({ children }: { children: React.ReactNode }) {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const pathname = usePathname()
 
-  // Skip maintenance check for admin routes and API routes
-  const isAdminRoute = pathname.startsWith('/dashboard') || 
-                      pathname.startsWith('/auth') ||
-                      pathname.startsWith('/api')
+  // Skip maintenance check for admin routes, API routes, and static assets
+  const isExcludedRoute = pathname.startsWith('/dashboard') || 
+                         pathname.startsWith('/auth') ||
+                         pathname.startsWith('/api') ||
+                         pathname.startsWith('/_next') ||
+                         pathname.startsWith('/maintenance') ||
+                         pathname === '/favicon.ico' ||
+                         pathname === '/robots.txt' ||
+                         pathname === '/sitemap.xml'
 
   useEffect(() => {
     const checkMaintenanceMode = async () => {
+      // Skip check if user is admin or on excluded routes
+      if (isExcludedRoute || session?.user?.role === 'ADMIN') {
+        setIsLoading(false)
+        return
+      }
+
+      // Only check when session is loaded (not loading)
+      if (status === 'loading') {
+        return
+      }
+
       try {
-        // Only check maintenance mode for public routes
-        if (!isAdminRoute) {
-          const response = await fetch('/api/maintenance')
-          if (response.ok) {
-            const data = await response.json()
-            setIsMaintenanceMode(data.maintenanceMode || false)
-          }
+        const response = await fetch('/api/maintenance')
+        if (response.ok) {
+          const data = await response.json()
+          setIsMaintenanceMode(data.maintenanceMode || false)
         }
       } catch (error) {
         console.error('Error checking maintenance mode:', error)
@@ -37,10 +50,10 @@ export function MaintenanceChecker({ children }: { children: React.ReactNode }) 
     }
 
     checkMaintenanceMode()
-  }, [isAdminRoute])
+  }, [isExcludedRoute, session?.user?.role, status])
 
-  // Show loading during initial check
-  if (isLoading) {
+  // Show loading during initial check (but not for excluded routes)
+  if (isLoading && !isExcludedRoute) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -49,7 +62,7 @@ export function MaintenanceChecker({ children }: { children: React.ReactNode }) 
   }
 
   // Show maintenance page if maintenance mode is enabled and user is not admin
-  if (isMaintenanceMode && !isAdminRoute && session?.user?.role !== 'ADMIN') {
+  if (isMaintenanceMode && !isExcludedRoute && session?.user?.role !== 'ADMIN') {
     return <MaintenancePage />
   }
 

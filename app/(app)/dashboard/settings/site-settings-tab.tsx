@@ -793,6 +793,30 @@ export function SiteSettingsTab() {
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 ⚠️ Maintenance mode is enabled. Regular users cannot access the site.
               </p>
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/maintenance/sync', { method: 'POST' })
+                      const data = await response.json()
+                      
+                      if (response.ok) {
+                        toast.info(`📋 ${data.recommendation}`, {
+                          duration: 8000,
+                        })
+                      } else {
+                        toast.error('Failed to sync maintenance mode')
+                      }
+                    } catch (error) {
+                      toast.error('Error syncing maintenance mode')
+                    }
+                  }}
+                >
+                  Sync Server Settings
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
