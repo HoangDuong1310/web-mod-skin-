@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/shared/theme-provider'
 import { AuthProvider } from '@/components/shared/auth-provider'
+import { MaintenanceChecker } from '@/components/shared/maintenance-checker'
 import { AnalyticsScripts } from '@/components/shared/analytics-scripts'
 import { WebsiteStructuredData, OrganizationStructuredData } from '@/components/shared/structured-data'
 import { generateDynamicMetadata, getSEOSettings } from '@/lib/dynamic-seo'
@@ -45,9 +46,11 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <div className="flex-1">{children}</div>
-            </div>
+            <MaintenanceChecker>
+              <div className="relative flex min-h-screen flex-col">
+                <div className="flex-1">{children}</div>
+              </div>
+            </MaintenanceChecker>
             <Toaster richColors position="top-right" />
           </AuthProvider>
         </ThemeProvider>

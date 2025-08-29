@@ -11,10 +11,8 @@ export default withAuth(
         }
         
         // Check admin access for dashboard routes
-        if (req.nextUrl.pathname.startsWith('/dashboard')) {
-          if (req.nextauth.token.role !== 'ADMIN') {
-            return NextResponse.redirect(new URL('/', req.url))
-          }
+        if (req.nextauth.token.role !== 'ADMIN') {
+          return NextResponse.redirect(new URL('/', req.url))
         }
       }
       
