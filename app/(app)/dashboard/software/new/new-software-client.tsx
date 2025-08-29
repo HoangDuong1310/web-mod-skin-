@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import AddSoftwareForm from '@/components/dashboard/add-software-form'
+import AddSoftwareForm from '@/components/dashboard/add-software-form-enhanced'
 
 export default function NewSoftwareClient() {
   const router = useRouter()

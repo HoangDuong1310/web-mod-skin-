@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <WebsiteStructuredData
           siteName={seoSettings.siteName || 'Next.js Full-Stack App'}
           siteDescription={seoSettings.siteDescription || 'A modern full-stack application'}
-          siteUrl={seoSettings.siteUrl}
+          siteUrl={seoSettings.siteUrl || 'https://example.com'}
         />
         <ThemeProvider
           attribute="class"

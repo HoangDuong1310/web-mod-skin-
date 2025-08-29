@@ -52,6 +52,23 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+// Convert image URL to API format if needed
+export function getImageUrl(imageUrl: string): string {
+  if (!imageUrl) return ''
+  
+  // If it's already an API URL or external URL, return as is
+  if (imageUrl.startsWith('/api/') || imageUrl.startsWith('http')) {
+    return imageUrl
+  }
+  
+  // If it's old format (/uploads/...), convert to API format
+  if (imageUrl.startsWith('/uploads/')) {
+    return `/api${imageUrl}`
+  }
+  
+  return imageUrl
+}
+
 // Truncate text
 export function truncate(text: string, length: number = 100): string {
   if (text.length <= length) return text

@@ -7,7 +7,7 @@ import { SoftwareTable } from '@/components/dashboard/software-table'
 import { DashboardStats } from '@/components/dashboard/stats'
 import { RecentDownloads } from '@/components/dashboard/recent-downloads'
 import { ReviewsOverview } from '@/components/dashboard/reviews-overview'
-import { SoftwareManagement } from '@/components/dashboard/software-management'
+import SoftwareManagement from '@/components/dashboard/software-management'
 import { UserManagement } from '@/components/dashboard/user-management'
 
 export const metadata: Metadata = {
@@ -124,19 +124,7 @@ export default async function DashboardPage() {
         <ReviewsOverview />
 
         {/* Software Management */}
-        <SoftwareManagement software={recentSoftware.map(software => ({
-          id: software.id,
-          title: software.title,
-          slug: software.slug,
-          description: software.description,
-          downloads: software.stock || 0, // Using stock as download count
-          status: software.status as 'PUBLISHED' | 'DRAFT' | 'ARCHIVED',
-          rating: Number(software.averageRating) || 0,
-          reviewCount: software._count.reviews,
-          category: software.category,
-          createdAt: software.createdAt.toISOString(),
-          updatedAt: software.updatedAt.toISOString(),
-        }))} />
+        <SoftwareManagement />
 
         {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -149,7 +137,7 @@ export default async function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SoftwareTable software={recentSoftware} />
+              {/* <SoftwareTable software={recentSoftware} /> */}
             </CardContent>
           </Card>
 
@@ -162,7 +150,7 @@ export default async function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <RecentDownloads reviews={recentReviews} />
+              {/* <RecentDownloads reviews={recentReviews} /> */}
             </CardContent>
           </Card>
         </div>

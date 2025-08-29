@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { getServerSession } from 'next-auth'
@@ -171,19 +172,29 @@ export async function POST(request: NextRequest) {
       // Generate download URL
       const downloadUrl = `/api/download/software/${safeFilename}`
 
+      // Update product with download information
+      const updatedProduct = await prisma.product.update({
+        where: { id: product.id },
+        data: {
+          downloadUrl: downloadUrl,
+          filename: safeFilename,
+          fileSize: getFileSizeInMB(file.size) + ' MB'
+        }
+      })
+
       // Return success response
       return NextResponse.json({
         message: 'Software uploaded successfully',
         software: {
-          id: product.id,
-          name: product.title,
+          id: updatedProduct.id,
+          name: updatedProduct.title,
           version: validatedData.version,
           category: category.name,
-          description: product.description,
+          description: updatedProduct.description,
           size: getFileSizeInMB(file.size) + ' MB',
-          status: product.status,
+          status: updatedProduct.status,
           downloadUrl: downloadUrl,
-          createdAt: product.createdAt
+          createdAt: updatedProduct.createdAt
         }
       }, { status: 201 })
 

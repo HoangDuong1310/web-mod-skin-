@@ -1,44 +1,75 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
-import { Upload, X, FileText } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
+import { Upload, X, FileText, Image as ImageIcon, File } from 'lucide-react'
 
 interface AddSoftwareFormProps {
   onSuccess?: () => void
   onCancel?: () => void
 }
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
 export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareFormProps) {
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
+    slug: '',
     version: '',
-    category: '',
+    categoryId: '',
     description: '',
     content: '',
-    status: 'DRAFT' as 'PUBLISHED' | 'DRAFT'
+    price: '0',
+    stock: '9999',
+    status: 'DRAFT' as 'PUBLISHED' | 'DRAFT',
+    metaTitle: '',
+    metaDescription: '',
+    downloadUrl: '',
+    externalUrl: ''
   })
 
-  const categories = [
-    'Productivity',
-    'Development',
-    'Design',
-    'Games',
-    'Education',
-    'Business',
-    'Security',
-    'Media',
-    'Utilities',
-    'Other'
-  ]
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/admin/categories')
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data.categories || [])
+      }
+    } catch (error) {
+      console.error('Categories fetch error:', error)
+    }
+  }
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -91,7 +122,7 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     
-    if (!formData.name.trim() || !formData.version.trim() || !formData.category || !selectedFile) {
+    if (!formData.title.trim() || !formData.version.trim() || !formData.categoryId || !selectedFile) {
       alert('Please fill in all required fields and select a file')
       return
     }
@@ -102,9 +133,9 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
       // Create FormData for file upload
       const uploadData = new FormData()
       uploadData.append('file', selectedFile)
-      uploadData.append('name', formData.name.trim())
+      uploadData.append('title', formData.title.trim())
       uploadData.append('version', formData.version.trim())
-      uploadData.append('category', formData.category)
+      uploadData.append('categoryId', formData.categoryId)
       uploadData.append('description', formData.description.trim())
       uploadData.append('content', formData.content.trim())
       uploadData.append('status', formData.status)
@@ -118,12 +149,19 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
         alert('Software added successfully!')
         // Reset form
         setFormData({
-          name: '',
+          title: '',
+          slug: '',
           version: '',
-          category: '',
+          categoryId: '',
           description: '',
           content: '',
-          status: 'DRAFT'
+          price: '0',
+          stock: '9999',
+          status: 'DRAFT',
+          metaTitle: '',
+          metaDescription: '',
+          downloadUrl: '',
+          externalUrl: ''
         })
         setSelectedFile(null)
         setPreviewUrl(null)
@@ -149,7 +187,7 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
             <Label htmlFor="name">Software Name *</Label>
             <Input
               id="name"
-              value={formData.name}
+              value={formData.title}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="e.g., Adobe Photoshop"
               required
@@ -169,14 +207,14 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
 
         <div>
           <Label htmlFor="category">Category *</Label>
-          <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+          <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
               {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>

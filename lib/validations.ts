@@ -131,6 +131,7 @@ export const reviewQuerySchema = z.object({
   productId: z.string().optional(),
   userId: z.string().optional(),
   rating: z.coerce.number().min(1).max(5).optional(),
+  sort: z.string().optional(),
 })
 
 export type CreateDownloadInput = z.infer<typeof createDownloadSchema>

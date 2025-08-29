@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       return []
     }
     
-    const baseUrl = settings.siteUrl // Already handles fallback logic in getSEOSettings()
+    const baseUrl = settings.siteUrl || 'https://example.com' // Already handles fallback logic in getSEOSettings()
     // Static pages
     const staticPages = [
       {
@@ -114,6 +114,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error generating sitemap:', error)
     
     // Return basic sitemap if database query fails
+    const baseUrl = 'https://example.com'
     return [
       {
         url: baseUrl,

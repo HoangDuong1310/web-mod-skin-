@@ -1,5 +1,5 @@
-import SoftwareManagement from '@/components/dashboard/software-management'
+import EnhancedSoftwareManagement from '@/components/dashboard/enhanced-software-management'
 
 export default function SoftwarePage() {
-  return <SoftwareManagement />
+  return <EnhancedSoftwareManagement />
 }

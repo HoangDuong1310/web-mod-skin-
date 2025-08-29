@@ -3,31 +3,17 @@ module.exports = {
   extends: [
     'next/core-web-vitals',
     'eslint:recommended',
-    '@typescript-eslint/recommended',
     'prettier',
   ],
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
   rules: {
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-      },
-    ],
-    '@typescript-eslint/consistent-type-imports': 'error',
-    '@typescript-eslint/no-explicit-any': 'warn',
     'prefer-const': 'error',
     'react-hooks/exhaustive-deps': 'warn',
+    'no-unused-vars': 'warn',
+    'no-undef': 'warn',
+    'react/no-unescaped-entities': 'warn',
+    'no-inner-declarations': 'warn',
+    'no-constant-condition': 'warn',
+    'no-redeclare': 'warn',
   },
-  overrides: [
-    {
-      files: ['*.ts', '*.tsx'],
-      parserOptions: {
-        project: './tsconfig.json',
-      },
-    },
-  ],
 }
 

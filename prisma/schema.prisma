@@ -122,6 +122,12 @@ model Product {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
+  // Download fields
+  downloadUrl String?   // Direct download URL for local files
+  filename    String?   // Original filename
+  fileSize    String?   // File size (formatted string like "2.5MB")
+  externalUrl String?   // External download link (app store, etc.)
+
   // Rating aggregation fields
   averageRating Decimal @default(0) @db.Decimal(3, 2)
   totalReviews  Int     @default(0)

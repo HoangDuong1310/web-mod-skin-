@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 import { StarRating } from '@/components/ui/star-rating'
 import { ProductReviews } from '@/components/shared/product-reviews'
-import { DownloadActions } from '@/components/product/download-actions'
+import DownloadActions from '@/components/product/download-actions'
 import { prisma } from '@/lib/prisma'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { generateMetadata as generateSEOMetadata, generateProductSchema } from '@/lib/seo'
@@ -356,10 +356,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <DownloadActions 
-                    downloadCount={downloadCount} 
                     productId={product.id}
-                    productTitle={product.title}
-                    productSlug={product.slug}
+                    hasDownloadUrl={!!product.downloadUrl}
+                    hasExternalUrl={!!product.externalUrl}
                   />
                 </CardContent>
               </Card>
