@@ -69,7 +69,8 @@ export async function POST(
 
     try {
       // Create uploads directory if it doesn't exist
-      const uploadsDir = join(process.cwd(), 'uploads', 'images', 'products')
+      const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
+      const uploadsDir = join(base, 'images', 'products')
       await mkdir(uploadsDir, { recursive: true })
 
       // Process each image

@@ -84,6 +84,7 @@ export default function EnhancedSoftwareManagement() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [downloadFile, setDownloadFile] = useState<File | null>(null)
   const [apiTypeIndex, setApiTypeIndex] = useState<Record<string, number>>({})
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -438,6 +439,11 @@ export default function EnhancedSoftwareManagement() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this software?')) return
 
+    // Optimistic UI update
+    const prevList = software
+    setDeletingIds((prev) => new Set(prev).add(id))
+    setSoftware((list) => list.filter((s) => s.id !== id))
+
     try {
       const response = await fetch(`/api/admin/software/${id}`, {
         method: 'DELETE'
@@ -445,12 +451,21 @@ export default function EnhancedSoftwareManagement() {
 
       if (response.ok) {
         toast.success('Software deleted successfully')
+        // Re-fetch to ensure counters/pagination are correct
         fetchSoftware()
       } else {
         throw new Error('Failed to delete software')
       }
     } catch (error) {
+      // Revert on failure
+      setSoftware(prevList)
       toast.error('Failed to delete software')
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
     }
   }
 

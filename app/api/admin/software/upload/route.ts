@@ -51,11 +51,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (100MB max)
-    const maxSize = 100 * 1024 * 1024 // 100MB
+    // Validate file size (200MB max)
+    const maxSize = 200 * 1024 * 1024 // 200MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { message: 'File size exceeds 100MB limit' },
+        { message: 'File size exceeds 200MB limit' },
         { status: 400 }
       )
     }
@@ -157,7 +157,8 @@ export async function POST(request: NextRequest) {
 
     try {
       // Create uploads directory if it doesn't exist
-      const uploadsDir = join(process.cwd(), 'uploads', 'software')
+      const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
+      const uploadsDir = join(base, 'software')
       await mkdir(uploadsDir, { recursive: true })
 
       // Generate safe filename and save file

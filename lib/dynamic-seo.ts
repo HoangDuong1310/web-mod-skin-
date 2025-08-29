@@ -100,6 +100,7 @@ export async function generateDynamicMetadata(
   const fullTitle = title && title !== settings.siteName ? `${title} | ${settings.siteName}` : settings.siteName
   const fullUrl = url ? `${settings.siteUrl}${url}` : settings.siteUrl
   const imageUrl = image ? (image.startsWith('http') ? image : `${settings.siteUrl}${image}`) : null
+  const favicon = (settings as any).favicon || '/images/logo.ico'
 
   return {
     title: fullTitle,
@@ -139,13 +140,18 @@ export async function generateDynamicMetadata(
       ] : [],
     },
     twitter: {
-      card: settings.twitterCard,
+      card: (settings.twitterCard || 'summary_large_image') as 'summary' | 'summary_large_image',
       title: fullTitle,
       description,
       images: imageUrl ? [imageUrl] : [],
     },
     alternates: {
       canonical: fullUrl,
+    },
+    icons: {
+      icon: favicon,
+      shortcut: favicon,
+      apple: favicon,
     },
     other: {
       ...(settings.googleSearchConsoleId && { 

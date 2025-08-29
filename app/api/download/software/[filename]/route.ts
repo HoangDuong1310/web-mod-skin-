@@ -22,7 +22,8 @@ export async function GET(
     }
 
     // Check if file exists
-    const filePath = join(process.cwd(), 'uploads', 'software', filename)
+    const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
+    const filePath = join(base, 'software', filename)
     
     try {
       await stat(filePath)

@@ -235,6 +235,27 @@ export async function DELETE(
       data: { deletedAt: new Date() }
     })
 
+    // On-demand revalidation to refresh user-facing pages
+    try {
+      const baseUrl = new URL(request.url)
+      const secret = process.env.REVALIDATE_SECRET
+      if (secret) {
+        const revalidateListUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
+        revalidateListUrl.searchParams.set('secret', secret)
+        revalidateListUrl.searchParams.set('path', '/products')
+        await fetch(revalidateListUrl.toString(), { method: 'POST' })
+
+        if ((deletedProduct as any).slug) {
+          const revalidateDetailUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
+          revalidateDetailUrl.searchParams.set('secret', secret)
+          revalidateDetailUrl.searchParams.set('path', `/products/${(deletedProduct as any).slug}`)
+          await fetch(revalidateDetailUrl.toString(), { method: 'POST' })
+        }
+      }
+    } catch (e) {
+      console.warn('Revalidate after delete failed:', e)
+    }
+
     return NextResponse.json({ 
       message: 'Product deleted successfully',
       product: deletedProduct 

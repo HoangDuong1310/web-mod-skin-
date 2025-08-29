@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Build where clause
-    const where: any = {}
+    // Build where clause (exclude soft-deleted by default)
+    const where: any = { deletedAt: null }
+
     if (status && status !== 'all') {
       where.status = status
     }
@@ -62,10 +63,10 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
-    // Get stats
+    // Get stats (exclude soft-deleted)
     const [publishedCount, draftCount, totalDownloads] = await Promise.all([
-      prisma.product.count({ where: { status: 'PUBLISHED' } }),
-      prisma.product.count({ where: { status: 'DRAFT' } }),
+      prisma.product.count({ where: { status: 'PUBLISHED', deletedAt: null } }),
+      prisma.product.count({ where: { status: 'DRAFT', deletedAt: null } }),
       prisma.download.count()
     ])
 

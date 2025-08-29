@@ -1,15 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { generateMetadata, generateWebsiteSchema, createJsonLdScript } from '@/lib/seo'
+import { generateWebsiteSchema } from '@/lib/seo'
+import { generateDynamicMetadata, getSEOSettings } from '@/lib/dynamic-seo'
 import { ArrowRight, Star, Shield, Zap, Users } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 
-export const metadata: Metadata = generateMetadata({
-  title: 'Home',
-  description: 'Discover the best products with our modern e-commerce platform. Fast, secure, and user-friendly shopping experience.',
-  keywords: ['e-commerce', 'online shopping', 'products', 'secure payment'],
-})
+export const dynamic = 'force-dynamic'
+
+export async function generateMetadata(): Promise<Metadata> {
+  // Use dynamic SEO settings so admin changes reflect on Home
+  return generateDynamicMetadata({
+    title: 'Home',
+    url: '/',
+  })
+}
 
 const features = [
   {
@@ -33,6 +38,7 @@ const features = [
 
 export default async function HomePage() {
   const websiteSchema = generateWebsiteSchema()
+  const settings = await getSEOSettings()
 
   // Load latest visible reviews for testimonials section
   const reviews = await prisma.review.findMany({
@@ -74,15 +80,13 @@ export default async function HomePage() {
         <div className="container relative">
           <div className="mx-auto max-w-4xl text-center">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-              Welcome to the{' '}
+              Welcome to{' '}
               <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Mod Skin
-              </span>{' '}
-              for all game
+                {settings.siteName}
+              </span>
             </h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
-              Discover amazing applications, download instantly, and experience 
-              the next generation of software with our modern platform.
+              {settings.siteDescription || 'Discover amazing applications, download instantly, and experience the next generation of software with our modern platform.'}
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link href="/products" className="inline-flex items-center justify-center h-12 px-8 text-lg font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
