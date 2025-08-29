@@ -4,6 +4,35 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// Function to recalculate product rating and review count
+async function recalculateProductStats(productId: string) {
+  const visibleReviews = await prisma.review.findMany({
+    where: {
+      productId,
+      isVerified: true,
+      isVisible: true
+    },
+    select: {
+      rating: true
+    }
+  })
+
+  const totalReviews = visibleReviews.length
+  const averageRating = totalReviews > 0
+    ? visibleReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
+    : 0
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      averageRating: averageRating,
+      totalReviews: totalReviews
+    }
+  })
+
+  return { averageRating, totalReviews }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -130,6 +159,9 @@ export async function PATCH(request: NextRequest) {
       }
     })
 
+    // Recalculate product stats after updating review visibility
+    await recalculateProductStats(updatedReview.productId)
+
     return NextResponse.json({ review: updatedReview })
   } catch (error) {
     console.error('Review update error:', error)
@@ -152,9 +184,22 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Review ID is required' }, { status: 400 })
     }
 
+    // Get the review before deleting to know which product to update
+    const reviewToDelete = await prisma.review.findUnique({
+      where: { id },
+      select: { productId: true }
+    })
+
+    if (!reviewToDelete) {
+      return NextResponse.json({ error: 'Review not found' }, { status: 404 })
+    }
+
     await prisma.review.delete({
       where: { id }
     })
+
+    // Recalculate product stats after deleting review
+    await recalculateProductStats(reviewToDelete.productId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

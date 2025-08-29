@@ -7,6 +7,36 @@ import { prisma } from '@/lib/prisma'
 // import { rateLimit } from '@/lib/rate-limit'
 import { createReviewSchema, reviewQuerySchema } from '@/lib/validations'
 
+// Function to recalculate product rating and review count
+async function recalculateProductStats(productId: string) {
+  const visibleReviews = await prisma.review.findMany({
+    where: {
+      productId,
+      isVerified: true,
+      isVisible: true,
+      deletedAt: null
+    },
+    select: {
+      rating: true
+    }
+  })
+
+  const totalReviews = visibleReviews.length
+  const averageRating = totalReviews > 0
+    ? visibleReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
+    : 0
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      averageRating: averageRating,
+      totalReviews: totalReviews
+    }
+  })
+
+  return { averageRating, totalReviews }
+}
+
 // GET /api/reviews - Get reviews for a product
 export async function GET(request: NextRequest) {
   try {
@@ -272,27 +302,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Update product average rating and review count
-    const reviewStats = await prisma.review.aggregate({
-      where: {
-        productId,
-        isVisible: true,
-        deletedAt: null,
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        id: true,
-      },
-    })
-
-    await prisma.product.update({
-      where: { id: productId },
-      data: {
-        averageRating: reviewStats._avg.rating || 0,
-        totalReviews: reviewStats._count.id,
-      },
-    })
+    await recalculateProductStats(productId)
 
     return NextResponse.json({
       review: {
