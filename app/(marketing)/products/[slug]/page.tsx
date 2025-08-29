@@ -101,16 +101,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
             slug: true,
           },
         },
-        reviews: {
-          where: {
-            isVisible: true,
-            deletedAt: null,
-          },
-          select: {
-            id: true,
-            rating: true,
-          },
-        },
       },
     })
 
@@ -124,11 +114,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
       notFound()
     }
 
-    // Calculate real rating and review count
-    const rating = product.reviews.length > 0 
-      ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length 
-      : 0
-    const reviewCount = product.reviews.length
+    // Use pre-calculated rating and review count from database
+    const rating = Number(product.averageRating) || 0
+    const reviewCount = product.totalReviews || 0
 
     // Get real download count
     const downloadCount = await prisma.download.count({
@@ -414,27 +402,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </CardContent>
               </Card>
 
-              {/* System Requirements */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Requirements</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm space-y-2">
-                  {product.category?.slug === 'smartphones' ? (
-                    <>
-                      <div><strong>OS:</strong> iOS 12+ / Android 8+</div>
-                      <div><strong>RAM:</strong> 2GB minimum</div>
-                      <div><strong>Storage:</strong> 100MB</div>
-                    </>
-                  ) : (
-                    <>
-                      <div><strong>OS:</strong> Windows 10+ / macOS 10.15+</div>
-                      <div><strong>RAM:</strong> 4GB minimum</div>
-                      <div><strong>Storage:</strong> 500MB</div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
             </div>
           </div>
 

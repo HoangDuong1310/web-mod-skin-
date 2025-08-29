@@ -36,15 +36,6 @@ export default async function ProductsPage() {
               slug: true,
             },
           },
-          reviews: {
-            where: {
-              isVisible: true,
-              deletedAt: null,
-            },
-            select: {
-              rating: true,
-            },
-          },
           _count: {
             select: {
               downloads: true,
@@ -167,17 +158,10 @@ export default async function ProductsPage() {
                           )}
                           <div className="flex items-center text-sm text-muted-foreground">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                            {(() => {
-                              // Calculate real rating for this product
-                              const productRating = product.reviews.length > 0
-                                ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
-                                : 0
-                              const reviewCount = product._count.reviews
-                              
-                              return reviewCount > 0
-                                ? `${productRating.toFixed(1)} (${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})`
-                                : 'No reviews yet'
-                            })()}
+                            {product.totalReviews > 0
+                              ? `${Number(product.averageRating).toFixed(1)} (${product.totalReviews} ${product.totalReviews === 1 ? 'review' : 'reviews'})`
+                              : 'No reviews yet'
+                            }
                           </div>
                         </div>
                       </div>
