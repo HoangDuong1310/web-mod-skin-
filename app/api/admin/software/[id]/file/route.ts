@@ -40,10 +40,10 @@ export async function POST(
       return NextResponse.json({ error: 'File too large (max 100MB)' }, { status: 400 })
     }
 
-    // Generate safe filename
+    // Generate safe filename with proper format: product_{productId}_{timestamp}.ext
     const timestamp = Date.now()
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const filename = `${timestamp}_${originalName}`
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'bin'
+    const filename = `product_${params.id}_${timestamp}.${extension}`
     
     // Ensure upload directory exists
     const uploadDir = path.join(process.cwd(), 'uploads/software')
@@ -61,21 +61,24 @@ export async function POST(
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
 
+    // Generate proper download URL that matches the download API
+    const downloadUrl = `/api/download/software/${filename}`
+
     // Update product with file info
     await prisma.product.update({
       where: { id: params.id },
       data: {
-        filename: originalName,
+        filename: filename,
         fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
-        downloadUrl: `/uploads/software/${filename}`
+        downloadUrl: downloadUrl
       }
     })
 
     return NextResponse.json({
       message: 'File uploaded successfully',
-      filename: originalName,
+      filename: filename,
       size: file.size,
-      downloadUrl: `/uploads/software/${filename}`
+      downloadUrl: downloadUrl
     })
 
   } catch (error) {

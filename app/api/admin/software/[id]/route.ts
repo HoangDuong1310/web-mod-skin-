@@ -111,19 +111,28 @@ export async function PUT(
       slug: validatedData.slug,
       description: validatedData.description || null,
       content: validatedData.content || null,
-      version: validatedData.version || null,
       price: validatedData.price,
       stock: validatedData.stock,
       status: validatedData.status,
       categoryId: validatedData.categoryId,
-      downloadUrl: validatedData.downloadUrl || null,
-      externalUrl: validatedData.externalUrl || null,
       metaTitle: validatedData.metaTitle || null,
       metaDescription: validatedData.metaDescription || null,
     }
 
+    // Only update URL fields if they were provided in the payload
+    if ('downloadUrl' in validatedData) {
+      updateData.downloadUrl = validatedData.downloadUrl || null
+    }
+    if ('externalUrl' in validatedData) {
+      updateData.externalUrl = validatedData.externalUrl || null
+    }
+    // Only update version if it was provided
+    if ('version' in validatedData) {
+      updateData.version = validatedData.version || null
+    }
+
     // Handle images JSON field properly
-    if (validatedData.images) {
+    if ('images' in validatedData && validatedData.images) {
       try {
         // If it's already a string, use as is. If it's parsed JSON, stringify it
         updateData.images = typeof validatedData.images === 'string' 

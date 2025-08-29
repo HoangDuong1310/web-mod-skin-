@@ -275,10 +275,18 @@ export default function EnhancedSoftwareManagement() {
       }
 
       // Create or update product
-      const productData = {
+      const productData: any = {
         ...formData,
         price: price,
         stock: stock
+      }
+
+      // Do NOT send empty URLs to avoid clearing existing values on server
+      if (!productData.downloadUrl || productData.downloadUrl.trim() === '') {
+        delete productData.downloadUrl
+      }
+      if (!productData.externalUrl || productData.externalUrl.trim() === '') {
+        delete productData.externalUrl
       }
 
       console.log('Product data to send:', productData) // Debug log
@@ -287,15 +295,16 @@ export default function EnhancedSoftwareManagement() {
 
       if (editingSoftware) {
         // Update existing product data first
-        const updateData = {
+        const updateData: any = {
           ...productData,
-          // If current images were modified, include them
-          ...(editingSoftware.images !== undefined && {
-            images: JSON.stringify(Array.isArray(editingSoftware.images) ? editingSoftware.images : [])
-          })
         }
 
-        console.log('Update data:', updateData) // Debug log
+        // Preserve images from editing state (array) so removals/additions are respected
+        if (Array.isArray(editingSoftware.images)) {
+          updateData.images = JSON.stringify(editingSoftware.images)
+        }
+
+        console.log('Update data with preserved images:', updateData) // Debug log
 
         const response = await fetch(`/api/admin/software/${editingSoftware.id}`, {
           method: 'PUT',
@@ -310,6 +319,25 @@ export default function EnhancedSoftwareManagement() {
         }
         const data = await response.json()
         productId = data.product.id
+        
+        // Upload new download file if provided during edit
+        if (downloadFile) {
+          const fileFormData = new FormData()
+          fileFormData.append('file', downloadFile)
+          
+          const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
+            method: 'POST',
+            body: fileFormData
+          })
+          
+          if (!fileResponse.ok) {
+            console.warn('File upload failed during edit, but product updated successfully')
+            toast.warning('Product updated but file upload failed. Please try uploading the file again.')
+          } else {
+            const fileData = await fileResponse.json()
+            console.log('File uploaded successfully:', fileData)
+          }
+        }
       } else {
         // Create new product with file upload if downloadFile exists
         if (downloadFile) {
@@ -344,8 +372,9 @@ export default function EnhancedSoftwareManagement() {
         }
       }
 
-      // Upload images if any
+      // Upload images if any (this will ADD to existing images)
       if (selectedImages.length > 0) {
+        console.log('Uploading new images to add to existing ones...')
         await uploadImages(productId)
       }
 
@@ -363,7 +392,28 @@ export default function EnhancedSoftwareManagement() {
   }
 
   const handleEdit = (item: Software) => {
-    setEditingSoftware(item)
+    // Set editing software with proper images handling
+    let parsedImages: string[] = []
+    try {
+      if (Array.isArray(item.images)) {
+        parsedImages = item.images
+      } else if (typeof (item as any).images === 'string') {
+        parsedImages = JSON.parse((item as any).images)
+      }
+    } catch (err) {
+      console.error('Failed to parse images in handleEdit:', err)
+      parsedImages = []
+    }
+
+    const editingItem = {
+      ...item,
+      images: parsedImages // Ensure images is always an array
+    }
+    setEditingSoftware(editingItem)
+    
+    // Find category ID from category name
+    const foundCategory = categories.find(cat => cat.name === item.category)
+    
     setFormData({
       title: item.name,  // API uses 'name'
       slug: item.slug,
@@ -373,12 +423,15 @@ export default function EnhancedSoftwareManagement() {
       price: item.price.toString(),
       stock: item.stock.toString(),
       status: item.status,
-      categoryId: '', // Need to find category ID from name
+      categoryId: foundCategory?.id || '', // Find category ID from name
       metaTitle: item.metaTitle || '',
       metaDescription: item.metaDescription || '',
       downloadUrl: item.downloadUrl || '',
       externalUrl: item.externalUrl || ''
     })
+    
+    // Reset selected images for new upload (don't mix with existing)
+    setSelectedImages([])
     setIsAddDialogOpen(true)
   }
 
