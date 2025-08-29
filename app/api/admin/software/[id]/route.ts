@@ -166,7 +166,7 @@ export async function PUT(
     }
     
     // Handle Zod validation errors
-    if (error?.constructor.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         message: 'Validation error',
         details: error.issues
@@ -174,7 +174,7 @@ export async function PUT(
     }
     
     // Handle Prisma errors
-    if (error?.code) {
+    if (error && typeof error === 'object' && 'code' in error) {
       console.error('Prisma error code:', error.code)
       return NextResponse.json({ 
         message: 'Database error',
