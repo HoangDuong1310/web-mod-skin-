@@ -25,6 +25,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 
+// Always render dynamically to reflect latest DB data immediately
+export const dynamic = 'force-dynamic'
+
 interface ProductPageProps {
   params: { slug: string }
 }

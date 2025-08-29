@@ -182,6 +182,25 @@ export async function POST(request: NextRequest) {
         }
       })
 
+      // On-demand revalidation for user-facing pages
+      try {
+        const baseUrl = new URL(request.url)
+        const secret = process.env.REVALIDATE_SECRET
+        if (secret) {
+          const revalidateListUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
+          revalidateListUrl.searchParams.set('secret', secret)
+          revalidateListUrl.searchParams.set('path', '/products')
+          await fetch(revalidateListUrl.toString(), { method: 'POST' })
+
+          const revalidateDetailUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
+          revalidateDetailUrl.searchParams.set('secret', secret)
+          revalidateDetailUrl.searchParams.set('path', `/products/${updatedProduct.slug}`)
+          await fetch(revalidateDetailUrl.toString(), { method: 'POST' })
+        }
+      } catch (e) {
+        console.warn('Revalidate after upload failed:', e)
+      }
+
       // Return success response
       return NextResponse.json({
         message: 'Software uploaded successfully',

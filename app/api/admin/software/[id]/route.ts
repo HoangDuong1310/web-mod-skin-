@@ -160,6 +160,27 @@ export async function PUT(
       }
     })
 
+    // On-demand revalidation to refresh user-facing pages
+    try {
+      const baseUrl = new URL(request.url)
+      const revalidateUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
+      const secret = process.env.REVALIDATE_SECRET
+      if (secret) {
+        // Revalidate listing
+        revalidateUrl.searchParams.set('secret', secret)
+        revalidateUrl.searchParams.set('path', '/products')
+        await fetch(revalidateUrl.toString(), { method: 'POST' })
+
+        // Revalidate detail page
+        const revalidateDetailUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
+        revalidateDetailUrl.searchParams.set('secret', secret)
+        revalidateDetailUrl.searchParams.set('path', `/products/${updatedProduct.slug}`)
+        await fetch(revalidateDetailUrl.toString(), { method: 'POST' })
+      }
+    } catch (e) {
+      console.warn('Revalidate after update failed:', e)
+    }
+
     return NextResponse.json({ 
       message: 'Product updated successfully',
       product: updatedProduct 

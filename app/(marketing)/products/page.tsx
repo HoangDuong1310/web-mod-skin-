@@ -15,6 +15,9 @@ export const metadata: Metadata = generateMetadata({
   keywords: ['apps', 'software', 'download', 'mobile apps', 'desktop apps'],
 })
 
+// Always render dynamically to avoid stale cached content
+export const dynamic = 'force-dynamic'
+
 export default async function ProductsPage() {
   try {
     const [products, totalDownloads, overallStats] = await Promise.all([
