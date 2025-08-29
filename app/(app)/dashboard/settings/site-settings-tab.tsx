@@ -19,14 +19,15 @@ import {
   Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 export function SiteSettingsTab() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [settings, setSettings] = useState({
-    siteName: 'Next.js Full-Stack App',
-    siteDescription: 'A modern full-stack application with Next.js 14, TypeScript, and Prisma',
-    siteUrl: 'https://yoursite.com',
+    siteName: DEFAULT_CONFIG.siteName,
+    siteDescription: DEFAULT_CONFIG.siteDescription,
+    siteUrl: DEFAULT_CONFIG.siteUrl,
     siteLogo: '',
     favicon: '',
     language: 'en',
@@ -35,8 +36,8 @@ export function SiteSettingsTab() {
     allowRegistration: true,
     requireEmailVerification: false,
     defaultUserRole: 'USER',
-    contactEmail: 'admin@yoursite.com',
-    supportEmail: 'support@yoursite.com',
+    contactEmail: DEFAULT_CONFIG.contactEmail,
+    supportEmail: DEFAULT_CONFIG.supportEmail,
     socialLinks: {
       twitter: '',
       facebook: '',
@@ -185,7 +186,7 @@ export function SiteSettingsTab() {
                 id="site-url"
                 value={settings.siteUrl}
                 onChange={(e) => setSettings(prev => ({ ...prev, siteUrl: e.target.value }))}
-                placeholder="https://yoursite.com"
+                placeholder={DEFAULT_CONFIG.siteUrl}
               />
             </div>
           </div>
@@ -209,7 +210,7 @@ export function SiteSettingsTab() {
                 type="email"
                 value={settings.contactEmail}
                 onChange={(e) => setSettings(prev => ({ ...prev, contactEmail: e.target.value }))}
-                placeholder="admin@yoursite.com"
+                placeholder={DEFAULT_CONFIG.contactEmail}
               />
             </div>
             
@@ -220,7 +221,7 @@ export function SiteSettingsTab() {
                 type="email"
                 value={settings.supportEmail}
                 onChange={(e) => setSettings(prev => ({ ...prev, supportEmail: e.target.value }))}
-                placeholder="support@yoursite.com"
+                placeholder={DEFAULT_CONFIG.supportEmail}
               />
             </div>
           </div>
@@ -246,7 +247,7 @@ export function SiteSettingsTab() {
                 id="site-logo"
                 value={settings.siteLogo}
                 onChange={(e) => setSettings(prev => ({ ...prev, siteLogo: e.target.value }))}
-                placeholder="https://yoursite.com/logo.png"
+                placeholder={`${DEFAULT_CONFIG.siteUrl}/logo.png`}
               />
               <p className="text-sm text-muted-foreground">
                 Recommended: 200x50px PNG with transparent background
@@ -259,7 +260,7 @@ export function SiteSettingsTab() {
                 id="favicon"
                 value={settings.favicon}
                 onChange={(e) => setSettings(prev => ({ ...prev, favicon: e.target.value }))}
-                placeholder="https://yoursite.com/favicon.ico"
+                placeholder={`${DEFAULT_CONFIG.siteUrl}/favicon.ico`}
               />
               <p className="text-sm text-muted-foreground">
                 Recommended: 32x32px ICO or PNG format
@@ -509,7 +510,7 @@ export function SiteSettingsTab() {
                 id="og-image"
                 value={settings.ogImage}
                 onChange={(e) => setSettings(prev => ({ ...prev, ogImage: e.target.value }))}
-                placeholder="https://yoursite.com/og-image.jpg"
+                placeholder={`${DEFAULT_CONFIG.siteUrl}/og-image.jpg`}
               />
             </div>
             
@@ -735,7 +736,7 @@ export function SiteSettingsTab() {
                 🌐 Current URL Configuration:
               </p>
               <div className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
-                <p><strong>Site URL:</strong> {settings.siteUrl || 'https://yoursite.com'}</p>
+                <p><strong>Site URL:</strong> {settings.siteUrl || DEFAULT_CONFIG.siteUrl}</p>
                 <p className="mt-1 text-xs">
                   🔧 <strong>Production:</strong> Will use Site URL above<br/>
                   🔧 <strong>Development:</strong> Will use http://localhost:3000<br/>

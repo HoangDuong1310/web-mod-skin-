@@ -7,6 +7,7 @@ import { MaintenanceChecker } from '@/components/shared/maintenance-checker'
 import { AnalyticsScripts } from '@/components/shared/analytics-scripts'
 import { WebsiteStructuredData, OrganizationStructuredData } from '@/components/shared/structured-data'
 import { generateDynamicMetadata, getSEOSettings } from '@/lib/dynamic-seo'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
 
@@ -35,9 +36,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           facebookPixelId={seoSettings.facebookPixelId}
         />
         <WebsiteStructuredData
-          siteName={seoSettings.siteName || 'Next.js Full-Stack App'}
-          siteDescription={seoSettings.siteDescription || 'A modern full-stack application'}
-          siteUrl={seoSettings.siteUrl || 'https://example.com'}
+          siteName={seoSettings.siteName || DEFAULT_CONFIG.siteName}
+          siteDescription={seoSettings.siteDescription || DEFAULT_CONFIG.siteDescription}
+          siteUrl={seoSettings.siteUrl || DEFAULT_CONFIG.siteUrl}
         />
         <ThemeProvider
           attribute="class"

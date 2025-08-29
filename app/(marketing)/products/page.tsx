@@ -3,17 +3,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/prisma'
 import { formatPrice } from '@/lib/utils'
-import { generateMetadata } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { Download, Star, Smartphone, Monitor } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = generateMetadata({
-  title: 'Apps & Software',
-  description: 'Discover and download the best applications and software for your devices.',
-  keywords: ['apps', 'software', 'download', 'mobile apps', 'desktop apps'],
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return generateDynamicMetadata({
+    title: 'Apps & Software',
+    description: 'Discover and download the best applications and software for your devices.',
+    keywords: ['apps', 'software', 'download', 'mobile apps', 'desktop apps'],
+  })
+}
 
 // Always render dynamically to avoid stale cached content
 export const dynamic = 'force-dynamic'

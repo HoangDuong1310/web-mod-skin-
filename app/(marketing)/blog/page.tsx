@@ -3,17 +3,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/prisma'
 import { formatDate, truncate } from '@/lib/utils'
-import { generateMetadata } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { Calendar, User, ArrowRight, Clock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = generateMetadata({
-  title: 'Blog',
-  description: 'Latest news, updates, and insights about apps, technology, and software development.',
-  keywords: ['blog', 'tech news', 'app updates', 'software', 'technology'],
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return generateDynamicMetadata({
+    title: 'Blog',
+    description: 'Latest news, updates, and insights about apps, technology, and software development.',
+    keywords: ['blog', 'tech news', 'app updates', 'software', 'technology'],
+  })
+}
 
 export default async function BlogPage() {
   try {

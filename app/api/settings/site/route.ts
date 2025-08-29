@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { getSettings, saveSettings } from '@/lib/settings'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 const siteSettingsSchema = z.object({
   siteName: z.union([z.string(), z.null()]).optional(),
@@ -128,9 +129,9 @@ export async function GET(request: NextRequest) {
     const savedSettings = await getSettings('site')
     
     const defaultSettings = {
-      siteName: 'Next.js Full-Stack App',
-      siteDescription: 'A modern full-stack application with Next.js 14, TypeScript, and Prisma',
-      siteUrl: 'https://yoursite.com',
+      siteName: DEFAULT_CONFIG.siteName,
+      siteDescription: DEFAULT_CONFIG.siteDescription,
+      siteUrl: DEFAULT_CONFIG.siteUrl,
       siteLogo: '',
       favicon: '',
       language: 'en',
@@ -139,8 +140,8 @@ export async function GET(request: NextRequest) {
       allowRegistration: true,
       requireEmailVerification: false,
       defaultUserRole: 'USER',
-      contactEmail: 'admin@yoursite.com',
-      supportEmail: 'support@yoursite.com',
+      contactEmail: DEFAULT_CONFIG.contactEmail,
+      supportEmail: DEFAULT_CONFIG.supportEmail,
       socialLinks: {
         twitter: '',
         facebook: '',

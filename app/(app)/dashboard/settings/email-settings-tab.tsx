@@ -16,6 +16,7 @@ import {
   Shield
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 export function EmailSettingsTab() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,7 +29,7 @@ export function EmailSettingsTab() {
     smtpUsername: '',
     smtpPassword: '',
     smtpSecure: true,
-    fromName: 'Next.js App',
+    fromName: DEFAULT_CONFIG.fromName,
     fromEmail: '',
     replyToEmail: '',
     
@@ -286,7 +287,7 @@ export function EmailSettingsTab() {
                 type="email"
                 value={settings.fromEmail}
                 onChange={(e) => setSettings(prev => ({ ...prev, fromEmail: e.target.value }))}
-                placeholder="noreply@yoursite.com"
+                placeholder={`noreply@${DEFAULT_CONFIG.siteUrl.replace('https://', '').replace('http://', '')}`}
               />
             </div>
           </div>
@@ -298,7 +299,7 @@ export function EmailSettingsTab() {
               type="email"
               value={settings.replyToEmail}
               onChange={(e) => setSettings(prev => ({ ...prev, replyToEmail: e.target.value }))}
-              placeholder="support@yoursite.com"
+              placeholder={DEFAULT_CONFIG.supportEmail}
             />
           </div>
 

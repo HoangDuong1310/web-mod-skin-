@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/prisma'
 import { formatPrice } from '@/lib/utils'
-import { generateMetadata as generateSEOMetadata } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { Download, Star, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -21,13 +21,13 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     })
 
     if (!category) {
-      return generateSEOMetadata({
+      return generateDynamicMetadata({
         title: 'Category Not Found',
         description: 'The requested category could not be found.',
       })
     }
 
-    return generateSEOMetadata({
+    return generateDynamicMetadata({
       title: category.metaTitle || `${category.name} Apps`,
       description: category.metaDescription || category.description || `Browse ${category.name} applications and software.`,
       keywords: [category.name, 'apps', 'software', 'download'],
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     })
   } catch (error) {
     console.error('Error generating metadata:', error)
-    return generateSEOMetadata({
+    return generateDynamicMetadata({
       title: 'App Category',
       description: 'Browse apps by category.',
     })

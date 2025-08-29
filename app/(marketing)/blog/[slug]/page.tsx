@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { prisma } from '@/lib/prisma'
 import { formatDate } from '@/lib/utils'
-import { generateMetadata as generateSEOMetadata, generateArticleSchema } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
+import { generateArticleSchema } from '@/lib/seo'
 import { 
   Calendar, 
   User, 
@@ -30,13 +31,13 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     })
 
     if (!post) {
-      return generateSEOMetadata({
+      return generateDynamicMetadata({
         title: 'Post Not Found',
         description: 'The requested blog post could not be found.',
       })
     }
 
-    return generateSEOMetadata({
+    return generateDynamicMetadata({
       title: post.metaTitle || post.title,
       description: post.metaDescription || post.excerpt || '',
       keywords: [post.title, 'blog', 'tech', 'apps'],
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     })
   } catch (error) {
     console.error('Error generating metadata:', error)
-    return generateSEOMetadata({
+    return generateDynamicMetadata({
       title: 'Blog Post',
       description: 'Read the latest from our blog.',
     })

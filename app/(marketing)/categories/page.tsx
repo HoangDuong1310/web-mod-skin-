@@ -2,16 +2,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/prisma'
-import { generateMetadata } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { Smartphone, Monitor, Package, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = generateMetadata({
-  title: 'App Categories',
-  description: 'Browse apps by categories. Find mobile apps, desktop software, and more.',
-  keywords: ['app categories', 'mobile apps', 'desktop software', 'categories'],
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return generateDynamicMetadata({
+    title: 'App Categories',
+    description: 'Browse apps by categories. Find mobile apps, desktop software, and more.',
+    keywords: ['app categories', 'mobile apps', 'desktop software', 'categories'],
+  })
+}
 
 export default async function CategoriesPage() {
   try {

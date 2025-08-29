@@ -1,4 +1,5 @@
 import { getSettings } from '@/lib/settings'
+import { DEFAULT_CONFIG, getDevFallbacks } from '@/lib/default-config'
 import type { Metadata } from 'next'
 
 export interface SEOSettings {
@@ -23,23 +24,24 @@ export async function getSEOSettings(): Promise<SEOSettings> {
     const settings = await getSettings('site')
     
     // Determine site URL based on environment
+    const devFallbacks = getDevFallbacks()
     let siteUrl = settings.siteUrl || process.env.APP_URL
     
     // Only fallback to localhost in development
     if (!siteUrl) {
       if (process.env.NODE_ENV === 'development') {
-        siteUrl = 'http://localhost:3000'
+        siteUrl = devFallbacks.siteUrl || 'http://localhost:3000'
       } else {
-        // In production, try to detect from environment or throw error
-        siteUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` 
+        // In production, try to detect from environment or use default
+        siteUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}`
              : process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-             : 'https://yoursite.com' // Better than localhost in production
+             : DEFAULT_CONFIG.siteUrl
       }
     }
     
     return {
-      siteName: settings.siteName || 'Next.js Full-Stack App',
-      siteDescription: settings.siteDescription || 'A modern full-stack application',
+      siteName: settings.siteName || DEFAULT_CONFIG.siteName,
+      siteDescription: settings.siteDescription || DEFAULT_CONFIG.siteDescription,
       siteUrl,
       seoTitle: settings.seoTitle || '',
       seoDescription: settings.seoDescription || '',
@@ -55,14 +57,15 @@ export async function getSEOSettings(): Promise<SEOSettings> {
     }
   } catch (error) {
     console.error('Failed to load SEO settings:', error)
+    const devFallbacks = getDevFallbacks()
     return {
-      siteName: 'Next.js Full-Stack App',
-      siteDescription: 'A modern full-stack application',
-      siteUrl: process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:3000' 
+      siteName: DEFAULT_CONFIG.siteName,
+      siteDescription: DEFAULT_CONFIG.siteDescription,
+      siteUrl: process.env.NODE_ENV === 'development'
+        ? devFallbacks.siteUrl || 'http://localhost:3000'
         : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}`
         : process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : 'https://yoursite.com',
+        : DEFAULT_CONFIG.siteUrl,
       seoTitle: '',
       seoDescription: '',
       seoKeywords: '',

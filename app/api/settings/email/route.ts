@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { getSettings, saveSettings } from '@/lib/settings'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 const emailSettingsSchema = z.object({
   smtpEnabled: z.boolean().default(false),
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
       smtpUsername: '',
       smtpPassword: '',
       smtpSecure: true,
-      fromName: 'Next.js App',
+      fromName: DEFAULT_CONFIG.fromName,
       fromEmail: '',
       replyToEmail: '',
       welcomeEmailEnabled: true,

@@ -2,6 +2,7 @@ import type { NextRequest} from 'next/server';
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 export async function GET(request: NextRequest) {
   try {

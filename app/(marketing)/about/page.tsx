@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { generateMetadata } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { prisma } from '@/lib/prisma'
 import { 
   Shield, 
@@ -17,11 +17,13 @@ import {
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = generateMetadata({
-  title: 'About Us',
-  description: 'Learn about our mission to provide the best apps and software for everyone. Trusted by millions of users worldwide.',
-  keywords: ['about us', 'company', 'mission', 'apps', 'software'],
-})
+export async function generateMetadata(): Promise<Metadata> {
+  return generateDynamicMetadata({
+    title: 'About Us',
+    description: 'Learn about our mission to provide the best apps and software for everyone. Trusted by millions of users worldwide.',
+    keywords: ['about us', 'company', 'mission', 'apps', 'software'],
+  })
+}
 
 async function getStats() {
   try {

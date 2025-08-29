@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 interface SEOConfig {
   title?: string
@@ -12,9 +13,9 @@ interface SEOConfig {
 }
 
 const defaultConfig = {
-  siteName: process.env.APP_NAME || 'Next.js Full-Stack App',
-  description: process.env.APP_DESCRIPTION || 'A modern full-stack application',
-  url: process.env.APP_URL || 'http://localhost:3000',
+  siteName: DEFAULT_CONFIG.siteName,
+  description: DEFAULT_CONFIG.siteDescription,
+  url: DEFAULT_CONFIG.siteUrl,
   locale: 'en_US',
 }
 

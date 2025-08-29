@@ -8,7 +8,8 @@ import { ProductReviews } from '@/components/shared/product-reviews'
 import DownloadActions from '@/components/product/download-actions'
 import { prisma } from '@/lib/prisma'
 import { formatPrice, formatDate } from '@/lib/utils'
-import { generateMetadata as generateSEOMetadata, generateProductSchema } from '@/lib/seo'
+import { generateDynamicMetadata } from '@/lib/dynamic-seo'
+import { generateProductSchema } from '@/lib/seo'
 import {
   Download, 
   Star, 
@@ -40,13 +41,13 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     })
 
     if (!product) {
-      return generateSEOMetadata({
+      return generateDynamicMetadata({
         title: 'App Not Found',
         description: 'The requested application could not be found.',
       })
     }
 
-    return generateSEOMetadata({
+    return generateDynamicMetadata({
       title: product.metaTitle || product.title,
       description: product.metaDescription || product.description || '',
       keywords: [product.title, product.category?.name || '', 'download', 'app', 'software'],
