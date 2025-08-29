@@ -90,10 +90,10 @@ export default async function HomePage() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link href="/products" className="inline-flex items-center justify-center h-12 px-8 text-lg font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-                Explore Apps <ArrowRight className="ml-2" />
+                Download Now <ArrowRight className="ml-2" />
               </Link>
               <Link href="/about" className="inline-flex items-center justify-center h-12 px-8 text-lg font-medium border border-input bg-background rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
-                Learn More
+                Xem Thêm
               </Link>
             </div>
           </div>
