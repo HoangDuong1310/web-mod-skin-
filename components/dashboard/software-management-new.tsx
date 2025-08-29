@@ -20,6 +20,7 @@ interface Software {
   category: string
   categorySlug: string
   description: string
+  version?: string
   price: number
   stock: number
   downloads: number
@@ -63,6 +64,7 @@ export default function SoftwareManagement() {
     slug: '',
     description: '',
     content: '',
+    version: '',
     price: '0',
     categoryId: '',
     stock: '9999',
@@ -153,6 +155,7 @@ export default function SoftwareManagement() {
       slug: item.slug,
       description: item.description,
       content: '',
+      version: item.version || '',
       price: item.price.toString(),
       categoryId: categories.find(c => c.slug === item.categorySlug)?.id || '',
       stock: item.stock.toString(),
@@ -190,6 +193,7 @@ export default function SoftwareManagement() {
       slug: '',
       description: '',
       content: '',
+      version: '',
       price: '0',
       categoryId: '',
       stock: '9999',
@@ -314,6 +318,16 @@ export default function SoftwareManagement() {
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                         placeholder="software-slug"
                         required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="version">Version</Label>
+                      <Input
+                        id="version"
+                        value={formData.version}
+                        onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                        placeholder="1.0.0"
                       />
                     </div>
 

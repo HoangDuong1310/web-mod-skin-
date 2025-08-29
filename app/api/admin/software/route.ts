@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
       category: product.category?.name || 'Uncategorized',
       categorySlug: product.category?.slug || '',
       description: product.description,
+      version: product.version,
       price: Number(product.price),
       stock: product.stock,
       downloads: product._count.downloads,
@@ -187,15 +188,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     const data = await request.json()
-    const { 
+    const {
       id,
-      title, 
+      title,
       slug,
-      description, 
+      description,
       content,
-      price, 
-      categoryId, 
-      stock, 
+      version,
+      price,
+      categoryId,
+      stock,
       status,
       images,
       metaTitle,
@@ -220,6 +222,7 @@ export async function PATCH(request: NextRequest) {
         ...(slug && { slug }),
         ...(description && { description }),
         ...(content && { content }),
+        ...(version !== undefined && { version }),
         ...(price !== undefined && { price: parseFloat(price) }),
         ...(stock !== undefined && { stock: parseInt(stock) }),
         ...(categoryId && { categoryId }),
