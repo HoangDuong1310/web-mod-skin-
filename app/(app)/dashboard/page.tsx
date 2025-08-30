@@ -7,6 +7,7 @@ import { DashboardStats } from '@/components/dashboard/stats'
 import { UserManagement } from '@/components/dashboard/user-management'
 import SoftwareManagement from '@/components/dashboard/software-mgmt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { MobileBreadcrumb } from '@/components/shared/mobile-breadcrumb'
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -53,17 +54,18 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
+      <MobileBreadcrumb />
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
+        <p className="text-muted-foreground mt-1">
           Welcome to your admin dashboard
         </p>
       </div>
       
       <DashboardStats stats={stats} />
       
-      <div className="grid gap-8">
+      <div className="grid gap-6 sm:gap-8">
         <SoftwareManagement />
         {canManageUsers(session.user.role) && <UserManagement />}
         

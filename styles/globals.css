@@ -194,5 +194,46 @@
   .h-screen-nav {
     height: calc(100vh - 4rem);
   }
+
+  /* Mobile responsive utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Mobile dialog adjustments */
+  @media (max-width: 640px) {
+    [data-radix-dialog-content] {
+      width: calc(100vw - 2rem) !important;
+      max-width: calc(100vw - 2rem) !important;
+      margin: 1rem !important;
+    }
+  }
+
+  /* Mobile table scroll */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Touch targets for mobile */
+  @media (max-width: 768px) {
+    button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
 }
 

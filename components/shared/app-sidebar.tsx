@@ -28,6 +28,7 @@ import {
 
 interface AppSidebarProps {
   session?: Session | null
+  onClose?: () => void
 }
 
 interface NavigationItem {
@@ -71,7 +72,7 @@ const userNavigation: NavigationItem[] = [
   { name: 'Blog', href: '/blog', icon: FileText },
 ]
 
-export function AppSidebar({ session }: AppSidebarProps) {
+export function AppSidebar({ session, onClose }: AppSidebarProps) {
   const pathname = usePathname()
   const userRole = (session?.user as any)?.role
   
@@ -104,7 +105,22 @@ export function AppSidebar({ session }: AppSidebarProps) {
   const isAdminArea = pathname.startsWith('/dashboard')
 
   return (
-    <div className="flex w-64 flex-col bg-card border-r">
+    <div className="flex w-64 flex-col bg-card border-r h-full">
+      {/* Mobile close button */}
+      {onClose && (
+        <div className="flex items-center justify-between p-4 lg:hidden">
+          <span className="text-lg font-semibold">Menu</span>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-md hover:bg-accent"
+            aria-label="Close menu"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
       <div className="flex h-16 items-center px-6">
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-xl font-bold">
@@ -134,6 +150,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
+              onClick={onClose}
             >
               <item.icon className="h-4 w-4" />
               <span>{item.name}</span>
@@ -152,6 +169,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
                         ? 'bg-primary/10 text-primary'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
+                    onClick={onClose}
                   >
                     {subItem.name}
                   </Link>

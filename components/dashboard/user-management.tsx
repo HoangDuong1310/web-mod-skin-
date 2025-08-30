@@ -146,7 +146,8 @@ export function UserManagement() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -219,6 +220,85 @@ export function UserManagement() {
               ))}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-4">
+          {users.map((user) => (
+            <Card key={user.id} className="p-4">
+              <div className="space-y-3">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium truncate">{user.name || 'No name'}</h3>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                      <Mail className="h-3 w-3" />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+                  </div>
+                  <Badge variant={getRoleColor(user.role)} className="gap-1 ml-2 flex-shrink-0">
+                    {getRoleIcon(user.role)}
+                    {user.role}
+                  </Badge>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-muted-foreground">Joined</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(user.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Status</div>
+                    <Badge
+                      variant={user.emailVerified ? 'default' : 'secondary'}
+                      className="mt-1"
+                    >
+                      {user.emailVerified ? 'Verified' : 'Unverified'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Downloads</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Package className="h-3 w-3" />
+                      <span>{user._count.downloads}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Reviews</div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="h-3 w-3" />
+                      <span>{user._count.reviews}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Change Role:</span>
+                    <Select
+                      value={user.role}
+                      onValueChange={(newRole) => updateUserRole(user.id, newRole)}
+                      disabled={updatingUser === user.id}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USER">User</SelectItem>
+                        <SelectItem value="STAFF">Staff</SelectItem>
+                        <SelectItem value="ADMIN">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
 
         {users.length === 0 && (

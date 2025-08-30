@@ -284,14 +284,14 @@ export default function SoftwareManagement() {
                   Add Software
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {editingSoftware ? 'Edit Software' : 'Add New Software'}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="title">Title</Label>
                       <Input
@@ -451,8 +451,8 @@ export default function SoftwareManagement() {
             </Select>
           </div>
 
-          {/* Software Table */}
-          <div className="rounded-md border">
+          {/* Software Table - Desktop */}
+          <div className="hidden md:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -548,6 +548,104 @@ export default function SoftwareManagement() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Software Cards - Mobile */}
+          <div className="md:hidden space-y-4">
+            {loading ? (
+              <div className="text-center py-10">
+                <div className="animate-pulse text-muted-foreground">Loading software...</div>
+              </div>
+            ) : software.length === 0 ? (
+              <div className="text-center py-10">
+                <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No software found</h3>
+                <p className="text-muted-foreground">Try adjusting your search or filters.</p>
+              </div>
+            ) : (
+              software.map((item) => (
+                <Card key={item.id} className="p-4">
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{item.name}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {item.description}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={item.status === 'PUBLISHED' ? 'default' : 'secondary'}
+                        className="ml-2 flex-shrink-0"
+                      >
+                        {item.status}
+                      </Badge>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">Category</div>
+                        <Badge variant="outline" className="mt-1">{item.category}</Badge>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Price</div>
+                        <div className="font-medium mt-1">
+                          {item.price === 0 ? 'Free' : formatCurrency(item.price)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Downloads</div>
+                        <div className="flex items-center space-x-1 mt-1">
+                          <Download className="h-3 w-3" />
+                          <span>{item.downloads.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Rating</div>
+                        <div className="mt-1">
+                          {item.totalReviews > 0 ? (
+                            <div className="flex items-center space-x-1">
+                              <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                              <span className="text-sm">
+                                {Number(item.averageRating).toFixed(1)} ({item.totalReviews})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No reviews</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(item.createdAt)}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(item.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
 
           {/* Pagination */}
