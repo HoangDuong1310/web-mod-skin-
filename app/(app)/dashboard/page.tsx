@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canAccessDashboard, canManageUsers } from '@/lib/auth-utils'
 import { DashboardStats } from '@/components/dashboard/stats'
 import { UserManagement } from '@/components/dashboard/user-management'
 import SoftwareManagement from '@/components/dashboard/software-mgmt'
@@ -14,7 +15,7 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  if (session.user.role !== 'ADMIN') {
+  if (!canAccessDashboard(session.user.role)) {
     redirect('/')
   }
 
@@ -64,7 +65,7 @@ export default async function DashboardPage() {
       
       <div className="grid gap-8">
         <SoftwareManagement />
-        <UserManagement />
+        {canManageUsers(session.user.role) && <UserManagement />}
         
         {/* Recent Activity */}
         <Card>

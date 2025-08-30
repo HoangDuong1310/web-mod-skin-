@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { canManageSoftware } from '@/lib/auth-utils'
 
 const uploadSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }

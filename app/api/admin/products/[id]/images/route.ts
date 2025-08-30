@@ -4,6 +4,7 @@ import { join } from 'path'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canManageSoftware } from '@/lib/auth-utils'
 
 // Helper function to generate safe image filename
 function generateSafeImageFilename(originalName: string, productId: string): string {
@@ -21,7 +22,7 @@ export async function POST(
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }
@@ -144,7 +145,7 @@ export async function DELETE(
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }

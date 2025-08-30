@@ -4,12 +4,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Session } from 'next-auth'
 import { cn } from '@/lib/utils'
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Tags, 
-  FileText, 
+import {
+  canManageSoftware,
+  canManageReviews,
+  canManageUsers,
+  canAccessAnalytics,
+  canAccessDashboard
+} from '@/lib/auth-utils'
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Tags,
+  FileText,
   Users,
   Settings,
   BarChart3,
@@ -66,9 +73,34 @@ const userNavigation: NavigationItem[] = [
 
 export function AppSidebar({ session }: AppSidebarProps) {
   const pathname = usePathname()
+  const userRole = (session?.user as any)?.role
   
-  // Determine which navigation to show
-  const navigation = (session?.user as any)?.role === 'ADMIN' ? adminNavigation : userNavigation
+  // Filter navigation based on user permissions
+  const getFilteredNavigation = () => {
+    if (!canAccessDashboard(userRole)) {
+      return userNavigation
+    }
+
+    // Filter admin navigation based on permissions
+    return adminNavigation.filter(item => {
+      switch (item.href) {
+        case '/dashboard/users':
+          return canManageUsers(userRole)
+        case '/dashboard/software':
+          return canManageSoftware(userRole)
+        case '/dashboard/reviews':
+          return canManageReviews(userRole)
+        case '/dashboard/analytics':
+          return canAccessAnalytics(userRole)
+        case '/dashboard/settings':
+          return userRole === 'ADMIN' // Settings is admin only for now
+        default:
+          return true // Dashboard and content are available to all staff
+      }
+    })
+  }
+
+  const navigation = getFilteredNavigation()
   const isAdminArea = pathname.startsWith('/dashboard')
 
   return (
@@ -86,7 +118,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
       {session?.user && (
         <div className="px-4 py-2">
           <div className="text-xs text-muted-foreground">
-            {isAdminArea ? 'Admin Panel' : 'User Panel'}
+            {isAdminArea ? (userRole === 'ADMIN' ? 'Admin Panel' : 'Staff Panel') : 'User Panel'}
           </div>
         </div>
       )}

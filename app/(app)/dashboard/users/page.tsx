@@ -23,8 +23,9 @@ export default async function UsersManagementPage() {
     redirect('/auth/signin')
   }
 
+  // User management is ADMIN only
   if (session.user.role !== 'ADMIN') {
-    redirect('/')
+    redirect('/dashboard')
   }
 
   // Get users with stats

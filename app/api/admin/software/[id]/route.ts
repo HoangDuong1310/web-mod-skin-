@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { canManageSoftware } from '@/lib/auth-utils'
 
 const updateProductSchema = z.object({
   title: z.string().min(1).max(100),
@@ -27,7 +28,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
@@ -61,7 +62,7 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
@@ -225,7 +226,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 

@@ -1,5 +1,6 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
+import { canAccessDashboard } from '@/lib/auth-utils'
 
 export default withAuth(
   function middleware(req) {
@@ -8,7 +9,7 @@ export default withAuth(
       const isMaintenanceMode = process.env.MAINTENANCE_MODE === 'true'
       
       // Skip maintenance check for admin routes, API routes, and static assets
-      const isExcludedRoute = req.nextUrl.pathname.startsWith('/dashboard') || 
+      const isExcludedRoute = req.nextUrl.pathname.startsWith('/dashboard') ||
                              req.nextUrl.pathname.startsWith('/auth') ||
                              req.nextUrl.pathname.startsWith('/api') ||
                              req.nextUrl.pathname.startsWith('/_next') ||
@@ -32,8 +33,8 @@ export default withAuth(
           return NextResponse.redirect(new URL('/auth/signin', req.url))
         }
         
-        // Check admin access for dashboard routes
-        if (req.nextauth.token.role !== 'ADMIN') {
+        // Check if user can access dashboard (ADMIN or STAFF)
+        if (!canAccessDashboard(req.nextauth.token.role)) {
           return NextResponse.redirect(new URL('/', req.url))
         }
       }

@@ -1,13 +1,18 @@
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { canManageReviews } from '@/lib/auth-utils'
 import ReviewManagement from '@/components/dashboard/review-management'
 
 export default async function ReviewsPage() {
   const session = await getServerSession(authOptions)
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user) {
     redirect('/auth/signin')
+  }
+
+  if (!canManageReviews(session.user.role)) {
+    redirect('/dashboard')
   }
 
   return (
