@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { signOut } from 'next-auth/react'
 import { LogOut, User } from 'lucide-react'
+import { getPostLogoutRedirectUrl } from '@/lib/redirect-utils'
 
 interface AppHeaderProps {
   user: {
@@ -32,7 +33,7 @@ export function AppHeader({ user }: AppHeaderProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => signOut({ callbackUrl: '/' })}
+          onClick={() => signOut({ callbackUrl: getPostLogoutRedirectUrl() })}
           className="text-muted-foreground"
         >
           <LogOut className="h-4 w-4" />

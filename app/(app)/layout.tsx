@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { canAccessDashboard } from '@/lib/auth-utils'
+import { getPostLogoutRedirectUrl } from '@/lib/redirect-utils'
 import { AppSidebar } from '@/components/shared/app-sidebar'
 import { AppHeader } from '@/components/shared/app-header'
 
@@ -18,7 +19,7 @@ export default async function AppLayout({ children }: AppLayoutProps) {
 
   // Allow ADMIN and STAFF roles to access dashboard
   if (!canAccessDashboard(session.user.role)) {
-    redirect('/')
+    redirect(getPostLogoutRedirectUrl())
   }
 
   return (

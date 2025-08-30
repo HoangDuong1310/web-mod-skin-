@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Route } from 'next'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { getPostLoginRedirectUrl } from '@/lib/redirect-utils'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,7 +28,7 @@ export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackParam = searchParams.get('callbackUrl')
-  const callbackUrl: Route = (callbackParam as Route) || ('/dashboard' as Route)
+  const callbackUrl: Route = (callbackParam as Route) || ('/' as Route)
   const error = searchParams.get('error')
 
   const [formData, setFormData] = useState({
@@ -56,7 +57,8 @@ export default function SignInPage() {
         // Check if sign in was successful
         const session = await getSession()
         if (session) {
-          router.push(callbackUrl)
+          const redirectUrl = getPostLoginRedirectUrl(session, callbackParam || undefined)
+          router.push(redirectUrl as Route)
         } else {
           setFormError('Authentication failed. Please try again.')
         }
@@ -79,7 +81,10 @@ export default function SignInPage() {
   const handleOAuthSignIn = async (provider: string) => {
     setIsLoading(true)
     try {
-      await signIn(provider, { callbackUrl })
+      await signIn(provider, {
+        callbackUrl: callbackParam || undefined,
+        redirect: true
+      })
     } catch (error) {
       console.error('OAuth sign in error:', error)
       setFormError('OAuth sign in failed. Please try again.')

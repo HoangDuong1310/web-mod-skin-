@@ -7,6 +7,8 @@ import type { Route } from 'next'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
+import { canAccessDashboard } from '@/lib/auth-utils'
+import { getPostLogoutRedirectUrl } from '@/lib/redirect-utils'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { User, LogOut } from 'lucide-react'
@@ -23,7 +25,7 @@ const navigation: { name: string; href: Route }[] = [
 export function MainNav() {
   const pathname = usePathname()
   const { data: session, status } = useSession()
-  const isAdmin = session?.user?.role === 'ADMIN'
+  const canAccessAdmin = canAccessDashboard(session?.user?.role)
 
   return (
     <div className="flex w-full items-center justify-between">
@@ -76,18 +78,20 @@ export function MainNav() {
               </Link>
             </Button>
 
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => signOut({ callbackUrl: getPostLogoutRedirectUrl() })}
             >
               <LogOut className="h-5 w-5" />
               <span className="sr-only">Sign Out</span>
             </Button>
 
-            {isAdmin && (
+            {canAccessAdmin && (
               <Button asChild>
-                <Link href={'/dashboard' as Route}>Admin Panel</Link>
+                <Link href={'/dashboard' as Route}>
+                  {session?.user?.role === 'ADMIN' ? 'Admin Panel' : 'Staff Panel'}
+                </Link>
               </Button>
             )}
           </>
