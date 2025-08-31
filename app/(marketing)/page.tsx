@@ -11,7 +11,6 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   // Use dynamic SEO settings so admin changes reflect on Home
   return generateDynamicMetadata({
-    title: 'Home',
     url: '/',
   })
 }

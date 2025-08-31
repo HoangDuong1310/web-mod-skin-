@@ -100,7 +100,13 @@ export async function generateDynamicMetadata(
   const url = pageConfig.url || ''
   const type = pageConfig.type || 'website'
   
-  const fullTitle = title && title !== settings.siteName ? `${title} | ${settings.siteName}` : settings.siteName
+  // For home page (no pageConfig.title provided), use just the seoTitle or siteName without suffix
+  // For other pages, add the site name suffix
+  const fullTitle = !pageConfig.title
+    ? (settings.seoTitle || settings.siteName)
+    : title && title !== settings.siteName
+      ? `${title} | ${settings.siteName}`
+      : settings.siteName
   const fullUrl = url ? `${settings.siteUrl}${url}` : settings.siteUrl
   const imageUrl = image ? (image.startsWith('http') ? image : `${settings.siteUrl}${image}`) : null
   const favicon = (settings as any).favicon || '/images/logo.ico'
