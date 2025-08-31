@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
+import { getSEOSettings } from '@/lib/dynamic-seo'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,78 +23,48 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const baseUrl = process.env.APP_URL || (
-      process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:3000' 
+    // Get the correct base URL from SEO settings
+    const settings = await getSEOSettings()
+    const baseUrl = settings.siteUrl || process.env.APP_URL || (
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:3000'
         : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}`
         : process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
         : 'https://yoursite.com'
     )
     
-    // Check if sitemap is accessible (try both main route and API fallback)
+    // Test sitemap generation directly (avoid network issues)
     let sitemapStatus = false
     let robotsStatus = false
     let sitemapError = ''
     let robotsError = ''
     
-    // Check sitemap.xml
+    // Test sitemap function
     try {
-      const sitemapResponse = await fetch(`${baseUrl}/sitemap.xml`, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'SEO-Validator/1.0',
-        },
-      })
-      sitemapStatus = sitemapResponse.ok
-      if (!sitemapResponse.ok) {
-        sitemapError = `HTTP ${sitemapResponse.status}: ${sitemapResponse.statusText}`
+      // Import and test sitemap generation
+      const sitemapModule = await import('@/app/sitemap')
+      const sitemapData = await sitemapModule.default()
+      sitemapStatus = Array.isArray(sitemapData) && sitemapData.length > 0
+      if (!sitemapStatus) {
+        sitemapError = 'Sitemap returned empty or invalid data'
       }
     } catch (error) {
       sitemapStatus = false
-      sitemapError = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      sitemapError = `Sitemap generation error: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
     
-    // If main sitemap fails, try API route
-    if (!sitemapStatus) {
-      try {
-        const apiSitemapResponse = await fetch(`${baseUrl}/api/sitemap.xml`)
-        if (apiSitemapResponse.ok) {
-          sitemapStatus = true
-          sitemapError = 'Main route failed, but API route works'
-        }
-      } catch (error) {
-        console.warn('API sitemap route also failed:', error)
-      }
-    }
-    
-    // Check robots.txt
+    // Test robots function
     try {
-      const robotsResponse = await fetch(`${baseUrl}/robots.txt`, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'SEO-Validator/1.0',
-        },
-      })
-      robotsStatus = robotsResponse.ok
-      if (!robotsResponse.ok) {
-        robotsError = `HTTP ${robotsResponse.status}: ${robotsResponse.statusText}`
+      // Import and test robots generation
+      const robotsModule = await import('@/app/robots')
+      const robotsData = await robotsModule.default()
+      robotsStatus = robotsData && robotsData.rules && Array.isArray(robotsData.rules) && robotsData.rules.length > 0
+      if (!robotsStatus) {
+        robotsError = 'Robots returned empty or invalid data'
       }
     } catch (error) {
       robotsStatus = false
-      robotsError = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`
-    }
-    
-    // If main robots fails, try API route
-    if (!robotsStatus) {
-      try {
-        const apiRobotsResponse = await fetch(`${baseUrl}/api/robots.txt`)
-        if (apiRobotsResponse.ok) {
-          robotsStatus = true
-          robotsError = 'Main route failed, but API route works'
-        }
-      } catch (error) {
-        console.warn('API robots route also failed:', error)
-      }
+      robotsError = `Robots generation error: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
 
     return NextResponse.json({
@@ -110,8 +81,13 @@ export async function GET(request: NextRequest) {
         error: robotsError || null
       },
       baseUrl,
+      seoSettings: {
+        sitemapEnabled: settings.sitemapEnabled,
+        robotsEnabled: settings.robotsEnabled,
+        seoIndexing: settings.seoIndexing
+      },
       timestamp: new Date().toISOString(),
-      fallbackRoutes: {
+      alternativeRoutes: {
         sitemap: `${baseUrl}/api/sitemap.xml`,
         robots: `${baseUrl}/api/robots.txt`
       }
