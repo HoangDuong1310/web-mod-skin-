@@ -649,7 +649,7 @@ export function SiteSettingsTab() {
               View Robots.txt
             </Button>
 
-            <Button 
+            <Button
               variant="outline"
               onClick={async () => {
                 try {
@@ -660,11 +660,27 @@ export function SiteSettingsTab() {
                     if (data.sitemap.accessible && data.robots.accessible) {
                       toast.success('✅ SEO files are accessible!')
                     } else {
-                      toast.error('❌ Some SEO files are not accessible')
+                      let errorMessage = '❌ SEO Files Issues:\n'
+                      if (!data.sitemap.accessible) {
+                        errorMessage += `• Sitemap: ${data.sitemap.error || 'Not accessible'}\n`
+                      }
+                      if (!data.robots.accessible) {
+                        errorMessage += `• Robots: ${data.robots.error || 'Not accessible'}\n`
+                      }
+                      errorMessage += '\nTip: Try "Clear SEO Cache" then validate again'
+                      
+                      toast.error(errorMessage, {
+                        duration: 10000,
+                      })
+                      
+                      // Also log detailed info to console for debugging
+                      console.log('🔍 SEO Validation Details:', data)
                     }
+                  } else {
+                    toast.error(`❌ Validation failed: ${data.error || 'Unknown error'}`)
                   }
                 } catch (error) {
-                  toast.error('Failed to validate SEO files')
+                  toast.error(`Failed to validate SEO files: ${error instanceof Error ? error.message : 'Network error'}`)
                 }
               }}
             >

@@ -90,24 +90,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }))
 
-    // Dynamic blog pages
-    const posts = await prisma.post.findMany({
-      where: {
-        status: 'PUBLISHED',
-        deletedAt: null,
-      },
-      select: {
-        slug: true,
-        updatedAt: true,
-      },
-    })
+    // Dynamic blog pages - safely handle if post table doesn't exist
+    let blogPages: Array<{
+      url: string
+      lastModified: Date
+      changeFrequency: 'monthly'
+      priority: number
+    }> = []
+    
+    try {
+      const posts = await prisma.post.findMany({
+        where: {
+          status: 'PUBLISHED',
+          deletedAt: null,
+        },
+        select: {
+          slug: true,
+          updatedAt: true,
+        },
+      })
 
-    const blogPages = posts.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: post.updatedAt,
-      changeFrequency: 'monthly' as const,
-      priority: 0.5,
-    }))
+      blogPages = posts.map((post) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: post.updatedAt,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      }))
+    } catch (postError) {
+      console.warn('Posts table not available for sitemap:', postError)
+      // Continue without blog pages
+    }
 
     return [...staticPages, ...productPages, ...categoryPages, ...blogPages]
   } catch (error) {

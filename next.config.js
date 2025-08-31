@@ -44,6 +44,19 @@ const nextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      // Fallback to API routes if main sitemap/robots fail
+      {
+        source: '/sitemap.xml',
+        destination: '/sitemap.xml', // First try Next.js MetadataRoute
+      },
+      {
+        source: '/robots.txt',
+        destination: '/robots.txt', // First try Next.js MetadataRoute
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

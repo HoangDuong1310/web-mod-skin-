@@ -30,37 +30,91 @@ export async function GET(request: NextRequest) {
         : 'https://yoursite.com'
     )
     
-    // Check if sitemap is accessible
+    // Check if sitemap is accessible (try both main route and API fallback)
     let sitemapStatus = false
     let robotsStatus = false
+    let sitemapError = ''
+    let robotsError = ''
     
+    // Check sitemap.xml
     try {
-      const sitemapResponse = await fetch(`${baseUrl}/sitemap.xml`)
+      const sitemapResponse = await fetch(`${baseUrl}/sitemap.xml`, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'SEO-Validator/1.0',
+        },
+      })
       sitemapStatus = sitemapResponse.ok
+      if (!sitemapResponse.ok) {
+        sitemapError = `HTTP ${sitemapResponse.status}: ${sitemapResponse.statusText}`
+      }
     } catch (error) {
       sitemapStatus = false
+      sitemapError = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
     
+    // If main sitemap fails, try API route
+    if (!sitemapStatus) {
+      try {
+        const apiSitemapResponse = await fetch(`${baseUrl}/api/sitemap.xml`)
+        if (apiSitemapResponse.ok) {
+          sitemapStatus = true
+          sitemapError = 'Main route failed, but API route works'
+        }
+      } catch (error) {
+        console.warn('API sitemap route also failed:', error)
+      }
+    }
+    
+    // Check robots.txt
     try {
-      const robotsResponse = await fetch(`${baseUrl}/robots.txt`)
+      const robotsResponse = await fetch(`${baseUrl}/robots.txt`, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'SEO-Validator/1.0',
+        },
+      })
       robotsStatus = robotsResponse.ok
+      if (!robotsResponse.ok) {
+        robotsError = `HTTP ${robotsResponse.status}: ${robotsResponse.statusText}`
+      }
     } catch (error) {
       robotsStatus = false
+      robotsError = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }
+    
+    // If main robots fails, try API route
+    if (!robotsStatus) {
+      try {
+        const apiRobotsResponse = await fetch(`${baseUrl}/api/robots.txt`)
+        if (apiRobotsResponse.ok) {
+          robotsStatus = true
+          robotsError = 'Main route failed, but API route works'
+        }
+      } catch (error) {
+        console.warn('API robots route also failed:', error)
+      }
     }
 
     return NextResponse.json({
       sitemap: {
         enabled: sitemapStatus,
         url: `${baseUrl}/sitemap.xml`,
-        accessible: sitemapStatus
+        accessible: sitemapStatus,
+        error: sitemapError || null
       },
       robots: {
         enabled: robotsStatus,
         url: `${baseUrl}/robots.txt`,
-        accessible: robotsStatus
+        accessible: robotsStatus,
+        error: robotsError || null
       },
       baseUrl,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      fallbackRoutes: {
+        sitemap: `${baseUrl}/api/sitemap.xml`,
+        robots: `${baseUrl}/api/robots.txt`
+      }
     })
 
   } catch (error) {
