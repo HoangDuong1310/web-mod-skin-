@@ -9,15 +9,20 @@ interface AnalyticsScriptsProps {
   facebookPixelId?: string
 }
 
-export function AnalyticsScripts({ 
-  googleAnalyticsId, 
-  googleSearchConsoleId, 
-  facebookPixelId 
+export function AnalyticsScripts({
+  googleAnalyticsId,
+  googleSearchConsoleId,
+  facebookPixelId
 }: AnalyticsScriptsProps) {
   
+  // Clean and get primary Google Analytics ID
+  const cleanGoogleAnalyticsId = googleAnalyticsId
+    ? googleAnalyticsId.split(',')[0].trim() // Take first ID if multiple are provided
+    : undefined;
+
   // Google Analytics
   useEffect(() => {
-    if (googleAnalyticsId && typeof window !== 'undefined') {
+    if (cleanGoogleAnalyticsId && typeof window !== 'undefined') {
       // @ts-ignore
       window.dataLayer = window.dataLayer || []
       // @ts-ignore
@@ -29,9 +34,9 @@ export function AnalyticsScripts({
       window.gtag = gtag
       
       gtag('js', new Date())
-      gtag('config', googleAnalyticsId)
+      gtag('config', cleanGoogleAnalyticsId)
     }
-  }, [googleAnalyticsId])
+  }, [cleanGoogleAnalyticsId])
 
   // Facebook Pixel
   useEffect(() => {
@@ -62,10 +67,10 @@ export function AnalyticsScripts({
   return (
     <>
       {/* Google Analytics */}
-      {googleAnalyticsId && (
+      {cleanGoogleAnalyticsId && (
         <>
           <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+            src={`https://www.googletagmanager.com/gtag/js?id=${cleanGoogleAnalyticsId}`}
             strategy="afterInteractive"
           />
           <Script id="google-analytics" strategy="afterInteractive">
@@ -73,7 +78,7 @@ export function AnalyticsScripts({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', '${googleAnalyticsId}');
+              gtag('config', '${cleanGoogleAnalyticsId}');
             `}
           </Script>
         </>
