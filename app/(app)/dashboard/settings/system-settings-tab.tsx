@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,6 +43,7 @@ interface SystemSettingsTabProps {
 export function SystemSettingsTab({ systemStats, systemInfo }: SystemSettingsTabProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isBackingUp, setIsBackingUp] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [settings, setSettings] = useState({
     // Database Settings
     enableBackups: true,
@@ -64,6 +65,30 @@ export function SystemSettingsTab({ systemStats, systemInfo }: SystemSettingsTab
     enableErrorReporting: true,
     enablePerformanceMonitoring: false,
   })
+
+  // Load settings from API
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/system')
+        if (response.ok) {
+          const data = await response.json()
+          const cleanSettings = Object.fromEntries(
+            Object.entries(data.settings).map(([key, value]) => [
+              key,
+              value === null ? '' : value
+            ])
+          )
+          setSettings(prev => ({ ...prev, ...cleanSettings }))
+        }
+      } catch (error) {
+        console.error('Error loading system settings:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadSettings()
+  }, [])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
@@ -413,7 +438,22 @@ export function SystemSettingsTab({ systemStats, systemInfo }: SystemSettingsTab
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Button variant="outline" className="h-auto p-4">
+            <Button
+              variant="outline"
+              className="h-auto p-4"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/admin/system/clear-cache', { method: 'POST' })
+                  if (response.ok) {
+                    toast.success('Cache cleared successfully!')
+                  } else {
+                    throw new Error('Failed to clear cache')
+                  }
+                } catch (error) {
+                  toast.error('Failed to clear cache')
+                }
+              }}
+            >
               <div className="text-left">
                 <div className="flex items-center gap-2 font-medium">
                   <RefreshCw className="h-4 w-4" />
@@ -425,7 +465,23 @@ export function SystemSettingsTab({ systemStats, systemInfo }: SystemSettingsTab
               </div>
             </Button>
             
-            <Button variant="outline" className="h-auto p-4">
+            <Button
+              variant="outline"
+              className="h-auto p-4"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/admin/system/cleanup-storage', { method: 'POST' })
+                  if (response.ok) {
+                    const data = await response.json()
+                    toast.success(`Storage cleanup completed: ${data.cleaned} cleaned`)
+                  } else {
+                    throw new Error('Failed to cleanup storage')
+                  }
+                } catch (error) {
+                  toast.error('Failed to cleanup storage')
+                }
+              }}
+            >
               <div className="text-left">
                 <div className="flex items-center gap-2 font-medium">
                   <Trash2 className="h-4 w-4" />
@@ -437,7 +493,22 @@ export function SystemSettingsTab({ systemStats, systemInfo }: SystemSettingsTab
               </div>
             </Button>
             
-            <Button variant="outline" className="h-auto p-4">
+            <Button
+              variant="outline"
+              className="h-auto p-4"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/admin/system/optimize-database', { method: 'POST' })
+                  if (response.ok) {
+                    toast.success('Database optimization completed!')
+                  } else {
+                    throw new Error('Failed to optimize database')
+                  }
+                } catch (error) {
+                  toast.error('Failed to optimize database')
+                }
+              }}
+            >
               <div className="text-left">
                 <div className="flex items-center gap-2 font-medium">
                   <Database className="h-4 w-4" />
@@ -449,7 +520,24 @@ export function SystemSettingsTab({ systemStats, systemInfo }: SystemSettingsTab
               </div>
             </Button>
             
-            <Button variant="destructive" className="h-auto p-4">
+            <Button
+              variant="destructive"
+              className="h-auto p-4"
+              onClick={async () => {
+                if (confirm('⚠️ WARNING: This will reset ALL system data. This action cannot be undone. Are you sure?')) {
+                  try {
+                    const response = await fetch('/api/admin/system/reset', { method: 'POST' })
+                    if (response.ok) {
+                      toast.success('System reset completed (simulation)')
+                    } else {
+                      throw new Error('Failed to reset system')
+                    }
+                  } catch (error) {
+                    toast.error('Failed to reset system')
+                  }
+                }
+              }}
+            >
               <div className="text-left">
                 <div className="flex items-center gap-2 font-medium">
                   <Trash2 className="h-4 w-4" />

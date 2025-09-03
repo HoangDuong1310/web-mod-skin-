@@ -1,19 +1,14 @@
-import { Metadata } from 'next'
 import { Wrench, Clock, Mail } from 'lucide-react'
-import { getSetting } from '@/lib/settings'
-import { DEFAULT_CONFIG } from '@/lib/default-config'
 
-export const metadata: Metadata = {
-  title: 'Maintenance - Site Under Maintenance',
-  description: 'Our site is currently under maintenance. We will be back soon.',
-  robots: 'noindex, nofollow',
+interface MaintenanceDisplayProps {
+  siteName?: string
+  supportEmail?: string
 }
 
-export default async function MaintenancePage() {
-  // Get site settings for contact info
-  const siteName = await getSetting('site.siteName') || DEFAULT_CONFIG.siteName
-  const supportEmail = await getSetting('site.supportEmail') || DEFAULT_CONFIG.supportEmail
-
+export function MaintenanceDisplay({ 
+  siteName = 'Website',
+  supportEmail 
+}: MaintenanceDisplayProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">

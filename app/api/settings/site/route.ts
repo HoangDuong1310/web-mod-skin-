@@ -51,6 +51,9 @@ const siteSettingsSchema = z.object({
   sitemapEnabled: z.boolean().default(true),
   robotsEnabled: z.boolean().default(true),
   seoIndexing: z.boolean().default(true),
+  // Download Settings
+  downloadDelayEnabled: z.boolean().default(true),
+  downloadDelaySeconds: z.number().min(5).max(120).default(30),
 })
 
 
@@ -161,6 +164,9 @@ export async function GET(request: NextRequest) {
       sitemapEnabled: true,
       robotsEnabled: true,
       seoIndexing: true,
+      // Download Settings
+      downloadDelayEnabled: true,
+      downloadDelaySeconds: 30,
     }
 
     return NextResponse.json({

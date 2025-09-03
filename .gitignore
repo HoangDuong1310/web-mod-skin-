@@ -47,3 +47,6 @@ Turbo/
 # Serena workspace (requested)
 .serena/
 /uploads/
+
+# AI Instructions (internal use only)
+.github/instructions/rule.instructions.md

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
+import {
   Save,
   Globe,
   Image as ImageIcon,
@@ -16,7 +16,8 @@ import {
   Search,
   BarChart3,
   FileText,
-  Copy
+  Copy,
+  Download
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
@@ -57,6 +58,9 @@ export function SiteSettingsTab() {
     sitemapEnabled: true,
     robotsEnabled: true,
     seoIndexing: true,
+    // Download Settings
+    downloadDelayEnabled: true,
+    downloadDelaySeconds: 30,
   })
 
   // Load settings from API on mount
@@ -571,6 +575,61 @@ export function SiteSettingsTab() {
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Download Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Download Settings
+          </CardTitle>
+          <CardDescription>
+            Configure download behavior for better user engagement and SEO
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Enable Download Delay</Label>
+              <p className="text-sm text-muted-foreground">
+                Add countdown timer before allowing downloads to increase page engagement
+              </p>
+            </div>
+            <Switch
+              checked={settings.downloadDelayEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, downloadDelayEnabled: checked }))}
+            />
+          </div>
+
+          {settings.downloadDelayEnabled && (
+            <div className="space-y-2">
+              <Label htmlFor="download-delay">Delay Time (seconds)</Label>
+              <div className="flex items-center space-x-4">
+                <Input
+                  id="download-delay"
+                  type="number"
+                  min="5"
+                  max="120"
+                  value={settings.downloadDelaySeconds}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    downloadDelaySeconds: Math.max(5, Math.min(120, parseInt(e.target.value) || 30))
+                  }))}
+                  className="w-24"
+                />
+                <span className="text-sm text-muted-foreground">
+                  seconds (5-120 seconds recommended)
+                </span>
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  💡 <strong>SEO Benefits:</strong> Longer page engagement time signals to search engines that your content is valuable, potentially improving search rankings.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

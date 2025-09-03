@@ -3,16 +3,21 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import MaintenancePage from '@/app/maintenance/page'
+import { MaintenanceDisplay } from './maintenance-display'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 export function MaintenanceChecker({ children }: { children: React.ReactNode }) {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [siteSettings, setSiteSettings] = useState({
+    siteName: DEFAULT_CONFIG.siteName,
+    supportEmail: DEFAULT_CONFIG.supportEmail
+  })
   const { data: session, status } = useSession()
   const pathname = usePathname()
 
   // Skip maintenance check for admin routes, API routes, and static assets
-  const isExcludedRoute = pathname.startsWith('/dashboard') || 
+  const isExcludedRoute = pathname.startsWith('/dashboard') ||
                          pathname.startsWith('/auth') ||
                          pathname.startsWith('/api') ||
                          pathname.startsWith('/_next') ||
@@ -39,6 +44,14 @@ export function MaintenanceChecker({ children }: { children: React.ReactNode }) 
         if (response.ok) {
           const data = await response.json()
           setIsMaintenanceMode(data.maintenanceMode || false)
+          
+          // Get site settings for display
+          if (data.siteName || data.supportEmail) {
+            setSiteSettings({
+              siteName: data.siteName || DEFAULT_CONFIG.siteName,
+              supportEmail: data.supportEmail || DEFAULT_CONFIG.supportEmail
+            })
+          }
         }
       } catch (error) {
         console.error('Error checking maintenance mode:', error)
@@ -63,7 +76,12 @@ export function MaintenanceChecker({ children }: { children: React.ReactNode }) 
 
   // Show maintenance page if maintenance mode is enabled and user is not admin
   if (isMaintenanceMode && !isExcludedRoute && session?.user?.role !== 'ADMIN') {
-    return <MaintenancePage />
+    return (
+      <MaintenanceDisplay
+        siteName={siteSettings.siteName}
+        supportEmail={siteSettings.supportEmail}
+      />
+    )
   }
 
   return <>{children}</>

@@ -2,6 +2,7 @@ import type { NextRequest} from 'next/server';
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { notificationService } from '@/lib/notifications'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,39 +25,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { channel } = body
 
-    console.log('🔵 Testing notification channel:', channel)
-
-    // Simulate testing different notification channels
-    switch (channel) {
-      case 'email':
-        console.log('📧 Test email would be sent to:', session.user.email)
-        break
-        
-      case 'browser':
-        console.log('🔔 Browser push notification would be sent')
-        break
-        
-      case 'slack':
-        console.log('💬 Slack notification would be sent to webhook')
-        break
-        
-      case 'discord':
-        console.log('🎮 Discord notification would be sent to webhook')
-        break
-        
-      case 'telegram':
-        console.log('📱 Telegram notification would be sent via bot')
-        break
-        
-      default:
-        return NextResponse.json(
-          { error: 'Invalid notification channel' },
-          { status: 400 }
-        )
+    if (!channel) {
+      return NextResponse.json(
+        { error: 'Channel parameter is required' },
+        { status: 400 }
+      )
     }
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('🔵 Testing notification channel:', channel)
+
+    // Validate channel
+    const validChannels = ['email', 'browser', 'slack', 'discord', 'telegram']
+    if (!validChannels.includes(channel)) {
+      return NextResponse.json(
+        { error: 'Invalid notification channel' },
+        { status: 400 }
+      )
+    }
+
+    // Send actual test notification
+    const success = await notificationService.sendTestNotification(channel)
+
+    if (!success) {
+      return NextResponse.json(
+        { error: `Failed to send test ${channel} notification. Please check your configuration.` },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({
       message: `Test ${channel} notification sent successfully`,
