@@ -75,7 +75,7 @@ export class SecurityService {
     }
 
     // Check special characters requirement
-    if (settings.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (settings.requireSpecialChars && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       errors.push('Password must contain at least one special character')
     }
 
@@ -116,7 +116,7 @@ export class SecurityService {
     if (/[a-z]/.test(password)) score += 1
     if (/[A-Z]/.test(password)) score += 1
     if (/\d/.test(password)) score += 1
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 1
+    if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) score += 1
 
     // Pattern detection (negative scoring)
     if (/(.)\1{2,}/.test(password)) {
