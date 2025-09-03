@@ -18,7 +18,7 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
   }
 
   return (
-    <div className="mt-8">
+    <div id="product-reviews" data-section="product-reviews" className="mt-8">
       <Tabs defaultValue="reviews" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="reviews">Reviews</TabsTrigger>

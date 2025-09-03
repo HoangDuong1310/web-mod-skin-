@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, Clock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ export function DownloadTimer({
   const [timeLeft, setTimeLeft] = useState(delaySeconds)
   const [isActive, setIsActive] = useState(false)
   const [isReady, setIsReady] = useState(!isEnabled)
+  const hasTriggeredRef = useRef(false)
 
   useEffect(() => {
     if (!isEnabled) {
@@ -28,7 +29,7 @@ export function DownloadTimer({
       return
     }
 
-    let interval: NodeJS.Timeout | null = null
+    let interval: ReturnType<typeof setInterval> | null = null
 
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
@@ -36,7 +37,11 @@ export function DownloadTimer({
           if (timeLeft <= 1) {
             setIsReady(true)
             setIsActive(false)
-            toast.success('🎉 Download sẵn sàng!')
+            // Auto trigger after countdown
+            if (!hasTriggeredRef.current) {
+              hasTriggeredRef.current = true
+              onDownloadReady()
+            }
             return 0
           }
           return timeLeft - 1
@@ -55,8 +60,10 @@ export function DownloadTimer({
       return
     }
     
+    setTimeLeft(delaySeconds)
+    hasTriggeredRef.current = false
     setIsActive(true)
-    toast.info(`⏱️ Vui lòng đợi ${delaySeconds} giây để có thể tải xuống`)
+    /* no toast during countdown start to avoid duplicates */
   }
 
   const handleDownload = () => {

@@ -44,6 +44,7 @@ export default function DownloadActions({
   }, [])
 
   const handleDownload = async () => {
+    if (isLoading) return; // prevent duplicate triggers
     if (!hasDownloadUrl && !hasExternalUrl) {
       toast.error('Download không khả dụng')
       return
@@ -66,7 +67,8 @@ export default function DownloadActions({
       // Handle different response types
       if (data.redirect) {
         // External download - redirect to URL
-        window.open(data.redirect, '_blank')
+        window.location.href = data.redirect
+        // no toast to avoid duplicates
         toast.success('Đang chuyển hướng đến trang tải xuống...')
       } else if (data.downloadUrl || data.filename) {
         // Local file download
@@ -95,8 +97,8 @@ export default function DownloadActions({
   }
 
   const handleViewOnStore = () => {
-    // This would redirect to app store/external store
-    window.open('#', '_blank')
+    // Open in same tab to avoid extra tab
+    window.location.href = '#'
   }
 
   if (!hasDownloadUrl && !hasExternalUrl) {
@@ -128,9 +130,14 @@ export default function DownloadActions({
         )}
       </DownloadTimer>
       
-      <Button variant="outline" size="lg" className="w-full" onClick={handleViewOnStore}>
+      <Button variant="outline" size="lg" className="w-full" onClick={() => {
+        const el = document.getElementById('product-reviews') || document.querySelector('[data-section="product-reviews"]') as HTMLElement | null
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }}>
         <ExternalLink className="mr-2 h-4 w-4" />
-        View on Store
+        Đánh giá ngay
       </Button>
     </div>
   )
