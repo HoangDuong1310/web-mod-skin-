@@ -11,9 +11,14 @@ import { convertUSDToVND } from '@/lib/vietqr';
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('Ko-fi webhook received request');
+    console.log('Headers:', Object.fromEntries(request.headers.entries()));
+    
     // Parse Ko-fi webhook form data
     const formData = await request.formData();
+    console.log('Form data keys:', [...formData.keys()]);
     const dataString = formData.get('data') as string;
+    console.log('Data string length:', dataString?.length || 0);
     
     if (!dataString) {
       console.error('Ko-fi webhook missing data field');
