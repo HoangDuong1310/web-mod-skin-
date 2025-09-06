@@ -11,8 +11,29 @@ import { convertUSDToVND } from '@/lib/vietqr';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Parse the webhook payload
-    const payload = await request.json();
+    // Parse Ko-fi webhook form data
+    const formData = await request.formData();
+    const dataString = formData.get('data') as string;
+    
+    if (!dataString) {
+      console.error('Ko-fi webhook missing data field');
+      return NextResponse.json(
+        { error: 'Missing data field' },
+        { status: 400 }
+      );
+    }
+
+    // Parse JSON from data field
+    let payload;
+    try {
+      payload = JSON.parse(dataString);
+    } catch (error) {
+      console.error('Ko-fi webhook invalid JSON in data field:', error);
+      return NextResponse.json(
+        { error: 'Invalid JSON in data field' },
+        { status: 400 }
+      );
+    }
     
     // Validate payload structure
     const validation = validateKofiPayload(payload);
