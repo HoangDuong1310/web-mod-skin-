@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         await prisma.product.update({
           where: { id: product.id },
           data: {
-            images: newImages ? JSON.stringify(newImages) : null
+            images: newImages ? JSON.stringify(newImages) : undefined
           }
         })
         fixedCount++
