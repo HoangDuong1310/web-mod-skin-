@@ -11,7 +11,7 @@ const createDonationSchema = z.object({
   currency: z.string().default('USD'),
   paymentMethod: z.enum(['KOFI', 'BANK_TRANSFER', 'MANUAL']),
   donorName: z.string().optional(),
-  donorEmail: z.string().email().optional(),
+  donorEmail: z.string().email().optional().or(z.literal('')),
   message: z.string().optional(),
   isAnonymous: z.boolean().default(false),
   goalId: z.string().optional(),
