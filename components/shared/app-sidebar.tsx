@@ -23,7 +23,8 @@ import {
   MessageSquare,
   Download,
   Folder,
-  PenTool
+  PenTool,
+  Heart
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -52,6 +53,16 @@ const adminNavigation: NavigationItem[] = [
   },
   { name: 'Download Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
+  { 
+    name: 'Donations', 
+    href: '/dashboard/donations', 
+    icon: Heart,
+    subItems: [
+      { name: 'Overview', href: '/dashboard/donations/overview' },
+      { name: 'All Donations', href: '/dashboard/donations' },
+      { name: 'Goals', href: '/dashboard/donations/goals' }
+    ]
+  },
   { 
     name: 'Content', 
     href: '/dashboard/content', 

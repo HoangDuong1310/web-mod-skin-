@@ -256,13 +256,18 @@ async function main() {
       },
     ]
 
-    // Create products
+    // Create products with JSON string images
     const createdProducts = []
     for (const product of products) {
+      const productData = {
+        ...product,
+        images: JSON.stringify(product.images) // Convert array to JSON string
+      }
+      
       const created = await prisma.product.upsert({
         where: { slug: product.slug },
         update: {},
-        create: product,
+        create: productData,
       })
       createdProducts.push(created)
     }

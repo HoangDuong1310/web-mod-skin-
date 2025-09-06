@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["fullTextIndex", "fullTextSearch"]
 }
 
@@ -11,7 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Auth.js required models
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -25,10 +21,10 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId], map: "accounts_userId_fkey")
   @@map("accounts")
 }
 
@@ -39,30 +35,32 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId], map: "sessions_userId_fkey")
   @@map("sessions")
 }
 
 model User {
-  id            String       @id @default(cuid())
-  name          String?
-  email         String       @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?      // For credential-based authentication
-  passwordUpdatedAt DateTime? // Track when password was last updated
-  role          Role         @default(USER)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  deletedAt     DateTime?
-  
-  // Relations
-  accounts         Account[]
-  sessions         Session[]
-  downloads        Download[]
-  posts            Post[]
-  reviews          Review[]
-  passwordHistory  PasswordHistory[]
-  auditLogs        AuditLog[]
+  id                String            @id @default(cuid())
+  name              String?
+  email             String            @unique
+  emailVerified     DateTime?
+  image             String?
+  role              Role              @default(USER)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+  password          String?
+  passwordUpdatedAt DateTime?
+  accounts          Account[]
+  auditLogs         AuditLog[]
+  downloads         Download[]
+  notifications     notifications[]
+  passwordHistory   PasswordHistory[]
+  posts             Post[]
+  reviews           Review[]
+  sessions          Session[]
+  donations         Donation[]
+  donationGoals     DonationGoal[]
 
   @@index([email])
   @@index([createdAt])
@@ -78,27 +76,22 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// Category model with hierarchical structure
 model Category {
-  id          String      @id @default(cuid())
-  name        String
-  slug        String      @unique
-  description String?     @db.Text
-  image       String?
-  parentId    String?
-  status      Status      @default(PUBLISHED)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
-
-  // SEO fields
+  id              String     @id @default(cuid())
+  name            String
+  slug            String     @unique
+  description     String?    @db.Text
+  image           String?
+  parentId        String?
+  status          Status     @default(PUBLISHED)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
   metaTitle       String?
-  metaDescription String? @db.Text
-
-  // Relations
-  parent     Category?  @relation("CategoryParent", fields: [parentId], references: [id])
-  children   Category[] @relation("CategoryParent")
-  products   Product[]
+  metaDescription String?    @db.Text
+  parent          Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children        Category[] @relation("CategoryParent")
+  products        Product[]
 
   @@index([slug])
   @@index([parentId])
@@ -107,42 +100,33 @@ model Category {
   @@map("categories")
 }
 
-// Product model
 model Product {
-  id          String    @id @default(cuid())
-  title       String
-  slug        String    @unique
-  description String?   @db.Text
-  content     String?   @db.Text
-  version     String?   // Product version
-  status      Status    @default(DRAFT)
-  price       Decimal   @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2)
-  stock       Int       @default(0)
-  images      Json?     // Array of image URLs
-  categoryId  String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-
-  // Download fields
-  downloadUrl String?   // Direct download URL for local files
-  filename    String?   // Original filename
-  fileSize    String?   // File size (formatted string like "2.5MB")
-  externalUrl String?   // External download link (app store, etc.)
-
-  // Rating aggregation fields
-  averageRating Decimal @default(0) @db.Decimal(3, 2)
-  totalReviews  Int     @default(0)
-
-  // SEO fields
+  id              String     @id @default(cuid())
+  title           String
+  slug            String     @unique
+  description     String?    @db.Text
+  content         String?    @db.Text
+  status          Status     @default(DRAFT)
+  price           Decimal    @db.Decimal(10, 2)
+  comparePrice    Decimal?   @db.Decimal(10, 2)
+  stock           Int        @default(0)
+  images          String?    @db.LongText
+  categoryId      String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?
   metaTitle       String?
-  metaDescription String? @db.Text
-
-  // Relations
-  category    Category?   @relation(fields: [categoryId], references: [id])
-  downloads   Download[]
-  reviews     Review[]
+  metaDescription String?    @db.Text
+  averageRating   Decimal    @default(0.00) @db.Decimal(3, 2)
+  totalReviews    Int        @default(0)
+  version         String?
+  downloadUrl     String?
+  externalUrl     String?
+  fileSize        String?
+  filename        String?
+  downloads       Download[]
+  category        Category?  @relation(fields: [categoryId], references: [id])
+  reviews         Review[]
 
   @@index([slug])
   @@index([categoryId])
@@ -154,48 +138,40 @@ model Product {
   @@map("products")
 }
 
-// Download model - simplified tracking for software downloads
 model Download {
-  id         String    @id @default(cuid())
-  userId     String?   // Allow null for anonymous downloads
+  id         String   @id @default(cuid())
+  userId     String?
   productId  String
-  downloadIp String?   // Track IP for analytics
-  userAgent  String?   // Track user agent for analytics
-  createdAt  DateTime  @default(now())
-  
-  // Relations
-  user    User?   @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-  
+  downloadIp String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
+
   @@index([userId, createdAt])
   @@index([productId, createdAt])
   @@index([createdAt])
   @@map("downloads")
 }
 
-// Post model for blog/content
 model Post {
-  id          String    @id @default(cuid())
-  title       String
-  slug        String    @unique
-  excerpt     String?   @db.Text
-  content     String    @db.Text
-  status      Status    @default(DRAFT)
-  featured    Boolean   @default(false)
-  authorId    String
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-
-  // SEO fields
+  id              String    @id @default(cuid())
+  title           String
+  slug            String    @unique
+  excerpt         String?   @db.Text
+  content         String    @db.Text
+  status          Status    @default(DRAFT)
+  featured        Boolean   @default(false)
+  authorId        String
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
   metaTitle       String?
-  metaDescription String? @db.Text
+  metaDescription String?   @db.Text
   featuredImage   String?
-
-  // Relations
-  author   User      @relation(fields: [authorId], references: [id])
-  postTags PostTag[]
+  postTags        PostTag[]
+  author          User      @relation(fields: [authorId], references: [id])
 
   @@index([slug])
   @@index([authorId])
@@ -206,7 +182,6 @@ model Post {
   @@map("posts")
 }
 
-// Tag model
 model Tag {
   id          String    @id @default(cuid())
   name        String    @unique
@@ -215,54 +190,40 @@ model Tag {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
-
-  // Relations
-  postTags PostTag[]
+  postTags    PostTag[]
 
   @@index([slug])
   @@map("tags")
 }
 
-// PostTag junction table
 model PostTag {
   id     String @id @default(cuid())
   postId String
   tagId  String
-
-  // Relations
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([postId, tagId])
+  @@index([tagId], map: "post_tags_tagId_fkey")
   @@map("post_tags")
 }
 
-// Review model for product ratings and reviews
 model Review {
-  id        String   @id @default(cuid())
-  productId String
-  rating    Int      // 1-5 stars
-  title     String
-  content   String   @db.Text
-  
-  // For authenticated users
-  userId    String?
-  
-  // For guest reviews
+  id         String    @id @default(cuid())
+  productId  String
+  rating     Int
+  title      String
+  content    String    @db.Text
+  userId     String?
   guestName  String?
   guestEmail String?
-  
-  // Moderation
-  isVerified Boolean  @default(false)
-  isVisible  Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  // Relations
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  isVerified Boolean   @default(false)
+  isVisible  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id])
 
   @@index([productId, createdAt])
   @@index([userId])
@@ -271,13 +232,12 @@ model Review {
   @@map("reviews")
 }
 
-// Settings model for system configuration
 model Setting {
   id        String   @id @default(cuid())
-  key       String   @unique // e.g. 'site.name', 'email.smtp.host'
-  value     String?  @db.Text // JSON string for complex values
-  category  String   // 'site', 'email', 'security', 'system', 'notifications'
-  isPublic  Boolean  @default(false) // Whether setting can be accessed publicly
+  key       String   @unique
+  value     String?  @db.Text
+  category  String
+  isPublic  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -286,27 +246,24 @@ model Setting {
   @@map("settings")
 }
 
-// Security-related models
 model PasswordHistory {
   id           String   @id @default(cuid())
   userId       String
   passwordHash String
   createdAt    DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("password_history")
 }
 
 model AccountLockout {
-  id         String   @id @default(cuid())
-  identifier String   @unique // email or username
+  id          String   @id @default(cuid())
+  identifier  String   @unique
   lockedUntil DateTime
-  reason     String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  reason      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([identifier])
   @@index([lockedUntil])
@@ -315,7 +272,7 @@ model AccountLockout {
 
 model FailedLoginAttempts {
   id          String   @id @default(cuid())
-  identifier  String   @unique // email or username
+  identifier  String   @unique
   attempts    Int      @default(1)
   lastAttempt DateTime @default(now())
   createdAt   DateTime @default(now())
@@ -334,9 +291,7 @@ model AuditLog {
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([action])
@@ -344,7 +299,33 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// Enums
+model notifications {
+  id             String                       @id
+  title          String
+  message        String                       @db.Text
+  type           notifications_type           @default(INFO)
+  isActive       Boolean                      @default(true)
+  startDate      DateTime?
+  endDate        DateTime?
+  targetAudience notifications_targetAudience @default(ALL)
+  position       notifications_position       @default(TOP)
+  priority       Int                          @default(0)
+  dismissible    Boolean                      @default(true)
+  linkUrl        String?
+  linkText       String?
+  createdById    String
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  users          User                         @relation(fields: [createdById], references: [id])
+
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([isActive, startDate, endDate])
+  @@index([priority])
+  @@index([type])
+}
+
 enum Role {
   ADMIN
   STAFF
@@ -357,3 +338,124 @@ enum Status {
   ARCHIVED
 }
 
+enum notifications_type {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+enum notifications_targetAudience {
+  ALL
+  AUTHENTICATED
+  GUEST
+}
+
+// Donation models for fundraising system
+model Donation {
+  id           String   @id @default(cuid())
+  amount       Decimal  @db.Decimal(10, 2)
+  currency     String   @default("USD")
+  
+  // Donor information (optional for anonymous donations)
+  userId       String?
+  donorName    String?   // For anonymous or guest donations
+  donorEmail   String?   // For anonymous donations (optional)
+  isAnonymous  Boolean   @default(false)
+  
+  // Payment information
+  paymentMethod PaymentMethod @default(MANUAL)
+  transactionId String?  @unique // External transaction ID
+  kofiTransactionId String? // Ko-fi specific transaction ID
+  
+  // VietQR information (for bank transfers)
+  bankCode     String?   // Bank identifier for VietQR
+  qrCodeUrl    String?   // Generated VietQR URL
+  transferNote String?   // Bank transfer note/reference
+  
+  // Status
+  status       DonationStatus @default(PENDING)
+  
+  // Message (optional)
+  message      String?   @db.Text
+  isMessagePublic Boolean @default(true)
+  
+  // Metadata
+  ipAddress    String?
+  userAgent    String?
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  completedAt  DateTime?
+  
+  // Relations
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  goal         DonationGoal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goalId       String?
+  
+  @@index([userId])
+  @@index([goalId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([createdAt])
+  @@index([isAnonymous])
+  @@index([kofiTransactionId])
+  @@map("donations")
+}
+
+model DonationGoal {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  targetAmount Decimal  @db.Decimal(10, 2)
+  currentAmount Decimal @default(0) @db.Decimal(10, 2)
+  currency     String   @default("USD")
+  
+  // Goal settings
+  isActive     Boolean  @default(true)
+  isVisible    Boolean  @default(true)
+  priority     Int      @default(0) // Higher priority goals show first
+  
+  // Timeframe
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+  
+  // Display settings
+  showProgress Boolean  @default(true)
+  showAmount   Boolean  @default(true)
+  showDonors   Boolean  @default(true)
+  
+  // Metadata
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String
+  
+  // Relations
+  creator      User     @relation(fields: [createdBy], references: [id])
+  donations    Donation[]
+  
+  @@index([isActive, isVisible])
+  @@index([priority])
+  @@index([startDate, endDate])
+  @@map("donation_goals")
+}
+
+enum DonationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  KOFI
+  BANK_TRANSFER
+  MANUAL
+}
+
+enum notifications_position {
+  TOP
+  BOTTOM
+}

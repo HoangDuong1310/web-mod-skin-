@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/shared/theme-provider'
 import { AuthProvider } from '@/components/shared/auth-provider'
 import { MaintenanceChecker } from '@/components/shared/maintenance-checker'
 import { AnalyticsScripts } from '@/components/shared/analytics-scripts'
+import { DonationProvider } from '@/components/shared/donation-provider'
 import { WebsiteStructuredData, OrganizationStructuredData } from '@/components/shared/structured-data'
 import { generateDynamicMetadata, getSEOSettings } from '@/lib/dynamic-seo'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <div className="relative flex min-h-screen flex-col">
                 <div className="flex-1">{children}</div>
               </div>
+              <DonationProvider />
             </MaintenanceChecker>
             <Toaster richColors position="top-right" />
           </AuthProvider>

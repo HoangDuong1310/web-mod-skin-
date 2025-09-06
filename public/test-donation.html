@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Donation System - Ko-fi + VietQR</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            border-bottom: 2px solid #007cba;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .success {
+            color: #28a745;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .result {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-container img {
+            max-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .bank-details {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Test Donation System - Ko-fi + VietQR</h1>
+        <p><strong>Server:</strong> <span id="serverStatus">Đang kiểm tra...</span></p>
+
+        <!-- Test 1: Ko-fi Webhook Simulation -->
+        <div class="test-section">
+            <h2>🔔 Test 1: Ko-fi Webhook Simulation</h2>
+            <p>Mô phỏng Ko-fi webhook để test xử lý donation tự động</p>
+            <button onclick="testKofiWebhook()">Test Ko-fi Webhook</button>
+            <div id="kofiResult"></div>
+        </div>
+
+        <!-- Test 2: VietQR Bank Transfer -->
+        <div class="test-section">
+            <h2>🏦 Test 2: VietQR Bank Transfer</h2>
+            <p>Test tạo QR code cho chuyển khoản ngân hàng Việt Nam</p>
+            
+            <label>Số tiền (USD):</label>
+            <input type="number" id="vietqrAmount" value="5" min="0.01" step="0.01">
+            
+            <label>Tên người donate:</label>
+            <input type="text" id="vietqrDonor" value="Test Donor">
+            
+            <label>Tin nhắn:</label>
+            <textarea id="vietqrMessage" rows="3">Test donation từ local development</textarea>
+            
+            <label>Ngân hàng:</label>
+            <select id="vietqrBank">
+                <option value="970415">VietinBank</option>
+                <option value="970407">Techcombank</option>
+                <option value="970436">Vietcombank</option>
+                <option value="970416">ACB</option>
+                <option value="970403">Sacombank</option>
+            </select>
+            
+            <button onclick="testVietQR()">Tạo VietQR</button>
+            <div id="vietqrResult"></div>
+        </div>
+
+        <!-- Test 3: Manual Donation -->
+        <div class="test-section">
+            <h2>✋ Test 3: Manual Donation</h2>
+            <p>Test tạo donation thủ công qua API</p>
+            
+            <label>Số tiền (USD):</label>
+            <input type="number" id="manualAmount" value="10" min="0.01" step="0.01">
+            
+            <label>Tên người donate:</label>
+            <input type="text" id="manualDonor" value="Manual Test Donor">
+            
+            <label>Email:</label>
+            <input type="email" id="manualEmail" value="test@example.com">
+            
+            <label>Tin nhắn:</label>
+            <textarea id="manualMessage" rows="3">Test manual donation</textarea>
+            
+            <label>Anonymous:</label>
+            <input type="checkbox" id="manualAnonymous">
+            
+            <button onclick="testManualDonation()">Tạo Manual Donation</button>
+            <div id="manualResult"></div>
+        </div>
+
+        <!-- Test 4: Admin Settings -->
+        <div class="test-section">
+            <h2>⚙️ Test 4: Admin Settings</h2>
+            <p>Test API quản lý cài đặt donation</p>
+            <button onclick="testGetSettings()">Lấy Settings</button>
+            <button onclick="testUpdateSettings()">Update Settings</button>
+            <div id="settingsResult"></div>
+        </div>
+
+        <!-- Test 5: Donation List -->
+        <div class="test-section">
+            <h2>📋 Test 5: Donation List</h2>
+            <p>Test API lấy danh sách donations</p>
+            <button onclick="testGetDonations()">Lấy Danh Sách Donations</button>
+            <div id="donationsResult"></div>
+        </div>
+    </div>
+
+    <script>
+        // Kiểm tra server status
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/api/health');
+                document.getElementById('serverStatus').innerHTML = 
+                    response.ok ? '✅ Online' : '❌ Error';
+            } catch (error) {
+                document.getElementById('serverStatus').innerHTML = '❌ Offline';
+            }
+        }
+
+        // Test Ko-fi Webhook
+        async function testKofiWebhook() {
+            const resultDiv = document.getElementById('kofiResult');
+            resultDiv.innerHTML = '<p>Đang test Ko-fi webhook...</p>';
+
+            const kofiData = {
+                verification_token: "b97cdb98-4087-41d5-b0f9-94bb23bcfdc6",
+                message_id: "test_" + Date.now(),
+                timestamp: new Date().toISOString(),
+                type: "Donation",
+                is_public: true,
+                from_name: "Test Donor Local",
+                message: "Test donation từ local development",
+                amount: "5.00",
+                url: "https://ko-fi.com/test",
+                email: "testdonor@example.com",
+                currency: "USD",
+                is_subscription_payment: false,
+                is_first_subscription_payment: false,
+                kofi_transaction_id: "test_kofi_" + Date.now()
+            };
+
+            try {
+                const response = await fetch('/api/webhooks/kofi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(kofiData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Ko-fi webhook test thành công!</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Lỗi: ${result.error}</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Network error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test VietQR
+        async function testVietQR() {
+            const resultDiv = document.getElementById('vietqrResult');
+            resultDiv.innerHTML = '<p>Đang tạo VietQR...</p>';
+
+            const donationData = {
+                amount: parseFloat(document.getElementById('vietqrAmount').value),
+                currency: 'USD',
+                paymentMethod: 'BANK_TRANSFER',
+                donorName: document.getElementById('vietqrDonor').value,
+                message: document.getElementById('vietqrMessage').value,
+                isAnonymous: false,
+                bankConfig: {
+                    bankId: document.getElementById('vietqrBank').value,
+                    accountNo: '113366668888',
+                    accountName: 'WebModSkin Test Donation'
+                }
+            };
+
+            try {
+                const response = await fetch('/api/donations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(donationData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.qrData) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ VietQR tạo thành công!</div>
+                        <div class="qr-container">
+                            <h3>QR Code để chuyển khoản:</h3>
+                            <img src="${result.qrData.qrUrl}" alt="VietQR Code">
+                        </div>
+                        <div class="bank-details">
+                            <h4>Thông tin chuyển khoản:</h4>
+                            <p><strong>Ngân hàng:</strong> ${result.qrData.displayInfo.bankName}</p>
+                            <p><strong>Số tài khoản:</strong> ${result.qrData.displayInfo.accountNo}</p>
+                            <p><strong>Tên tài khoản:</strong> ${result.qrData.displayInfo.accountName}</p>
+                            <p><strong>Số tiền:</strong> ${result.qrData.displayInfo.vndAmount} (${result.qrData.displayInfo.usdAmount})</p>
+                            <p><strong>Nội dung:</strong> ${result.qrData.transferNote}</p>
+                        </div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Lỗi: ${result.error}</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Network error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test Manual Donation
+        async function testManualDonation() {
+            const resultDiv = document.getElementById('manualResult');
+            resultDiv.innerHTML = '<p>Đang tạo manual donation...</p>';
+
+            const donationData = {
+                amount: parseFloat(document.getElementById('manualAmount').value),
+                currency: 'USD',
+                paymentMethod: 'MANUAL',
+                donorName: document.getElementById('manualDonor').value,
+                donorEmail: document.getElementById('manualEmail').value,
+                message: document.getElementById('manualMessage').value,
+                isAnonymous: document.getElementById('manualAnonymous').checked
+            };
+
+            try {
+                const response = await fetch('/api/donations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(donationData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Manual donation tạo thành công!</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Lỗi: ${result.error}</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Network error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test Get Settings
+        async function testGetSettings() {
+            const resultDiv = document.getElementById('settingsResult');
+            resultDiv.innerHTML = '<p>Đang lấy settings...</p>';
+
+            try {
+                const response = await fetch('/api/admin/donation-settings');
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Lấy settings thành công!</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Lỗi: ${result.error}</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Network error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test Update Settings
+        async function testUpdateSettings() {
+            const resultDiv = document.getElementById('settingsResult');
+            resultDiv.innerHTML = '<p>Đang update settings...</p>';
+
+            const settings = {
+                kofiUsername: 'webmodskin_test',
+                kofiEnabled: true,
+                vietqrBankId: '970415',
+                vietqrAccountNo: '113366668888',
+                vietqrAccountName: 'WebModSkin Test Donation',
+                vietqrEnabled: true,
+                donationsEnabled: true,
+                usdToVndRate: 27000
+            };
+
+            try {
+                const response = await fetch('/api/admin/donation-settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Update settings thành công!</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Lỗi: ${result.error}</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Network error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Test Get Donations
+        async function testGetDonations() {
+            const resultDiv = document.getElementById('donationsResult');
+            resultDiv.innerHTML = '<p>Đang lấy danh sách donations...</p>';
+
+            try {
+                const response = await fetch('/api/donations?page=1&limit=5');
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Lấy danh sách donations thành công!</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Lỗi: ${result.error}</div>
+                        <div class="result">${JSON.stringify(result, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ Network error: ${error.message}</div>
+                `;
+            }
+        }
+
+        // Kiểm tra server khi load trang
+        checkServerStatus();
+    </script>
+</body>
+</html>

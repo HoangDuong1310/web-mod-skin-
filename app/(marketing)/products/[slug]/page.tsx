@@ -123,11 +123,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
       where: { productId: product.id }
     })
 
+    // Parse images from JSON string
+    let productImages: string[] = []
+    try {
+      if (product.images && typeof product.images === 'string') {
+        productImages = JSON.parse(product.images)
+      }
+    } catch {
+      productImages = []
+    }
+
     // Generate structured data
     const productSchema = generateProductSchema({
       name: product.title,
       description: product.description || '',
-      image: product.images as string[],
+      image: productImages,
       price: Number(product.price),
       currency: 'USD',
       availability: product.stock > 0 ? 'InStock' : 'OutOfStock',

@@ -149,16 +149,27 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               <Link key={product.id} href={`/products/${product.slug}`}>
                 <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-primary/20">
                   <CardHeader className="pb-4">
-                    {product.images && (product.images as string[]).length > 0 && (
-                      <div className="relative aspect-video mb-4 overflow-hidden rounded-lg bg-muted">
-                        <Image
-                          src={(product.images as string[])[0]}
-                          alt={product.title}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                    )}
+                    {(() => {
+                      let imageArray: string[] = []
+                      try {
+                        if (product.images && typeof product.images === 'string') {
+                          imageArray = JSON.parse(product.images)
+                        }
+                      } catch {
+                        imageArray = []
+                      }
+                      
+                      return imageArray.length > 0 && (
+                        <div className="relative aspect-video mb-4 overflow-hidden rounded-lg bg-muted">
+                          <Image
+                            src={imageArray[0]}
+                            alt={product.title}
+                            fill
+                            className="object-cover transition-transform group-hover:scale-105"
+                          />
+                        </div>
+                      )
+                    })()}
                     
                     <div className="flex items-start justify-between">
                       <div className="flex-1">

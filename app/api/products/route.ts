@@ -139,14 +139,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createProductSchema.parse(body)
 
+    // Convert images array to JSON string for database storage
+    const dbData = {
+      ...validatedData,
+      images: validatedData.images ? JSON.stringify(validatedData.images) : null
+    }
+
     // Generate slug if not provided
-    if (!validatedData.slug) {
-      validatedData.slug = slugify(validatedData.title)
+    if (!dbData.slug) {
+      dbData.slug = slugify(dbData.title)
     }
 
     // Check if slug already exists
     const existingProduct = await prisma.product.findUnique({
-      where: { slug: validatedData.slug }
+      where: { slug: dbData.slug }
     })
 
     if (existingProduct) {
@@ -157,7 +163,7 @@ export async function POST(request: NextRequest) {
     }
 
     const product = await prisma.product.create({
-      data: validatedData,
+      data: dbData,
       include: {
         category: {
           select: {
