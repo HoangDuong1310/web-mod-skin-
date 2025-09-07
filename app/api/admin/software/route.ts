@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         stock: parseInt(stock) || 0,
         categoryId,
         status: status || 'DRAFT',
-        images: images || [],
+        images: images && images.length > 0 ? JSON.stringify(images) : null,
         metaTitle,
         metaDescription,
         averageRating: 0,
