@@ -13,7 +13,12 @@ import { DEFAULT_CONFIG } from '@/lib/default-config'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap', // Optimize font loading to prevent render blocking
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+})
 
 export async function generateMetadata(): Promise<Metadata> {
   return await generateDynamicMetadata()
@@ -28,6 +33,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preload critical resources */}
+        <link rel="preload" href="/fonts" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch for external domains */}
+        <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="//www.google-analytics.com" />
+      </head>
       <body className={cn(
         'min-h-screen bg-background font-sans antialiased',
         inter.className
@@ -41,6 +55,17 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           siteName={seoSettings.siteName || DEFAULT_CONFIG.siteName}
           siteDescription={seoSettings.siteDescription || DEFAULT_CONFIG.siteDescription}
           siteUrl={seoSettings.siteUrl || DEFAULT_CONFIG.siteUrl}
+        />
+        <OrganizationStructuredData
+          siteName={seoSettings.siteName || DEFAULT_CONFIG.siteName}
+          siteDescription={seoSettings.siteDescription || DEFAULT_CONFIG.siteDescription}
+          siteUrl={seoSettings.siteUrl || DEFAULT_CONFIG.siteUrl}
+          logo="/images/logo.png"
+          socialLinks={{
+            facebook: "https://facebook.com/yourpage",
+            twitter: "https://twitter.com/yourhandle",
+            instagram: "https://instagram.com/yourhandle"
+          }}
         />
         <ThemeProvider
           attribute="class"

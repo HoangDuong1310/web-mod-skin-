@@ -5,6 +5,16 @@ import { getToken } from 'next-auth/jwt'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Handle URL canonicalization (www vs non-www)
+  const hostname = request.headers.get('host') || ''
+  const url = request.nextUrl.clone()
+  
+  // Force non-www (adjust based on your preference)
+  if (hostname.startsWith('www.')) {
+    url.hostname = hostname.replace('www.', '')
+    return NextResponse.redirect(url, 301)
+  }
+
   // Skip middleware for static files and API routes
   if (
     pathname.startsWith('/_next') ||
