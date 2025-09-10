@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "app/api/admin/software/*/file/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/admin/software/upload/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/admin/products/*/images/route.ts": {
+      "maxDuration": 120
+    }
+  },
+  "regions": ["sin1"]
+}

@@ -24,6 +24,8 @@ interface Category {
 
 export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareFormProps) {
   const [loading, setLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{file?: number, images?: number}>({})
+  const [uploadStatus, setUploadStatus] = useState<string>('')
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedImages, setSelectedImages] = useState<File[]>([])
@@ -158,16 +160,53 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
 
       // Upload software file if selected
       if (selectedFile) {
+        console.log(`🔄 Starting file upload: ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)}MB)`)
+        setUploadStatus('Uploading file...')
+        setUploadProgress({file: 0})
+        
         const fileData = new FormData()
         fileData.append('file', selectedFile)
         
-        const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
-          method: 'POST',
-          body: fileData,
-        })
+        // Create AbortController for timeout handling
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => {
+          controller.abort()
+          console.log('❌ File upload timeout after 5 minutes')
+        }, 5 * 60 * 1000) // 5 minutes timeout
+        
+        try {
+          setUploadProgress({file: 50}) // Simulated progress since we can't track real progress easily
+          const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
+            method: 'POST',
+            body: fileData,
+            signal: controller.signal
+          })
 
-        if (!fileResponse.ok) {
-          console.warn('File upload failed, but product created')
+          clearTimeout(timeoutId)
+          setUploadProgress({file: 100})
+
+          if (!fileResponse.ok) {
+            const errorData = await fileResponse.json().catch(() => ({}))
+            console.error('File upload failed:', errorData)
+            toast.error(`File upload failed: ${errorData.error || 'Unknown error'}`)
+          } else {
+            const result = await fileResponse.json()
+            console.log(`✅ File upload successful in ${result.processingTimeMs}ms`)
+            toast.success('File uploaded successfully!')
+            setUploadStatus('File upload completed!')
+          }
+        } catch (error) {
+          clearTimeout(timeoutId)
+          setUploadProgress({})
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.error('❌ File upload timeout')
+            setUploadStatus('Upload timeout - please try again with a smaller file')
+            toast.error('File upload timeout. Please try with a smaller file or check your connection.')
+          } else {
+            console.error('❌ File upload error:', error)
+            setUploadStatus('Upload failed - please try again')
+            toast.error('File upload failed. Please try again.')
+          }
         }
       }
 
@@ -562,6 +601,33 @@ export default function AddSoftwareForm({ onSuccess, onCancel }: AddSoftwareForm
             </Button>
           )}
         </div>
+
+        {/* Upload Progress Indicator */}
+        {(uploadStatus || uploadProgress.file !== undefined) && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-700">
+                {uploadStatus || 'Uploading...'}
+              </span>
+              {uploadProgress.file !== undefined && (
+                <span className="text-sm text-blue-600">
+                  {uploadProgress.file}%
+                </span>
+              )}
+            </div>
+            {uploadProgress.file !== undefined && (
+              <div className="w-full bg-blue-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  style={{width: `${uploadProgress.file}%`}}
+                />
+              </div>
+            )}
+            <p className="text-xs text-blue-600 mt-2">
+              Large files may take several minutes to upload. Please wait...
+            </p>
+          </div>
+        )}
       </form>
     </div>
   )

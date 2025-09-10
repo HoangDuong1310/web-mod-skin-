@@ -8,6 +8,9 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { canManageSoftware } from '@/lib/auth-utils'
 
+// Extend timeout for large file uploads
+export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
+
 const uploadSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   version: z.string().min(1, 'Version is required').max(20, 'Version too long'),
