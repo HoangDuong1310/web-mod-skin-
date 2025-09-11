@@ -6,11 +6,19 @@ import { prisma } from '@/lib/prisma'
 export const runtime = 'nodejs'
 // Extend timeout for large file uploads
 export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Set headers to bypass Cloudflare and optimize for large uploads
+  const headers = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'CF-Cache-Status': 'BYPASS',
+    'X-Accel-Buffering': 'no', // Disable nginx buffering
+  }
+
   console.log(`🔵 Starting file upload for product ${params.id}`)
   const startTime = Date.now()
   
@@ -103,7 +111,7 @@ export async function POST(
       size: file.size,
       downloadUrl: downloadUrl,
       processingTimeMs: processingTime
-    })
+    }, { headers })
 
   } catch (error) {
     const processingTime = Date.now() - startTime
@@ -122,7 +130,7 @@ export async function POST(
         details: error instanceof Error ? error.message : 'Unknown error',
         processingTimeMs: processingTime
       },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }

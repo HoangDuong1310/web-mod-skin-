@@ -340,15 +340,19 @@ export default function EnhancedSoftwareManagement() {
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             controller.abort()
-            console.log('❌ File upload timeout after 5 minutes')
-          }, 5 * 60 * 1000) // 5 minutes timeout
+            console.log('❌ File upload timeout after 10 minutes')
+          }, 10 * 60 * 1000) // 10 minutes timeout (longer than server)
           
           try {
             setUploadProgress(50) // Simulated progress
             const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
               method: 'POST',
               body: fileFormData,
-              signal: controller.signal
+              signal: controller.signal,
+              headers: {
+                'Cache-Control': 'no-cache',
+                'CF-Cache-Status': 'BYPASS',
+              }
             })
             
             clearTimeout(timeoutId)
@@ -399,15 +403,19 @@ export default function EnhancedSoftwareManagement() {
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             controller.abort()
-            console.log('❌ Product creation with file upload timeout after 5 minutes')
-          }, 5 * 60 * 1000) // 5 minutes timeout
+            console.log('❌ Product creation with file upload timeout after 10 minutes')
+          }, 10 * 60 * 1000) // 10 minutes timeout
 
           try {
             setUploadProgress(50) // Simulated progress
             const response = await fetch('/api/admin/software/upload', {
               method: 'POST',
               body: uploadFormData,
-              signal: controller.signal
+              signal: controller.signal,
+              headers: {
+                'Cache-Control': 'no-cache',
+                'CF-Cache-Status': 'BYPASS',
+              }
             })
 
             clearTimeout(timeoutId)

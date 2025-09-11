@@ -1,0 +1,62 @@
+# Add these lines to your nginx config for web-mod-skin
+# Location: /etc/nginx/sites-available/web-mod-skin
+
+# Special handling for upload routes - bypass Cloudflare timeout
+location ~ ^/api/admin/software/.*/file$ {
+    # Bypass Cloudflare for direct uploads
+    proxy_pass http://localhost:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    
+    # Extended timeouts for large files
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+    proxy_connect_timeout 60s;
+    send_timeout 600s;
+    
+    # Large body size
+    client_max_body_size 500M;
+    client_body_timeout 600s;
+    
+    # Disable buffering for real-time upload progress
+    proxy_buffering off;
+    proxy_request_buffering off;
+    
+    # Headers to bypass cache
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    add_header CF-Cache-Status "BYPASS";
+    add_header X-Accel-Buffering "no";
+}
+
+location /api/admin/software/upload {
+    # Same settings for upload route
+    proxy_pass http://localhost:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+    proxy_connect_timeout 60s;
+    send_timeout 600s;
+    
+    client_max_body_size 500M;
+    client_body_timeout 600s;
+    
+    proxy_buffering off;
+    proxy_request_buffering off;
+    
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    add_header CF-Cache-Status "BYPASS";
+    add_header X-Accel-Buffering "no";
+}
+
+# To apply:
+# 1. Add these blocks to your nginx config
+# 2. Test: nginx -t
+# 3. Reload: systemctl reload nginx

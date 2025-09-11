@@ -10,6 +10,10 @@ import { canManageSoftware } from '@/lib/auth-utils'
 
 // Extend timeout for large file uploads
 export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
+export const runtime = 'nodejs'
+
+// Disable Next.js body parsing to handle large files manually
+export const dynamic = 'force-dynamic'
 
 const uploadSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
@@ -33,6 +37,16 @@ function getFileSizeInMB(bytes: number): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Set headers to bypass Cloudflare and optimize for large uploads
+  const headers = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'CF-Cache-Status': 'BYPASS',
+    'X-Accel-Buffering': 'no', // Disable nginx buffering
+  }
+
+  console.log(`🔵 Starting software upload with file bypass headers`)
+  const startTime = Date.now()
+
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
@@ -218,9 +232,13 @@ export async function POST(request: NextRequest) {
           size: getFileSizeInMB(file.size) + ' MB',
           status: updatedProduct.status,
           downloadUrl: downloadUrl,
-          createdAt: updatedProduct.createdAt
+          createdAt: updatedProduct.createdAt,
+          processingTimeMs: Date.now() - startTime
         }
-      }, { status: 201 })
+      }, { 
+        status: 201,
+        headers
+      })
 
     } catch (fileError) {
       // If file save failed, delete the database record
@@ -229,23 +247,28 @@ export async function POST(request: NextRequest) {
       console.error('File save error:', fileError)
       return NextResponse.json(
         { message: 'Failed to save file' },
-        { status: 500 }
+        { status: 500, headers }
       )
     }
 
   } catch (error) {
-    console.error('Upload error:', error)
+    const processingTime = Date.now() - startTime
+    console.error(`❌ Upload error after ${processingTime}ms:`, error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: 'Invalid form data', errors: error.errors },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
     return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
+      { 
+        message: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        processingTimeMs: processingTime
+      },
+      { status: 500, headers }
     )
   }
 }
