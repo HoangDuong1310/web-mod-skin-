@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://modskinslol.com',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': '*', // Allow all headers
   'Access-Control-Allow-Credentials': 'true',
 }
 
