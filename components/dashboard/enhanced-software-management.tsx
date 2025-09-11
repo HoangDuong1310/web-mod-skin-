@@ -81,6 +81,8 @@ export default function EnhancedSoftwareManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingSoftware, setEditingSoftware] = useState<Software | null>(null)
   const [uploadingImages, setUploadingImages] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<string>('')
+  const [uploadProgress, setUploadProgress] = useState<number>(0)
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [downloadFile, setDownloadFile] = useState<File | null>(null)
   const [apiTypeIndex, setApiTypeIndex] = useState<Record<string, number>>({})
@@ -167,6 +169,8 @@ export default function EnhancedSoftwareManagement() {
     setSelectedImages([])
     setDownloadFile(null)
     setEditingSoftware(null)
+    setUploadStatus('')
+    setUploadProgress(0)
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,6 +258,8 @@ export default function EnhancedSoftwareManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setUploadStatus('')
+    setUploadProgress(0)
 
     try {
       // Validate form data before processing
@@ -323,25 +329,63 @@ export default function EnhancedSoftwareManagement() {
         
         // Upload new download file if provided during edit
         if (downloadFile) {
+          console.log(`🔄 Starting file upload: ${downloadFile.name} (${(downloadFile.size / 1024 / 1024).toFixed(2)}MB)`)
+          setUploadStatus(`Uploading file: ${downloadFile.name}...`)
+          setUploadProgress(10)
+          
           const fileFormData = new FormData()
           fileFormData.append('file', downloadFile)
           
-          const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
-            method: 'POST',
-            body: fileFormData
-          })
+          // Create AbortController for timeout handling
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => {
+            controller.abort()
+            console.log('❌ File upload timeout after 5 minutes')
+          }, 5 * 60 * 1000) // 5 minutes timeout
           
-          if (!fileResponse.ok) {
-            console.warn('File upload failed during edit, but product updated successfully')
-            toast.warning('Product updated but file upload failed. Please try uploading the file again.')
-          } else {
-            const fileData = await fileResponse.json()
-            console.log('File uploaded successfully:', fileData)
+          try {
+            setUploadProgress(50) // Simulated progress
+            const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
+              method: 'POST',
+              body: fileFormData,
+              signal: controller.signal
+            })
+            
+            clearTimeout(timeoutId)
+            setUploadProgress(100)
+            
+            if (!fileResponse.ok) {
+              const errorData = await fileResponse.json().catch(() => ({}))
+              console.error('File upload failed:', errorData)
+              setUploadStatus(`Upload failed: ${errorData.error || 'Unknown error'}`)
+              toast.warning(`Product updated but file upload failed: ${errorData.error || 'Unknown error'}. Please try uploading the file again.`)
+            } else {
+              const fileData = await fileResponse.json()
+              console.log(`✅ File uploaded successfully in ${fileData.processingTimeMs || 'unknown'}ms:`, fileData)
+              setUploadStatus('File uploaded successfully!')
+              toast.success('File uploaded successfully!')
+            }
+          } catch (error) {
+            clearTimeout(timeoutId)
+            setUploadProgress(0)
+            if (error instanceof Error && error.name === 'AbortError') {
+              console.error('❌ File upload timeout')
+              setUploadStatus('Upload timeout - please try again')
+              toast.error('File upload timeout. Please try with a smaller file or check your connection.')
+            } else {
+              console.error('❌ File upload error:', error)
+              setUploadStatus('Upload failed - please try again')
+              toast.warning('Product updated but file upload failed. Please try uploading the file again.')
+            }
           }
         }
       } else {
         // Create new product with file upload if downloadFile exists
         if (downloadFile) {
+          console.log(`🔄 Creating new product with file: ${downloadFile.name} (${(downloadFile.size / 1024 / 1024).toFixed(2)}MB)`)
+          setUploadStatus(`Creating product with file: ${downloadFile.name}...`)
+          setUploadProgress(10)
+          
           const uploadFormData = new FormData()
           uploadFormData.append('file', downloadFile)
           uploadFormData.append('name', formData.title)
@@ -351,14 +395,49 @@ export default function EnhancedSoftwareManagement() {
           uploadFormData.append('content', formData.content)
           uploadFormData.append('status', formData.status)
 
-          const response = await fetch('/api/admin/software/upload', {
-            method: 'POST',
-            body: uploadFormData
-          })
+          // Create AbortController for timeout handling
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => {
+            controller.abort()
+            console.log('❌ Product creation with file upload timeout after 5 minutes')
+          }, 5 * 60 * 1000) // 5 minutes timeout
 
-          if (!response.ok) throw new Error('Failed to create product')
-          const data = await response.json()
-          productId = data.software.id
+          try {
+            setUploadProgress(50) // Simulated progress
+            const response = await fetch('/api/admin/software/upload', {
+              method: 'POST',
+              body: uploadFormData,
+              signal: controller.signal
+            })
+
+            clearTimeout(timeoutId)
+            setUploadProgress(100)
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}))
+              console.error('Product creation with file failed:', errorData)
+              setUploadStatus(`Creation failed: ${errorData.message || 'Unknown error'}`)
+              throw new Error(errorData.message || 'Failed to create product with file')
+            }
+            
+            const data = await response.json()
+            productId = data.software.id
+            console.log(`✅ Product created with file successfully: ${data.software.id}`)
+            setUploadStatus('Product with file created successfully!')
+            
+          } catch (error) {
+            clearTimeout(timeoutId)
+            setUploadProgress(0)
+            if (error instanceof Error && error.name === 'AbortError') {
+              console.error('❌ Product creation timeout')
+              setUploadStatus('Creation timeout - please try again')
+              throw new Error('Product creation timeout. Please try with a smaller file or check your connection.')
+            } else {
+              console.error('❌ Product creation error:', error)
+              setUploadStatus('Creation failed - please try again')
+              throw error
+            }
+          }
         } else {
           // Create product without file
           const response = await fetch('/api/admin/software', {
@@ -868,6 +947,33 @@ export default function EnhancedSoftwareManagement() {
                   }
                 </Button>
               </div>
+
+              {/* Upload Progress Indicator */}
+              {(uploadStatus || uploadProgress > 0) && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-700">
+                      {uploadStatus || 'Processing...'}
+                    </span>
+                    {uploadProgress > 0 && (
+                      <span className="text-sm text-blue-600">
+                        {uploadProgress}%
+                      </span>
+                    )}
+                  </div>
+                  {uploadProgress > 0 && (
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                        style={{width: `${uploadProgress}%`}}
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-blue-600 mt-2">
+                    Large files may take several minutes to upload. Please wait...
+                  </p>
+                </div>
+              )}
             </form>
           </DialogContent>
         </Dialog>
