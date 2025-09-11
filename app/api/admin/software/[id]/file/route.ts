@@ -8,6 +8,22 @@ export const runtime = 'nodejs'
 export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
 export const dynamic = 'force-dynamic'
 
+// CORS headers for cross-origin requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://modskinslol.com',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  })
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -17,6 +33,7 @@ export async function POST(
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'CF-Cache-Status': 'BYPASS',
     'X-Accel-Buffering': 'no', // Disable nginx buffering
+    ...corsHeaders, // Add CORS headers
   }
 
   console.log(`🔵 Starting file upload for product ${params.id}`)

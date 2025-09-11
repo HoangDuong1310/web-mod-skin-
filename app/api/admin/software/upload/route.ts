@@ -15,6 +15,22 @@ export const runtime = 'nodejs'
 // Disable Next.js body parsing to handle large files manually
 export const dynamic = 'force-dynamic'
 
+// CORS headers for cross-origin requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://modskinslol.com',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  })
+}
+
 const uploadSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   version: z.string().min(1, 'Version is required').max(20, 'Version too long'),
@@ -42,6 +58,7 @@ export async function POST(request: NextRequest) {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'CF-Cache-Status': 'BYPASS',
     'X-Accel-Buffering': 'no', // Disable nginx buffering
+    ...corsHeaders, // Add CORS headers
   }
 
   console.log(`🔵 Starting software upload with file bypass headers`)
