@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/utils'
+import { UPLOAD_BASE_URL } from '@/lib/upload-config'
 import { 
   Package, Plus, Download, Search, Edit, Trash2, Eye, 
   Upload, X, Image as ImageIcon, ExternalLink, File, Copy
@@ -345,7 +346,7 @@ export default function EnhancedSoftwareManagement() {
           
           try {
             setUploadProgress(50) // Simulated progress
-            const fileResponse = await fetch(`/api/admin/software/${productId}/file`, {
+            const fileResponse = await fetch(`${UPLOAD_BASE_URL}/api/admin/software/${productId}/file`, {
               method: 'POST',
               body: fileFormData,
               signal: controller.signal,
@@ -408,7 +409,7 @@ export default function EnhancedSoftwareManagement() {
 
           try {
             setUploadProgress(50) // Simulated progress
-            const response = await fetch('/api/admin/software/upload', {
+            const response = await fetch(`${UPLOAD_BASE_URL}/api/admin/software/upload`, {
               method: 'POST',
               body: uploadFormData,
               signal: controller.signal,
