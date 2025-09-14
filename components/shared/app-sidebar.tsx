@@ -24,7 +24,8 @@ import {
   Download,
   Folder,
   PenTool,
-  Heart
+  Heart,
+  Palette
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -53,6 +54,14 @@ const adminNavigation: NavigationItem[] = [
   },
   { name: 'Download Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
+  { 
+    name: 'Custom Skins', 
+    href: '/dashboard/skin-submissions', 
+    icon: Palette,
+    subItems: [
+      { name: 'Submissions', href: '/dashboard/skin-submissions' },
+    ]
+  },
   { 
     name: 'Donations', 
     href: '/dashboard/donations', 

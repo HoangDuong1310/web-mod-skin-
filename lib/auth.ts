@@ -1,5 +1,4 @@
 import type { NextAuthOptions } from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
@@ -7,7 +6,8 @@ import { compare } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
 export const authOptions: NextAuthOptions = {
-  // adapter: PrismaAdapter(prisma), // Temporarily disabled due to type issues
+  // Note: Database adapter cannot be used with CredentialsProvider
+  // CredentialsProvider requires JWT strategy
   session: {
     strategy: 'jwt',
   },
@@ -86,6 +86,7 @@ export const authOptions: NextAuthOptions = {
       return baseUrl
     },
     async jwt({ token, user }) {
+      // When user signs in, store additional info in JWT
       if (user) {
         token.role = user.role
         token.createdAt = user.createdAt
@@ -93,6 +94,7 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
+      // Send properties to the client, using JWT data
       if (token && session.user) {
         session.user.id = token.sub!
         session.user.role = token.role as string

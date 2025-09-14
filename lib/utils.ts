@@ -54,7 +54,24 @@ export function slugify(text: string): string {
 
 // Convert image URL to API format if needed
 export function getImageUrl(imageUrl: string): string {
-  if (!imageUrl) return ''
+  // Handle null, undefined, or empty strings
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    console.warn('getImageUrl: Invalid imageUrl provided:', imageUrl)
+    return '/placeholder-image.svg'
+  }
+  
+  // Handle corrupted JSON fragments or malformed strings
+  if (imageUrl.length < 3 || imageUrl === '[' || imageUrl === ']' || imageUrl === '{}' || imageUrl === 'null') {
+    console.warn('getImageUrl: Corrupted or malformed imageUrl detected:', imageUrl)
+    return '/placeholder-image.svg'
+  }
+  
+  // Validate that it looks like a proper URL/path
+  const urlPattern = /^(\/|http|data:)/
+  if (!urlPattern.test(imageUrl)) {
+    console.warn('getImageUrl: Invalid URL format:', imageUrl)
+    return '/placeholder-image.svg'
+  }
   
   // If it's already an API URL or external URL, return as is
   if (imageUrl.startsWith('/api/') || imageUrl.startsWith('http')) {

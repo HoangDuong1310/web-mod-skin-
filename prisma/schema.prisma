@@ -61,6 +61,10 @@ model User {
   sessions          Session[]
   donations         Donation[]
   donationGoals     DonationGoal[]
+  customSkins       CustomSkin[]
+  skinSubmissions   SkinSubmission[]
+  reviewedSubmissions SkinSubmission[] @relation("SkinReviewer")
+  skinDownloads     SkinDownload[]
 
   @@index([email])
   @@index([createdAt])
@@ -458,4 +462,162 @@ enum PaymentMethod {
 enum notifications_position {
   TOP
   BOTTOM
+}
+
+// Custom Skins Models for League of Legends
+model Champion {
+  id              Int             @id
+  name            String
+  description     String?
+  alias           String
+  contentId       String
+  squarePortraitPath String
+  roles           String?         @db.Text // JSON array of roles
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  customSkins     CustomSkin[]
+  skinSubmissions SkinSubmission[]
+
+  @@index([alias])
+  @@index([name])
+  @@map("champions")
+}
+
+model SkinCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  customSkins CustomSkin[]
+  skinSubmissions SkinSubmission[]
+
+  @@index([slug])
+  @@map("skin_categories")
+}
+
+model CustomSkin {
+  id              String           @id @default(cuid())
+  name            String
+  description     String           @db.Text
+  version         String
+  championId      Int
+  categoryId      String
+  authorId        String
+  
+  // File information
+  fileName        String
+  filePath        String           // Path to uploaded file
+  fileSize        String           // Human readable file size
+  fileType        SkinFileType     // zip, rar, fantome
+  
+  // Preview images
+  previewImages   String?          @db.LongText // JSON array of image paths
+  thumbnailImage  String?          // Main preview image
+  
+  // Status and metadata
+  status          SkinStatus       @default(APPROVED)
+  downloadCount   Int              @default(0)
+  
+  // Timestamps
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  
+  // Relations
+  champion        Champion         @relation(fields: [championId], references: [id])
+  category        SkinCategory     @relation(fields: [categoryId], references: [id])
+  author          User             @relation(fields: [authorId], references: [id])
+  downloads       SkinDownload[]
+  
+  @@index([championId])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status])
+  @@index([createdAt])
+  @@fulltext([name, description])
+  @@map("custom_skins")
+}
+
+model SkinSubmission {
+  id              String           @id @default(cuid())
+  name            String
+  description     String           @db.Text
+  version         String
+  championId      Int
+  categoryId      String
+  submitterId     String
+  
+  // File information
+  fileName        String
+  filePath        String           // Path to uploaded file
+  fileSize        String
+  fileType        SkinFileType
+  
+  // Preview images
+  previewImages   String?          @db.LongText // JSON array of image paths
+  thumbnailImage  String?
+  
+  // Review information
+  status          SubmissionStatus @default(PENDING)
+  reviewedById    String?
+  reviewedAt      DateTime?
+  adminNotes      String?          @db.Text     // Internal admin notes
+  feedbackMessage String?          @db.Text     // Feedback for submitter
+  
+  // Timestamps
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  
+  // Relations
+  champion        Champion         @relation(fields: [championId], references: [id])
+  category        SkinCategory     @relation(fields: [categoryId], references: [id])
+  submitter       User             @relation(fields: [submitterId], references: [id])
+  reviewer        User?            @relation("SkinReviewer", fields: [reviewedById], references: [id])
+  
+  @@index([championId])
+  @@index([categoryId])
+  @@index([submitterId])
+  @@index([reviewedById])
+  @@index([status])
+  @@index([createdAt])
+  @@map("skin_submissions")
+}
+
+model SkinDownload {
+  id         String     @id @default(cuid())
+  userId     String?
+  skinId     String
+  downloadIp String?
+  userAgent  String?
+  createdAt  DateTime   @default(now())
+  
+  skin       CustomSkin @relation(fields: [skinId], references: [id])
+  user       User?      @relation(fields: [userId], references: [id])
+  
+  @@index([userId, createdAt])
+  @@index([skinId, createdAt])
+  @@index([createdAt])
+  @@map("skin_downloads")
+}
+
+enum SkinFileType {
+  ZIP
+  RAR
+  FANTOME
+}
+
+enum SkinStatus {
+  APPROVED
+  FEATURED
+  HIDDEN
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
 }

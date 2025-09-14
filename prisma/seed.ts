@@ -1,6 +1,7 @@
-import { PrismaClient, Role, Status } from '@prisma/client'
+import { PrismaClient, Role, Status, SkinFileType, SkinStatus, SubmissionStatus } from '@prisma/client'
 import { hash } from 'bcryptjs'
 import { Decimal } from '@prisma/client/runtime/library'
+
 
 const prisma = new PrismaClient()
 
@@ -693,6 +694,317 @@ async function main() {
     })
 
     console.log('✅ Sample downloads created')
+
+    // === CUSTOM SKINS DATA ===
+    
+    // Note: Skin categories and champions are seeded separately
+    // Run: npx tsx scripts/seed-skin-categories.ts
+    // Run: npx tsx scripts/seed-champions.ts
+    console.log('ℹ️ Skin categories and champions should be seeded separately using dedicated scripts')
+
+
+
+    // Create custom skins
+    const customSkins = [
+      // Yasuo Skins
+      {
+        name: 'Dark Star Yasuo',
+        description: 'A cosmic themed skin featuring dark energy VFX and stellar particles. Includes custom sound effects and recall animation.',
+        version: '1.2',
+        championId: 157,
+        categoryId: 'theme-skins',
+        authorId: regularUser.id,
+        fileName: 'dark_star_yasuo_v12.zip',
+        filePath: '/uploads/skins/dark_star_yasuo_v12.zip',
+        fileSize: '25600000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/previews/yasuo_dark_star_1.jpg',
+          '/uploads/previews/yasuo_dark_star_2.jpg',
+          '/uploads/previews/yasuo_dark_star_3.jpg'
+        ]),
+        thumbnailImage: '/uploads/previews/yasuo_dark_star_thumb.jpg',
+        status: SkinStatus.APPROVED,
+        downloadCount: 1250
+      },
+      {
+        name: 'PROJECT: Yasuo Enhanced',
+        description: 'Enhanced version of PROJECT Yasuo with additional VFX layers and cyberpunk effects.',
+        version: '2.0',
+        championId: 157,
+        categoryId: 'vfx-skins',
+        authorId: secondUser.id,
+        fileName: 'project_yasuo_enhanced_v20.zip',
+        filePath: '/uploads/skins/project_yasuo_enhanced_v20.zip',
+        fileSize: '31200000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/previews/yasuo_project_1.jpg',
+          '/uploads/previews/yasuo_project_2.jpg'
+        ]),
+        status: SkinStatus.FEATURED,
+        downloadCount: 892
+      },
+
+      // Jinx Skins
+      {
+        name: 'Star Guardian Jinx Deluxe',
+        description: 'Magical girl inspired skin with sparkly VFX, custom rockets, and transformation sequence.',
+        version: '1.5',
+        championId: 222,
+        categoryId: 'anime-skins',
+        authorId: thirdUser.id,
+        fileName: 'star_guardian_jinx_deluxe.zip',
+        filePath: '/uploads/skins/star_guardian_jinx_deluxe.zip',
+        fileSize: '42300000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/previews/jinx_star_guardian_1.jpg',
+          '/uploads/previews/jinx_star_guardian_2.jpg',
+          '/uploads/previews/jinx_star_guardian_3.jpg',
+          '/uploads/previews/jinx_star_guardian_4.jpg'
+        ]),
+        status: SkinStatus.APPROVED,
+        downloadCount: 2156
+      },
+
+      // Ahri Skins
+      {
+        name: 'Spirit Blossom Ahri Crimson',
+        description: 'Red chroma variant of Spirit Blossom Ahri with autumn-themed VFX and red spirit fires.',
+        version: '1.0',
+        championId: 103,
+        categoryId: 'chroma-skins',
+        authorId: adminUser.id,
+        fileName: 'spirit_blossom_ahri_crimson.zip',
+        filePath: '/uploads/skins/spirit_blossom_ahri_crimson.zip',
+        fileSize: '28900000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/previews/ahri_spirit_crimson_1.jpg',
+          '/uploads/previews/ahri_spirit_crimson_2.jpg'
+        ]),
+        status: SkinStatus.APPROVED,
+        downloadCount: 1789
+      },
+      {
+        name: 'Elderwood Ahri',
+        description: 'Nature-themed skin with wooden textures, leaf particles, and forest spirit VFX.',
+        version: '1.3',
+        championId: 103,
+        categoryId: 'fantasy-skins',
+        authorId: regularUser.id,
+        fileName: 'elderwood_ahri_v13.fantome',
+        filePath: '/uploads/skins/elderwood_ahri_v13.fantome',
+        fileSize: '33700000',
+        fileType: SkinFileType.FANTOME,
+        previewImages: JSON.stringify([
+          '/uploads/previews/ahri_elderwood_1.jpg',
+          '/uploads/previews/ahri_elderwood_2.jpg',
+          '/uploads/previews/ahri_elderwood_3.jpg'
+        ]),
+        status: SkinStatus.FEATURED,
+        downloadCount: 967
+      },
+
+      // Zed Skins
+      {
+        name: 'Death Sworn Zed',
+        description: 'Gothic horror themed skin with shadow magic enhanced VFX and spectral effects.',
+        version: '1.1',
+        championId: 238,
+        categoryId: 'theme-skins',
+        authorId: secondUser.id,
+        fileName: 'death_sworn_zed_v11.zip',
+        filePath: '/uploads/skins/death_sworn_zed_v11.zip',
+        fileSize: '27400000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/previews/zed_death_sworn_1.jpg',
+          '/uploads/previews/zed_death_sworn_2.jpg'
+        ]),
+        status: SkinStatus.APPROVED,
+        downloadCount: 1432
+      },
+
+      // Lux Skins
+      {
+        name: 'Cosmic Lux Prismatic',
+        description: 'Rainbow cosmic skin with prismatic light effects and constellation patterns.',
+        version: '2.1',
+        championId: 99,
+        categoryId: 'vfx-skins',
+        authorId: thirdUser.id,
+        fileName: 'cosmic_lux_prismatic.rar',
+        filePath: '/uploads/skins/cosmic_lux_prismatic.rar',
+        fileSize: '38200000',
+        fileType: SkinFileType.RAR,
+        previewImages: JSON.stringify([
+          '/uploads/previews/lux_cosmic_prismatic_1.jpg',
+          '/uploads/previews/lux_cosmic_prismatic_2.jpg',
+          '/uploads/previews/lux_cosmic_prismatic_3.jpg'
+        ]),
+        status: SkinStatus.APPROVED,
+        downloadCount: 1678
+      },
+
+      // Lee Sin Skins
+      {
+        name: 'Dragon Fist Lee Sin Legacy',
+        description: 'Enhanced classic Dragon Fist skin with improved dragon VFX and traditional Chinese elements.',
+        version: '1.4',
+        championId: 64,
+        categoryId: 'custom-skins',
+        authorId: adminUser.id,
+        fileName: 'dragon_fist_lee_sin_legacy.zip',
+        filePath: '/uploads/skins/dragon_fist_lee_sin_legacy.zip',
+        fileSize: '29800000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/previews/leesin_dragon_fist_1.jpg',
+          '/uploads/previews/leesin_dragon_fist_2.jpg'
+        ]),
+        status: SkinStatus.APPROVED,
+        downloadCount: 834
+      },
+
+      // Irelia Skins
+      {
+        name: 'Divine Sword Irelia Azure',
+        description: 'Blue chroma of Divine Sword Irelia with azure blade effects and celestial particles.',
+        version: '1.0',
+        championId: 39,
+        categoryId: 'chroma-skins',
+        authorId: regularUser.id,
+        fileName: 'divine_sword_irelia_azure.fantome',
+        filePath: '/uploads/skins/divine_sword_irelia_azure.fantome',
+        fileSize: '32100000',
+        fileType: SkinFileType.FANTOME,
+        previewImages: JSON.stringify([
+          '/uploads/previews/irelia_divine_azure_1.jpg',
+          '/uploads/previews/irelia_divine_azure_2.jpg'
+        ]),
+        status: SkinStatus.APPROVED,
+        downloadCount: 1123
+      }
+    ]
+
+    for (const skin of customSkins) {
+      await prisma.customSkin.create({
+        data: skin,
+      })
+    }
+
+    console.log('✅ Custom skins created')
+
+    // Create skin submissions (pending review)
+    const skinSubmissions = [
+      {
+        name: 'Arcane Jinx Updated',
+        description: 'Updated version of Arcane Jinx with improved textures and additional VFX based on the Netflix series.',
+        version: '2.0',
+        championId: 222,
+        categoryId: 'anime-skins',
+        submitterId: regularUser.id,
+        fileName: 'arcane_jinx_updated_v20.zip',
+        filePath: '/uploads/submissions/arcane_jinx_updated_v20.zip',
+        fileSize: '45600000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/submissions/previews/jinx_arcane_updated_1.jpg',
+          '/uploads/submissions/previews/jinx_arcane_updated_2.jpg'
+        ]),
+        status: SubmissionStatus.PENDING
+      },
+      {
+        name: 'Battle Academia Yasuo Custom',
+        description: 'Fan-made Battle Academia skin for Yasuo with school uniform design and academy-themed VFX.',
+        version: '1.0',
+        championId: 157,
+        categoryId: 'anime-skins',
+        submitterId: secondUser.id,
+        fileName: 'battle_academia_yasuo.fantome',
+        filePath: '/uploads/submissions/battle_academia_yasuo.fantome',
+        fileSize: '34200000',
+        fileType: SkinFileType.FANTOME,
+        previewImages: JSON.stringify([
+          '/uploads/submissions/previews/yasuo_academia_1.jpg'
+        ]),
+        status: SubmissionStatus.PENDING
+      },
+      {
+        name: 'KDA Ahri Purple Chroma',
+        description: 'Purple chroma variant for KDA Ahri with matching VFX color adjustments.',
+        version: '1.1',
+        championId: 103,
+        categoryId: 'chroma-skins',
+        submitterId: thirdUser.id,
+        fileName: 'kda_ahri_purple_chroma.zip',
+        filePath: '/uploads/submissions/kda_ahri_purple_chroma.zip',
+        fileSize: '28300000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/submissions/previews/ahri_kda_purple_1.jpg',
+          '/uploads/submissions/previews/ahri_kda_purple_2.jpg'
+        ]),
+        status: SubmissionStatus.NEEDS_REVISION,
+        feedbackMessage: 'Great work! Please adjust the VFX purple tone to match the model better.'
+      },
+      {
+        name: 'Dragonmancer Zed',
+        description: 'Eastern dragon-themed skin for Zed with traditional armor and dragon VFX.',
+        version: '1.0',
+        championId: 238,
+        categoryId: 'fantasy-skins',
+        submitterId: adminUser.id,
+        fileName: 'dragonmancer_zed.zip',
+        filePath: '/uploads/submissions/dragonmancer_zed.zip',
+        fileSize: '31800000',
+        fileType: SkinFileType.ZIP,
+        previewImages: JSON.stringify([
+          '/uploads/submissions/previews/zed_dragonmancer_1.jpg'
+        ]),
+        status: SubmissionStatus.APPROVED,
+        reviewedAt: new Date(),
+        feedbackMessage: 'Excellent quality! Approved for publication.'
+      }
+    ]
+
+    for (const submission of skinSubmissions) {
+      await prisma.skinSubmission.create({
+        data: submission,
+      })
+    }
+
+    console.log('✅ Skin submissions created')
+
+    // Create skin downloads
+    const skinDownloads = []
+    const skinIds = (await prisma.customSkin.findMany({ select: { id: true } })).map(s => s.id)
+    const downloadUsers = [regularUser, secondUser, thirdUser, adminUser]
+    
+    for (let i = 0; i < 50; i++) {
+      const randomUser = downloadUsers[Math.floor(Math.random() * downloadUsers.length)]
+      const randomSkinId = skinIds[Math.floor(Math.random() * skinIds.length)]
+      const daysAgo = Math.floor(Math.random() * 30)
+      const downloadDate = new Date()
+      downloadDate.setDate(downloadDate.getDate() - daysAgo)
+      
+      skinDownloads.push({
+        userId: randomUser.id,
+        skinId: randomSkinId, // Changed from customSkinId to skinId
+        downloadIp: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        createdAt: downloadDate
+      })
+    }
+
+    await prisma.skinDownload.createMany({
+      data: skinDownloads,
+      skipDuplicates: true
+    })
+
+    console.log('✅ Skin downloads created')
 
     console.log('🎉 Database seeding completed successfully!')
     

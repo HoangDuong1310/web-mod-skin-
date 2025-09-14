@@ -10,12 +10,14 @@ import { cn } from '@/lib/utils'
 import { canAccessDashboard } from '@/lib/auth-utils'
 import { getPostLogoutRedirectUrl } from '@/lib/redirect-utils'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
-import { User, LogOut } from 'lucide-react'
+import { User, LogOut, FileImage, Settings } from 'lucide-react'
 
 const navigation: { name: string; href: Route }[] = [
   { name: 'Home', href: '/' },
   { name: 'Apps', href: '/products' },
+  { name: 'Custom Skins', href: '/custom-skins' },
   { name: 'Categories', href: '/categories' },
   { name: 'Blog', href: '/blog' },
   { name: 'About', href: '/about' },
@@ -71,21 +73,36 @@ export function MainNav() {
           </Button>
         ) : session ? (
           <>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href={'/profile' as Route}>
-                <User className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
-              </Link>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => signOut({ callbackUrl: getPostLogoutRedirectUrl() })}
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="sr-only">Sign Out</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">User menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href={'/profile' as Route} className="cursor-pointer">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={'/profile/submissions' as Route} className="cursor-pointer">
+                    <FileImage className="h-4 w-4 mr-2" />
+                    My Submissions
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => signOut({ callbackUrl: getPostLogoutRedirectUrl() })}
+                  className="cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {canAccessAdmin && (
               <Button asChild>
