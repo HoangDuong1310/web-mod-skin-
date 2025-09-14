@@ -70,8 +70,9 @@ export async function GET(request: NextRequest) {
           skins: sampleSkins,
           timestamp: new Date().toISOString()
         })
+      }
 
-      case 'sample-submissions':
+      case 'sample-submissions': {
         // Get sample submissions for testing
         const sampleSubmissions = await prisma.skinSubmission.findMany({
           take: 5,
@@ -102,8 +103,9 @@ export async function GET(request: NextRequest) {
           submissions: sampleSubmissions,
           timestamp: new Date().toISOString()
         })
+      }
 
-      case 'champions':
+      case 'champions': {
         // Get champions list for testing
         const champions = await prisma.champion.findMany({
           take: 10,
@@ -130,8 +132,9 @@ export async function GET(request: NextRequest) {
           })),
           timestamp: new Date().toISOString()
         })
+      }
 
-      case 'categories':
+      case 'categories': {
         // Get skin categories for testing
         const categories = await prisma.skinCategory.findMany({
           select: {
@@ -156,8 +159,9 @@ export async function GET(request: NextRequest) {
           })),
           timestamp: new Date().toISOString()
         })
+      }
 
-      case 'stats':
+      case 'stats': {
         // Get overall statistics
         const stats = await Promise.all([
           prisma.customSkin.count(),
@@ -190,8 +194,9 @@ export async function GET(request: NextRequest) {
           },
           timestamp: new Date().toISOString()
         })
+      }
 
-      case 'endpoints':
+      case 'endpoints': {
         // List all available test endpoints
         return NextResponse.json({
           status: 'Available test endpoints',
@@ -245,13 +250,15 @@ export async function GET(request: NextRequest) {
           ],
           timestamp: new Date().toISOString()
         })
+      }
 
-      default:
+      default: {
         return NextResponse.json({
           error: 'Unknown endpoint',
           available: ['status', 'database', 'sample-skins', 'sample-submissions', 'champions', 'categories', 'stats', 'endpoints'],
           usage: 'Add ?endpoint=<name> to the URL'
         }, { status: 400 })
+      }
     }
   } catch (error) {
     console.error('Test API Error:', error)
