@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
           message: 'Local testing endpoints available'
         })
 
-      case 'database':
+      case 'database': {
         // Test database connection
         const userCount = await prisma.user.count()
         const skinCount = await prisma.customSkin.count()
@@ -33,8 +33,9 @@ export async function GET(request: NextRequest) {
           },
           timestamp: new Date().toISOString()
         })
+      }
 
-      case 'sample-skins':
+      case 'sample-skins': {
         // Get sample skins for testing
         const sampleSkins = await prisma.customSkin.findMany({
           take: 5,
