@@ -4,15 +4,6 @@ const nextConfig = {
     typedRoutes: true,
     serverComponentsExternalPackages: ['@prisma/client'],
   },
-  // Add body size limits for large file uploads
-  api: {
-    bodyParser: {
-      sizeLimit: '300mb',
-    },
-    responseLimit: false,
-    // Increase timeout for API routes
-    externalResolver: true,
-  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -25,6 +16,19 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'http',
+        hostname: 'ddragon.leagueoflegends.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ddragon.leagueoflegends.com',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
       },
     ],
   },

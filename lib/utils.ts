@@ -86,6 +86,34 @@ export function getImageUrl(imageUrl: string): string {
   return imageUrl
 }
 
+// Get champion icon URL from Riot CDN
+export function getChampionIconUrl(championAlias: string): string {
+  if (!championAlias) return '/placeholder-image.svg'
+  return `http://ddragon.leagueoflegends.com/cdn/15.15.1/img/champion/${championAlias}.png`
+}
+
+// Get champion square portrait URL
+export function getChampionSquarePortraitUrl(squarePortraitPath?: string): string {
+  if (!squarePortraitPath) return '/placeholder-image.svg'
+  return `http://ddragon.leagueoflegends.com/cdn/15.15.1/img/champion/square/${squarePortraitPath}`
+}
+
+// Get skin thumbnail with proper API path
+export function getSkinThumbnailUrl(thumbnailImage?: string): string {
+  if (!thumbnailImage) return '/placeholder-image.svg'
+  
+  if (thumbnailImage.startsWith('http')) {
+    return thumbnailImage
+  }
+  
+  // If already starts with /uploads/previews/, just add /api prefix
+  if (thumbnailImage.startsWith('/uploads/previews/')) {
+    return `/api${thumbnailImage}`
+  }
+  
+  return `/api/uploads/previews/${thumbnailImage}`
+}
+
 // Truncate text
 export function truncate(text: string, length: number = 100): string {
   if (text.length <= length) return text

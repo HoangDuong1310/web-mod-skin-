@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const skin = await (prisma as any).skinSubmission.findUnique({
+    const skin = await (prisma as any).customSkin.findUnique({
       where: {
         id: params.id,
         status: 'APPROVED',
@@ -31,7 +31,7 @@ export async function GET(
             description: true
           }
         },
-        submitter: {
+        author: {
           select: {
             id: true,
             name: true

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Download, Eye, User } from 'lucide-react'
-import { getImageUrl } from '@/lib/utils'
+import { getChampionIconUrl, getSkinThumbnailUrl } from '@/lib/utils'
 
 interface SkinCardProps {
   skin: CustomSkin
@@ -25,17 +25,31 @@ export default function SkinCard({ skin }: SkinCardProps) {
     }
   }
 
+  // Generate champion icon URL
+  const getChampionIcon = (championAlias?: string) => {
+    if (!championAlias) return null
+    return getChampionIconUrl(championAlias)
+  }
+
+  // Get skin thumbnail image
+  const getSkinThumbnail = () => {
+    // Use first preview image or fallback to thumbnailImage
+    const firstPreviewImage = skin.previewImages && skin.previewImages.length > 0 
+      ? skin.previewImages[0] 
+      : skin.thumbnailImage
+    return getSkinThumbnailUrl(firstPreviewImage)
+  }
+
   return (
     <Card className="hover:shadow-lg transition-all duration-300 group">
       <CardContent className="p-0">
         {/* Skin Thumbnail */}
         <div className="relative h-48 overflow-hidden rounded-t-lg">
-          {skin.thumbnailImage ? (
-            <Image
-              src={skin.thumbnailImage}
+          {getSkinThumbnail() !== '/placeholder-image.svg' ? (
+            <img
+              src={getSkinThumbnail()}
               alt={skin.name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center">
@@ -45,24 +59,34 @@ export default function SkinCard({ skin }: SkinCardProps) {
             </div>
           )}
           
+          {/* Champion Icon Overlay */}
+          {skin.champion?.alias && getChampionIcon(skin.champion.alias) && (
+            <div className="absolute top-2 left-2">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-lg">
+                <Image
+                  src={getChampionIcon(skin.champion.alias)!}
+                  alt={skin.champion.name}
+                  fill
+                  className="object-cover"
+                  onError={(e) => {
+                    // Fallback to initial if champion icon fails
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                  }}
+                />
+                {/* Fallback div if image fails */}
+                <div className="absolute inset-0 bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  {skin.champion.name.charAt(0)}
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* File Type Badge */}
           <div className="absolute top-2 right-2">
             <Badge className={`${getFileTypeColor(skin.fileType)} text-white border-0`}>
               {skin.fileType}
             </Badge>
-          </div>
-
-          {/* Champion Portrait */}
-          <div className="absolute top-2 left-2">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-background">
-              <Image
-                src={getImageUrl(skin.champion.squarePortraitPath)}
-                alt={skin.champion.name}
-                width={40}
-                height={40}
-                className="object-cover"
-              />
-            </div>
           </div>
         </div>
 

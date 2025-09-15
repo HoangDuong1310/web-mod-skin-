@@ -21,7 +21,7 @@ export async function GET() {
         id: category.id,
         name: category.name,
         description: category.description,
-        count: category._count.customSkins
+        skinCount: category._count.customSkins
       }))
     })
 

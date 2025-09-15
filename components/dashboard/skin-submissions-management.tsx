@@ -290,7 +290,10 @@ export default function SkinSubmissionsManagement() {
                         <div className="relative h-10 w-10 rounded overflow-hidden bg-muted">
                           {submission.thumbnailImage ? (
                             <Image
-                              src={submission.thumbnailImage}
+                              src={submission.thumbnailImage.startsWith('http') 
+                                ? submission.thumbnailImage 
+                                : `/api/uploads/previews/${submission.thumbnailImage}`
+                              }
                               alt={submission.name}
                               fill
                               className="object-cover"
@@ -545,7 +548,7 @@ export default function SkinSubmissionsManagement() {
                     {selectedSubmission.previewImages.map((image, index) => (
                       <div key={index} className="relative h-32 rounded-lg overflow-hidden bg-muted">
                         <Image
-                          src={image}
+                          src={image.startsWith('http') ? image : `/api/uploads/previews/${image}`}
                           alt={`Preview ${index + 1}`}
                           fill
                           className="object-cover"
