@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   }
 }
 
+// Revalidate every 60 seconds to show new skins
+export const revalidate = 60
+
 async function getInitialData() {
   try {
     // Get featured skins

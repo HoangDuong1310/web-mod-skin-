@@ -130,41 +130,50 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'approve') {
-      // Create approved skin
-      await (prisma as any).customSkin.create({
-        data: {
-          name: submission.name,
-          description: submission.description,
-          version: submission.version,
-          championId: submission.championId,
-          categoryId: submission.categoryId,
-          authorId: submission.submitterId,
-          fileName: submission.fileName,
-          filePath: submission.filePath,
-          fileSize: submission.fileSize,
-          fileType: submission.fileType,
-          previewImages: submission.previewImages,
-          thumbnailImage: submission.thumbnailImage,
-          status: 'APPROVED'
-        }
-      })
+      try {
+        // Create approved skin
+        const newSkin = await (prisma as any).customSkin.create({
+          data: {
+            name: submission.name,
+            description: submission.description,
+            version: submission.version,
+            championId: submission.championId,
+            categoryId: submission.categoryId,
+            authorId: submission.submitterId,
+            fileName: submission.fileName,
+            filePath: submission.filePath,
+            fileSize: submission.fileSize,
+            fileType: submission.fileType,
+            previewImages: submission.previewImages,
+            thumbnailImage: submission.thumbnailImage,
+            status: 'APPROVED',
+            downloadCount: 0
+          }
+        })
 
-      // Update submission status
-      await (prisma as any).skinSubmission.update({
-        where: { id: submissionId },
-        data: {
-          status: 'APPROVED',
-          reviewedById: session.user.id,
-          reviewedAt: new Date(),
-          adminNotes,
-          feedbackMessage: feedbackMessage || 'Your skin has been approved and is now live!'
-        }
-      })
+        console.log('Created approved skin:', newSkin)
 
-      return NextResponse.json({
-        message: 'Skin approved successfully',
-        action: 'approved'
-      })
+        // Update submission status
+        await (prisma as any).skinSubmission.update({
+          where: { id: submissionId },
+          data: {
+            status: 'APPROVED',
+            reviewedById: session.user.id,
+            reviewedAt: new Date(),
+            adminNotes,
+            feedbackMessage: feedbackMessage || 'Your skin has been approved and is now live!'
+          }
+        })
+
+        return NextResponse.json({
+          message: 'Skin approved successfully',
+          action: 'approved',
+          skinId: newSkin.id
+        })
+      } catch (error) {
+        console.error('Error creating approved skin:', error)
+        throw error
+      }
 
     } else if (action === 'reject') {
       await (prisma as any).skinSubmission.update({

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     const where: any = {
-      status: 'APPROVED',
+      status: { in: ['APPROVED', 'FEATURED'] },
       deletedAt: null
     }
 
