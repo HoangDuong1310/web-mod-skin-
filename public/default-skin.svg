@@ -1,0 +1,17 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'>
+  <defs>
+    <linearGradient id='skinGrad' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#3b82f6'/>
+      <stop offset='50%' stop-color='#8b5cf6'/>
+      <stop offset='100%' stop-color='#ec4899'/>
+    </linearGradient>
+  </defs>
+  <rect width='400' height='225' fill='url(#skinGrad)'/>
+  <circle cx='200' cy='112' r='40' fill='white' opacity='0.1'/>
+  <text x='50%' y='50%' text-anchor='middle' dy='.3em' font-family='system-ui' font-size='16' font-weight='bold' fill='white' opacity='0.8'>
+    Custom Skin
+  </text>
+  <text x='50%' y='65%' text-anchor='middle' dy='.3em' font-family='system-ui' font-size='12' fill='white' opacity='0.6'>
+    No Preview Available
+  </text>
+</svg>

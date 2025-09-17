@@ -86,16 +86,16 @@ export function getImageUrl(imageUrl: string): string {
   return imageUrl
 }
 
-// Get champion icon URL from Riot CDN
+// Get champion icon URL from Riot CDN (using HTTPS)
 export function getChampionIconUrl(championAlias: string): string {
-  if (!championAlias) return '/placeholder-image.svg'
-  return `http://ddragon.leagueoflegends.com/cdn/15.15.1/img/champion/${championAlias}.png`
+  if (!championAlias) return '/default-avatar.svg'
+  return `https://ddragon.leagueoflegends.com/cdn/15.9.1/img/champion/${championAlias}.png`
 }
 
 // Get champion square portrait URL
 export function getChampionSquarePortraitUrl(squarePortraitPath?: string): string {
-  if (!squarePortraitPath) return '/placeholder-image.svg'
-  return `http://ddragon.leagueoflegends.com/cdn/15.15.1/img/champion/square/${squarePortraitPath}`
+  if (!squarePortraitPath) return '/default-avatar.svg'
+  return `https://ddragon.leagueoflegends.com/cdn/15.9.1/img/champion/square/${squarePortraitPath}`
 }
 
 // Get skin thumbnail with proper API path
