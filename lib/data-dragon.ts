@@ -16,7 +16,7 @@ export async function getLatestDataDragonVersion(): Promise<string> {
     const response = await fetch('https://ddragon.leagueoflegends.com/api/versions.json')
     const versions = await response.json()
     cachedVersion = versions[0] // Latest version is first
-    return cachedVersion
+    return cachedVersion || CURRENT_VERSION
   } catch (error) {
     console.warn('Failed to fetch latest Data Dragon version, using fallback:', CURRENT_VERSION)
     return CURRENT_VERSION
