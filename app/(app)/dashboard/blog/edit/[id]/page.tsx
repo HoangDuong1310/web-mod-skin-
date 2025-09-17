@@ -9,3 +9,4 @@ export default function BlogEditPage({ params }: BlogEditPageProps) {
   // Redirect to the content edit page since blog and content editing are the same
   redirect(`/dashboard/content/edit/${params.id}`)
 }
+

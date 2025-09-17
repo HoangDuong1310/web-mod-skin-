@@ -106,3 +106,4 @@ export const config = {
     '/((?!api/auth|api/health|api/maintenance|_next/static|_static|[\\w-]+\\.\\w+).*)',
   ],
 }
+

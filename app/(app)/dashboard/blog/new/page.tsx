@@ -5,3 +5,4 @@ export default function BlogNewPage() {
   // Redirect to the content new page since blog and content creation are the same
   redirect('/dashboard/content/new')
 }
+

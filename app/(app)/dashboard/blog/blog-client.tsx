@@ -187,3 +187,4 @@ export function BlogClient({ posts }: BlogClientProps) {
     </div>
   )
 }
+

@@ -9,8 +9,8 @@ export async function GET(
   try {
     const filename = params.filename
 
-    // Use absolute base path from env if provided, fallback to project/uploads for local
-    const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
+    // Use absolute base path from env if provided, fallback to public/uploads for local
+    const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'public', 'uploads')
     const filePath = join(base, 'previews', filename)
 
     // Read the file

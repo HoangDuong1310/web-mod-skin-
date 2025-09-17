@@ -56,12 +56,16 @@ const adminNavigation: NavigationItem[] = [
   { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
   { 
     name: 'Custom Skins', 
-    href: '/dashboard/skin-submissions', 
+    href: '/dashboard/custom-skins', 
     icon: Palette,
     subItems: [
+      { name: 'Add New Skin', href: '/dashboard/custom-skins/add' },
       { name: 'Submissions', href: '/dashboard/skin-submissions' },
+      { name: 'Approved Skins', href: '/dashboard/custom-skins/approved' },
+      { name: 'Analytics', href: '/dashboard/custom-skins/analytics' }
     ]
   },
+  { name: 'File Management', href: '/dashboard/files', icon: FileText },
   { 
     name: 'Donations', 
     href: '/dashboard/donations', 
@@ -217,4 +221,5 @@ export function AppSidebar({ session, onClose }: AppSidebarProps) {
     </div>
   )
 }
+
 

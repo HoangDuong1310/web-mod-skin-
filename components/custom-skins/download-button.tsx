@@ -99,7 +99,7 @@ export function DownloadButton({ skinId }: DownloadButtonProps) {
       size="lg"
     >
       <Download className="h-4 w-4 mr-2" />
-      {isDownloading ? 'Processing...' : 'Open in App'}
+      {isDownloading ? 'Processing...' : 'Open AinzSkin'}
     </Button>
   )
 }

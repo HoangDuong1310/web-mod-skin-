@@ -183,11 +183,25 @@ export function pick<T extends Record<string, any>, K extends keyof T>(
   keys: K[]
 ): Pick<T, K> {
   const result = {} as Pick<T, K>
-  keys.forEach((key) => {
+  for (const key of keys) {
     if (key in obj) {
       result[key] = obj[key]
     }
-  })
+  }
   return result
 }
+
+// Format bytes to human readable format
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes'
+  
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
 

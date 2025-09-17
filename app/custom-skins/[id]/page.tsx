@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar, Download, FileText, Gauge, User } from 'lucide-react'
 import { DownloadButton } from '@/components/custom-skins/download-button'
-import { DownloadInfo } from '@/components/custom-skins/download-info'
 
 interface PageProps {
   params: {
@@ -202,7 +201,6 @@ export default async function SkinDetailPage({ params }: PageProps) {
                 
                 <div className="space-y-4">
                   <DownloadButton skinId={skin.id} />
-                  <DownloadInfo skinId={skin.id} />
                 </div>
               </CardContent>
             </Card>

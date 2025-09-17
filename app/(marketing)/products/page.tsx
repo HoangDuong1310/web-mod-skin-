@@ -44,7 +44,9 @@ export default async function ProductsPage() {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          downloads: {
+            _count: 'desc'
+          }
         },
       }),
       
@@ -190,23 +192,25 @@ export default async function ProductsPage() {
                       {product.description}
                     </CardDescription>
 
-                    <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-                      {product.category?.slug === 'smartphones' ? (
-                        <Smartphone className="w-4 h-4" />
-                      ) : (
-                        <Monitor className="w-4 h-4" />
-                      )}
-                      <span>Compatible with {product.category?.name || 'All Devices'}</span>
+                    <div className="flex items-center justify-between gap-2 mb-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        {product.category?.slug === 'smartphones' ? (
+                          <Smartphone className="w-4 h-4" />
+                        ) : (
+                          <Monitor className="w-4 h-4" />
+                        )}
+                        <span>Compatible with {product.category?.name || 'All Devices'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="w-4 h-4" />
+                        <span className="font-medium">{product._count.downloads.toLocaleString()}</span>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-center">
                       <div className="text-sm text-primary group-hover:text-primary/80 transition-colors">
                         Click to view details & download
                       </div>
-                    </div>
-
-                    <div className="mt-3 text-xs text-muted-foreground text-center">
-                      Downloaded {product._count.downloads.toLocaleString()} times
                     </div>
                   </CardContent>
                 </Card>
