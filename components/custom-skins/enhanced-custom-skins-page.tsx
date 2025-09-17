@@ -530,7 +530,15 @@ export function EnhancedCustomSkinsPage({ initialData }: EnhancedCustomSkinsPage
                   <div className="flex gap-4">
                     <div className="w-32 h-20 relative rounded-lg overflow-hidden">
                       <img
-                        src={skin.thumbnailImage || skin.previewImages?.[0] || '/default-skin.svg'}
+                        src={
+                          skin.thumbnailImage?.startsWith('/uploads/') 
+                            ? `/api${skin.thumbnailImage}`
+                            : skin.thumbnailImage || 
+                              (skin.previewImages?.[0]?.startsWith('/uploads/') 
+                                ? `/api${skin.previewImages[0]}`
+                                : skin.previewImages?.[0]) || 
+                              '/default-skin.svg'
+                        }
                         alt={skin.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {

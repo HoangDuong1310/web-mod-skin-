@@ -30,6 +30,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { cn, getChampionIconUrl } from '@/lib/utils'
+import { processPreviewImages, convertToApiUrl, getBestSkinImage } from '@/lib/image-utils'
 import { formatDistanceToNow } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -47,17 +48,10 @@ export function SkinQuickViewModal({ skin, open, onOpenChange }: SkinQuickViewMo
 
   if (!skin) return null
 
-  // Parse preview images
-  const previewImages = skin.previewImages 
-    ? typeof skin.previewImages === 'string'
-      ? JSON.parse(skin.previewImages)
-      : skin.previewImages
-    : []
-
-  const allImages = [
-    skin.thumbnailImage,
-    ...previewImages
-  ].filter(Boolean)
+  // Use utility functions for image processing
+  const previewImages = processPreviewImages(skin.previewImages)
+  const thumbnailImage = convertToApiUrl(skin.thumbnailImage)
+  const allImages = [thumbnailImage, ...previewImages].filter(Boolean)
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}/custom-skins/${skin.id}`

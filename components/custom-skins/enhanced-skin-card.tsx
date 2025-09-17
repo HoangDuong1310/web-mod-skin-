@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn, getChampionIconUrl } from '@/lib/utils'
+import { processPreviewImages, convertToApiUrl, getBestSkinImage } from '@/lib/image-utils'
 import { formatDistanceToNow } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
@@ -65,14 +66,10 @@ export function EnhancedSkinCard({
   const [championIconLoaded, setChampionIconLoaded] = useState(false)
   const [championAvatarLoaded, setChampionAvatarLoaded] = useState(false)
 
-  // Parse preview images
-  const previewImages = skin.previewImages 
-    ? typeof skin.previewImages === 'string'
-      ? JSON.parse(skin.previewImages)
-      : skin.previewImages
-    : []
-
-  const displayImage = skin.thumbnailImage || previewImages[0] || '/default-skin.svg'
+  // Use utility functions for image processing
+  const previewImages = processPreviewImages(skin.previewImages)
+  const thumbnailImage = convertToApiUrl(skin.thumbnailImage)
+  const displayImage = getBestSkinImage(skin)
 
   // Reset champion icon state when champion changes
   useEffect(() => {
