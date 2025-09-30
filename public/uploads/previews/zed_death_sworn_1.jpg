@@ -1,0 +1,17 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 450'>
+  <defs>
+    <linearGradient id='grad3' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#34f7e3'/>
+      <stop offset='50%' stop-color='#ccf5b5'/>
+      <stop offset='100%' stop-color='#747978'/>
+    </linearGradient>
+  </defs>
+  <rect width='800' height='450' fill='url(#grad3)'/>
+  <circle cx='571.9576996759295' cy='131.18388419992561' r='64.44035257273228' fill='white' opacity='0.1'/>
+  <text x='50%' y='45%' text-anchor='middle' dy='.3em' font-family='system-ui' font-size='28' font-weight='bold' fill='white' opacity='0.9'>
+    Zed
+  </text>
+  <text x='50%' y='60%' text-anchor='middle' dy='.3em' font-family='system-ui' font-size='14' fill='white' opacity='0.7'>
+    Custom Skin Preview
+  </text>
+</svg>

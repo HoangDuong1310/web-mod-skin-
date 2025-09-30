@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live2D Widget - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 50px 20px;
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .feature-card {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .feature-card p {
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+        
+        .demo-section {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin: 30px 0;
+        }
+        
+        .demo-section h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn.primary {
+            background: #28a745;
+            border-color: #28a745;
+        }
+        
+        .btn.primary:hover {
+            background: #218838;
+        }
+        
+        .code-section {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .code-section pre {
+            color: #f8f8f2;
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            opacity: 0.8;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎭 Live2D Widget</h1>
+        <p>Standalone Project - Ready to integrate into any website</p>
+    </div>
+    
+    <div class="container">
+        <div class="features">
+            <div class="feature-card">
+                <h3>🚀 Easy Integration</h3>
+                <p>Chỉ cần 1 dòng script để tích hợp Live2D widget vào website của bạn. Không cần cấu hình phức tạp.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>📱 Responsive Design</h3>
+                <p>Hoạt động mượt mà trên mọi thiết bị, từ desktop đến mobile. Tự động thích ứng với kích thước màn hình.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🎨 Customizable</h3>
+                <p>Dễ dàng tùy chỉnh vị trí, kích thước, và hành vi của Live2D character theo ý muốn.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>⚡ High Performance</h3>
+                <p>Tối ưu hóa hiệu suất, sử dụng WebGL để render mượt mà mà không ảnh hưởng đến tốc độ website.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🔧 No Dependencies</h3>
+                <p>Standalone project, không cần thêm thư viện nào khác. Tất cả files cần thiết đã được tích hợp sẵn.</p>
+            </div>
+            
+            <div class="feature-card">
+                <h3>🌐 Cross-Browser</h3>
+                <p>Tương thích với tất cả trình duyệt hiện đại: Chrome, Firefox, Safari, Edge.</p>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎮 Interactive Demo</h2>
+            <p style="text-align: center; margin-bottom: 30px;">
+                Live2D widget đã được tích hợp vào trang này. Hãy thử tương tác với character ở góc màn hình!
+            </p>
+            
+            <div class="buttons">
+                <button class="btn" onclick="testInteraction()">Test Click</button>
+                <button class="btn" onclick="changeBackground()">Đổi nền</button>
+                <button class="btn" onclick="showInfo()">Thông tin</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📝 Quick Integration</h2>
+            <p style="text-align: center; margin-bottom: 20px;">
+                Chỉ cần thêm 1 dòng script vào website của bạn:
+            </p>
+            
+            <div class="code-section">
+                <pre>&lt;script src="path/to/live2d-widget.js"&gt;&lt;/script&gt;</pre>
+            </div>
+            
+            <div class="buttons">
+                <a href="../README.md" class="btn primary">📖 Xem hướng dẫn chi tiết</a>
+                <a href="simple.html" class="btn">🔍 Demo đơn giản</a>
+                <a href="advanced.html" class="btn">⚙️ Demo nâng cao</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Made with ❤️ for the community • Live2D Widget Standalone Project</p>
+    </div>
+
+    <!-- Load Live2D Widget -->
+    <script src="../live2d-widget.js"></script>
+    
+    <script>
+        function testInteraction() {
+            // Simulate click on Live2D widget
+            const live2dElement = document.getElementById('live2d');
+            if (live2dElement) {
+                live2dElement.click();
+                showMessage('🎭 Đã test tương tác với Live2D widget!');
+            } else {
+                showMessage('⏳ Live2D widget đang load...');
+            }
+        }
+        
+        function changeBackground() {
+            const colors = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+            ];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            document.body.style.background = randomColor;
+            showMessage('🎨 Đã đổi màu nền!');
+        }
+        
+        function showInfo() {
+            showMessage(`
+                📊 Live2D Widget Info:
+                • Version: Standalone Project
+                • Status: ${document.getElementById('live2d') ? 'Active' : 'Loading...'}
+                • Browser: ${navigator.userAgent.split(' ')[0]}
+            `);
+        }
+        
+        function showMessage(msg) {
+            const existingMsg = document.querySelector('.temp-message');
+            if (existingMsg) existingMsg.remove();
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'temp-message';
+            msgDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                font-size: 14px;
+                white-space: pre-line;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            msgDiv.textContent = msg;
+            document.body.appendChild(msgDiv);
+            
+            setTimeout(() => msgDiv.remove(), 3000);
+        }
+        
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Welcome message
+        setTimeout(() => {
+            showMessage('🎉 Chào mừng đến với Live2D Widget Demo!\nHãy thử tương tác với character ở góc màn hình!');
+        }, 2000);
+    </script>
+</body>
+</html>

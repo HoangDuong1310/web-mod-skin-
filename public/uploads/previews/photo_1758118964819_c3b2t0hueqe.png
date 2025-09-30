@@ -1,0 +1,17 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 450'>
+  <defs>
+    <linearGradient id='grad9' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#672cef'/>
+      <stop offset='50%' stop-color='#a4d0c7'/>
+      <stop offset='100%' stop-color='#c54e89'/>
+    </linearGradient>
+  </defs>
+  <rect width='800' height='450' fill='url(#grad9)'/>
+  <circle cx='455.45791441130484' cy='168.0253249124387' r='62.401053487248646' fill='white' opacity='0.1'/>
+  <text x='50%' y='45%' text-anchor='middle' dy='.3em' font-family='system-ui' font-size='28' font-weight='bold' fill='white' opacity='0.9'>
+    Photo
+  </text>
+  <text x='50%' y='60%' text-anchor='middle' dy='.3em' font-family='system-ui' font-size='14' fill='white' opacity='0.7'>
+    Custom Skin Preview
+  </text>
+</svg>

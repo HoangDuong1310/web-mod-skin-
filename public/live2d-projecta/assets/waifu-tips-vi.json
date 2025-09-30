@@ -1,0 +1,186 @@
+{
+  "mouseover": [{
+    "selector": "#waifu-tool-hitokoto",
+    "text": ["Đoán xem mình sẽ nói gì nhỉ?", "Mình học được nhiều kinh nghiệm sống từ Hoàng tử Ếch đấy!", "Hôm nay bạn thế nào?"]
+  }, {
+    "selector": "#waifu-tool-asteroids",
+    "text": ["Chơi game bắn máy bay không?", "Nút này ghi là 'Đừng nhấn' đấy!", "Sao, bạn muốn chơi game với mình à?", "Nghe nói làm vậy có thể nhảy múa!"]
+  }, {
+    "selector": "#waifu-tool-switch-model",
+    "text": ["Bạn không thích mình nữa à? Huhu~", "Muốn gặp chị gái mình không?", "Muốn xem em gái mình không?", "Muốn đổi nhân vật khác không?"]
+  }, {
+    "selector": "#waifu-tool-switch-texture",
+    "text": ["Thích thay đồ không?", "Lần này sẽ cosplay gì nhỉ?", "Biến hình!", "Xem nào, chuyện gì sẽ xảy ra tiếp theo!"]
+  }, {
+    "selector": "#waifu-tool-photo",
+    "text": ["Bạn muốn chụp ảnh mình à? Một hai ba~ Cheese~", "Thôi, chúng ta selfie cùng nhau nhé!", "Cứ mỉm cười thôi~"]
+  }, {
+    "selector": "#waifu-tool-info",
+    "text": ["Muốn biết thêm về mình không?", "Đây là lịch sử chuyển nhà của mình đấy.", "Bạn muốn hiểu sâu về mình điều gì?"]
+  }, {
+    "selector": "#waifu-tool-quit",
+    "text": ["Đã đến lúc phải tạm biệt rồi sao?", "Huhu QAQ hẹn gặp lại...", "Đừng bỏ mình đi mà...", "Chúng ta... còn gặp lại nhau nữa không...", "Hừ, bạn sẽ hối hận đấy!"]
+  }],
+  "click": [{
+    "selector": "#waifu",
+    "text": ["Bạn đang làm gì vậy?", "Đừng động vào mình nữa!", "Bạn muốn làm gì?", "Hehe, bạn thích mình à?", "Mình không thích bị sờ soạng!", "Kyaa! Bạn làm gì vậy!", "Đừng có nghịch mình nữa!"]
+  }],
+  "seasons": [{
+    "date": "01/01",
+    "text": "Chúc mừng năm mới! Năm mới vui vẻ nhé~"
+  }, {
+    "date": "02/14",
+    "text": "Hôm nay là Valentine đấy! Có ai tặng chocolate cho bạn không?"
+  }, {
+    "date": "03/08",
+    "text": "Chúc mừng ngày Quốc tế Phụ nữ!"
+  }, {
+    "date": "04/30",
+    "text": "Nghỉ lễ vui vẻ nhé!"
+  }, {
+    "date": "09/02",
+    "text": "Chúc mừng ngày Quốc khánh!"
+  }, {
+    "date": "12/25",
+    "text": "Merry Christmas! Giáng sinh vui vẻ~"
+  }],
+  "time": [{
+    "hour": [6, 7, 8, 9, 10, 11],
+    "text": "Chào buổi sáng! Hôm nay cũng cố gắng nhé!"
+  }, {
+    "hour": [12, 13, 14],
+    "text": "Buổi trưa rồi đấy! Đã ăn cơm chưa?"
+  }, {
+    "hour": [15, 16, 17, 18],
+    "text": "Buổi chiều tốt lành! Làm việc mệt chưa?"
+  }, {
+    "hour": [19, 20, 21],
+    "text": "Buổi tối vui vẻ! Đã ăn tối chưa nhỉ?"
+  }, {
+    "hour": [22, 23, 0],
+    "text": "Đã muộn rồi đấy! Đi ngủ sớm thôi~"
+  }, {
+    "hour": [1, 2, 3, 4, 5],
+    "text": "Thức khuya không tốt cho sức khỏe đâu!"
+  }],
+  "message": {
+    "default": [
+      "Xin chào! Mình là Live2D assistant của bạn~",
+      "Hôm nay bạn thế nào?",
+      "Có gì mình có thể giúp bạn không?",
+      "Cảm ơn bạn đã ghé thăm!",
+      "Chúc bạn một ngày tốt lành!",
+      "Bạn có muốn chơi game không?",
+      "Mình rất vui khi được gặp bạn!",
+      "Website này thật tuyệt phải không?",
+      "Bạn thích màu gì nhất?",
+      "Mình thích được ở đây với bạn!",
+      "Hãy cùng mình khám phá nhé!",
+      "Bạn có thích anime không?",
+      "Mình có thể nhảy múa đấy!",
+      "Bấm vào mình để tương tác nhé!",
+      "Mình sẽ luôn ở đây với bạn!"
+    ],
+    "console": "Chào dev! Mở console để xem thêm thông tin nhé~",
+    "copy": "Bạn vừa copy gì vậy? Nhớ ghi nguồn nhé!",
+    "visibilitychange": "Đừng bỏ mình một mình ở đây mà!",
+    "welcome": "Chào mừng bạn đến với website! Mình là Live2D assistant~",
+    "changeSuccess": "Bộ đồ mới của mình đẹp không?",
+    "changeFail": "Mình chưa có bộ đồ khác!",
+    "photo": "Chụp xong rồi! Mình có đẹp không?",
+    "goodbye": "Chúc bạn may mắn và hạnh phúc!",
+    "hitokoto": "Câu nói này từ <span>「$1」</span>, do <span>$2</span> chia sẻ.",
+    "referrer": "Xin chào! Bạn đến từ <span>$1</span>",
+    "hoverBody": ["Làm gì vậy, đừng sờ mình!", "Chuột... chuột đặt nhầm chỗ rồi!", "Bạn muốn làm gì?", "Meo meo meo?", "Sợ quá (ノ≧∇≦)ノ", "Cứu với! Có biến thái!", "Thế này thì phải dùng võ lực rồi!", "Mình sắp giận đấy!", "Đừng động tay động chân!", "Thật... thật là không biết xấu hổ!", "Biến thái!"],
+    "tapBody": ["Là... là vô tình chạm phải thôi...", "Lolicon là gì vậy?", "Bạn có thấy con gấu của mình không?", "Sờ nữa mình báo công an đấy! ⌇●﹏●⌇", "Alo 113 không, có biến thái cứ sờ mình hoài (ó﹏ò｡)", "Đừng sờ nữa, mình sẽ nói với vợ để đánh bạn!", "Sao cứ động vào mình! Coi chừng mình cắn!", "Đừng sờ, có gì hay ho đâu mà sờ!"]
+  },
+  "models": [{
+    "name": "Potion-Maker/Pio",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/Potion-Maker/Pio/index.json"],
+    "message": "Đây là Pio từ Potion Maker ~"
+  }, {
+    "name": "Potion-Maker/Tia",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/Potion-Maker/Tia/index.json"],
+    "message": "Đây là Tia từ Potion Maker ~"
+  }, {
+    "name": "Epsilon2.1",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/Epsilon2.1/index.json"],
+    "message": "Epsilon 2.1 đây!"
+  }, {
+    "name": "Gantzert_Felixander",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/Gantzert_Felixander/index.json"],
+    "message": "Gantzert Felixander chào bạn!"
+  }, {
+    "name": "haru/01",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/haru/01/index.json"],
+    "message": "Haru (01) đây nhé!"
+  }, {
+    "name": "haru/02",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/haru/02/index.json"],
+    "message": "Haru (02) chào bạn!"
+  }, {
+    "name": "haruto",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/haruto/index.json"],
+    "message": "Haruto đây!"
+  }, {
+    "name": "hibiki",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/hibiki/index.json"],
+    "message": "Hibiki chào mọi người!"
+  }, {
+    "name": "hijiki",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/hijiki/index.json"],
+    "message": "Hijiki đây nhé!"
+  }, {
+    "name": "koharu",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/koharu/index.json"],
+    "message": "Koharu chào bạn!"
+  }, {
+    "name": "miku",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/miku/index.json"],
+    "message": "Hatsune Miku đây!"
+  }, {
+    "name": "ni-j",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/ni-j/index.json"],
+    "message": "Ni-j chào mọi người!"
+  }, {
+    "name": "nico",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/nico/index.json"],
+    "message": "Nico nico nii~"
+  }, {
+    "name": "nietzsche",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/nietzsche/index.json"],
+    "message": "Nietzsche đây!"
+  }, {
+    "name": "nipsilon",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/nipsilon/index.json"],
+    "message": "Nipsilon chào bạn!"
+  }, {
+    "name": "nito",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/nito/index.json"],
+    "message": "Nito đây nhé!"
+  }, {
+    "name": "shizuku",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/shizuku/index.json"],
+    "message": "Shizuku chào mọi người!"
+  }, {
+    "name": "tororo",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/tororo/index.json"],
+    "message": "Tororo đây!"
+  }, {
+    "name": "tsumiki",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/tsumiki/index.json"],
+    "message": "Tsumiki chào bạn!"
+  }, {
+    "name": "unitychan",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/unitychan/index.json"],
+    "message": "Unity-chan đây!"
+  }, {
+    "name": "wanko",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/wanko/index.json"],
+    "message": "Wanko chào mọi người!"
+  }, {
+    "name": "z16",
+    "paths": ["https://fastly.jsdelivr.net/gh/fghrsh/live2d_api/model/z16/index.json"],
+    "message": "Z16 đây nhé!"
+  }]
+}

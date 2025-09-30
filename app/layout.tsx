@@ -12,6 +12,7 @@ import { generateDynamicMetadata, getSEOSettings } from '@/lib/dynamic-seo'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
+import { Live2DWidget } from '@/components/shared/live2d-widget'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -81,6 +82,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <DonationProvider />
             </MaintenanceChecker>
             <Toaster richColors position="top-right" />
+            {/* Live2D Widget */}
+            <Live2DWidget />
           </AuthProvider>
         </ThemeProvider>
       </body>
