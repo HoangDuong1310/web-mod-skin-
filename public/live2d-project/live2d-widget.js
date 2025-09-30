@@ -6,7 +6,8 @@
 // Configuration
 const live2d_path = './live2d-project/';
 const WIDGET_VERSION = '2.0.0-local'; // Force reload
-console.log(`[Live2D Widget] Version ${WIDGET_VERSION}`);
+// Silent mode - version log disabled
+// console.log(`[Live2D Widget] Version ${WIDGET_VERSION}`);
 
 // Method to encapsulate asynchronous resource loading
 function loadExternalResource(url, type) {
@@ -53,7 +54,6 @@ function loadExternalResource(url, type) {
     
     // Clear ALL localStorage to force fresh start
     localStorage.clear();
-    console.log('[DEBUG] Cleared localStorage');
     
     // Initialize widget with LOCAL model
     initWidget({
@@ -212,14 +212,9 @@ function loadExternalResource(url, type) {
       cubism2Path: live2d_path + 'js/live2d.min.js',
       // cubism5Path: 'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js',
       tools: ['hitokoto', 'asteroids', 'switch-model', 'switch-texture', 'photo', 'info', 'quit'], // Updated: VN quotes, love msg, model info
-      logLevel: 'info', // Changed to info for better debugging
+      logLevel: 'error', // Changed to error to suppress warnings
       drag: true, // Enable drag interaction
     });
-    
-    console.log('%cLive2D%cWidget%c Standalone Project', 
-      'padding: 8px; background: #cd3e45; font-weight: bold; font-size: large; color: white;', 
-      'padding: 8px; background: #ff5450; font-size: large; color: #eee;', 
-      'padding: 8px; background: #28a745; font-size: large; color: white;');
     
   } catch (error) {
     console.error('❌ Failed to load Live2D Widget:', error);

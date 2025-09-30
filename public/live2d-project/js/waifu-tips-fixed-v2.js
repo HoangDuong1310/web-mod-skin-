@@ -93,7 +93,8 @@ class Logger {
 }
 
 Logger.levelOrder = {error: 0, warn: 1, info: 2, trace: 3};
-const logger = new Logger();
+// Silent mode - only show critical errors
+const logger = new Logger('error');
 
 // Model Manager class
 class ModelManager {
@@ -643,7 +644,6 @@ function setupEventHandlers(messages) {
     
     // Console detection
     const noop = () => {};
-    console.log("%c", noop);
     noop.toString = () => {
         if (messages.message.console) {
             showMessage(messages.message.console, 6000, 9);

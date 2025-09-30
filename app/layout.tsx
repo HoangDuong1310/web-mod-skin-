@@ -13,6 +13,7 @@ import { DEFAULT_CONFIG } from '@/lib/default-config'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
 import { Live2DWidget } from '@/components/shared/live2d-widget'
+import Script from 'next/script'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -35,8 +36,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* CRITICAL: Error suppressor must load FIRST */}
+        <Script
+          src="/live2d-project/error-suppressor.js"
+          strategy="beforeInteractive"
+        />
         {/* Preload critical resources */}
-        <link rel="preload" href="/fonts" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* DNS prefetch for external domains */}

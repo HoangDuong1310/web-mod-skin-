@@ -52,7 +52,7 @@ function loadExternalResource(url, type) {
     cubism2Path: live2d_path + 'live2d.min.js',
     cubism5Path: 'https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js',
     tools: ['hitokoto', 'asteroids', 'switch-model', 'switch-texture', 'photo', 'info', 'quit'],
-    logLevel: 'info', // Changed to info để xem debug messages
+    logLevel: 'error', // Changed to error to suppress warnings and debug messages
     drag: true, // Enable drag
     modelId: 0,
     modelTexturesId: 0
