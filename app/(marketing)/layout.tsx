@@ -1,6 +1,8 @@
 import React from 'react'
 import { MainNav } from '@/components/shared/main-nav'
 import { Footer } from '@/components/shared/footer'
+import { AnnouncementBanner } from '@/components/shared/announcement-banner'
+import { BannerModal } from '@/components/shared/banner-modal'
 
 interface MarketingLayoutProps {
   children: React.ReactNode
@@ -9,6 +11,9 @@ interface MarketingLayoutProps {
 export default function MarketingLayout({ children }: MarketingLayoutProps) {
   return (
     <>
+      {/* Top Banner for announcements/livestream */}
+      <AnnouncementBanner position="TOP" />
+      
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
           <MainNav />
@@ -16,6 +21,9 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
       </header>
       <main className="flex-1">{children}</main>
       <Footer />
+      
+      {/* Modal Banner for important announcements */}
+      <BannerModal />
     </>
   )
 }

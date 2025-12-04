@@ -21,6 +21,7 @@
     "seed:custom-skins": "tsx scripts/seed-custom-skins.ts",
     "seed:skin-categories": "tsx scripts/seed-skin-categories.ts",
     "seed:champions": "tsx scripts/seed-champions.ts",
+    "seed:banners": "tsx scripts/seed-banners.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"

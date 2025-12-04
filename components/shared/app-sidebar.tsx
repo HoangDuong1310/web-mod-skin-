@@ -25,7 +25,8 @@ import {
   Folder,
   PenTool,
   Heart,
-  Palette
+  Palette,
+  Megaphone
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -74,6 +75,15 @@ const adminNavigation: NavigationItem[] = [
       { name: 'Overview', href: '/dashboard/donations/overview' },
       { name: 'All Donations', href: '/dashboard/donations' },
       { name: 'Goals', href: '/dashboard/donations/goals' }
+    ]
+  },
+  { 
+    name: 'Banners', 
+    href: '/dashboard/banners', 
+    icon: Megaphone,
+    subItems: [
+      { name: 'All Banners', href: '/dashboard/banners' },
+      { name: 'Create New', href: '/dashboard/banners/new' }
     ]
   },
   { 

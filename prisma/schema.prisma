@@ -621,3 +621,73 @@ enum SubmissionStatus {
   REJECTED
   NEEDS_REVISION
 }
+
+// Banner model for announcements, livestream notifications, etc.
+model Banner {
+  id              String       @id @default(cuid())
+  title           String       // Banner title
+  content         String?      @db.Text // Banner content/description
+  linkUrl         String?      // Link to navigate when clicked
+  linkText        String?      // Text for the link button
+  imageUrl        String?      // Banner image URL
+  backgroundColor String?      // Custom background color (hex)
+  textColor       String?      // Custom text color (hex)
+  
+  // Display settings
+  type            BannerType   @default(INFO)
+  position        BannerPosition @default(TOP)
+  isActive        Boolean      @default(true)
+  isDismissible   Boolean      @default(true)
+  showOnMobile    Boolean      @default(true)
+  
+  // Scheduling
+  startDate       DateTime?    // When to start showing
+  endDate         DateTime?    // When to stop showing
+  
+  // Priority (higher = more important)
+  priority        Int          @default(0)
+  
+  // Target audience
+  targetAudience  BannerAudience @default(ALL)
+  
+  // For mobile app integration
+  appVisible      Boolean      @default(true) // Show in mobile app
+  appData         String?      @db.Text // JSON data for app customization
+  
+  // Statistics
+  viewCount       Int          @default(0)
+  clickCount      Int          @default(0)
+  
+  // Metadata
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+  
+  @@index([isActive, startDate, endDate])
+  @@index([priority])
+  @@index([type])
+  @@index([position])
+  @@index([appVisible])
+  @@map("banners")
+}
+
+enum BannerType {
+  INFO        // General information
+  LIVESTREAM  // Livestream announcement
+  PROMOTION   // Promotional banner
+  WARNING     // Warning/Alert
+  SUCCESS     // Success message
+  EVENT       // Special event
+}
+
+enum BannerPosition {
+  TOP         // Fixed at top
+  BOTTOM      // Fixed at bottom
+  MODAL       // Show as modal/popup
+}
+
+enum BannerAudience {
+  ALL         // Everyone
+  AUTHENTICATED // Logged in users only
+  GUEST       // Guest users only
+}
