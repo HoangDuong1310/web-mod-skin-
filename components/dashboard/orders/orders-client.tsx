@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -258,6 +258,38 @@ export function OrdersClient() {
     )
   }
 
+  // Tra cứu order từ message
+  const [lookupCode, setLookupCode] = useState('')
+  const [lookupResult, setLookupResult] = useState<any>(null)
+  const [lookupLoading, setLookupLoading] = useState(false)
+  const [lookupError, setLookupError] = useState('')
+  const lookupInputRef = useRef<HTMLInputElement>(null)
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLookupLoading(true)
+    setLookupError('')
+    setLookupResult(null)
+    try {
+      const res = await fetch(`/api/admin/orders/find-user-by-order-message?message=${encodeURIComponent(lookupCode)}`)
+      const data = await res.json()
+      if (res.ok) {
+        setLookupResult(data.order)
+      } else {
+        setLookupError(data.error || 'Không tìm thấy đơn hàng')
+      }
+    } catch (err) {
+      setLookupError('Lỗi server')
+    } finally {
+      setLookupLoading(false)
+    }
+  }
+
+  // Nút focus vào ô tra cứu
+  const focusLookupInput = () => {
+    lookupInputRef.current?.focus()
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -266,6 +298,48 @@ export function OrdersClient() {
           Xem và xử lý các đơn hàng mua license
         </p>
       </div>
+
+      {/* Nút tra cứu nổi bật */}
+      <div className="flex items-center gap-2 mb-2">
+        <Button variant="default" onClick={focusLookupInput}>
+          Tra cứu đơn hàng
+        </Button>
+        <span className="text-muted-foreground text-xs">(Tìm nhanh đơn hàng từ mã Ko-fi/message)</span>
+      </div>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Tra cứu user từ mã order (message Ko-fi)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLookup} className="flex flex-col sm:flex-row gap-2 items-end">
+            <Input
+              ref={lookupInputRef}
+              placeholder="Nhập mã order từ message, ví dụ ORD..."
+              value={lookupCode}
+              onChange={e => setLookupCode(e.target.value)}
+              className="max-w-xs"
+              required
+            />
+            <Button type="submit" disabled={lookupLoading}>
+              {lookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Tra cứu'}
+            </Button>
+          </form>
+          {lookupError && <p className="text-destructive mt-2">{lookupError}</p>}
+          {lookupResult && (
+            <div className="mt-4 p-3 border rounded bg-muted">
+              <div className="mb-2 font-medium">Thông tin đơn hàng:</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                <div><span className="text-muted-foreground">Mã đơn:</span> <span className="font-mono">{lookupResult.orderCode || lookupResult.orderNumber}</span></div>
+                <div><span className="text-muted-foreground">Trạng thái:</span> {lookupResult.status}</div>
+                <div><span className="text-muted-foreground">Khách hàng:</span> {lookupResult.user?.name || 'N/A'} ({lookupResult.user?.email})</div>
+                <div><span className="text-muted-foreground">Gói:</span> {lookupResult.plan?.name}</div>
+                <div><span className="text-muted-foreground">Ngày tạo:</span> {formatDate(lookupResult.createdAt)}</div>
+                <div><span className="text-muted-foreground">Thanh toán:</span> {lookupResult.paymentStatus}</div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       {stats && (

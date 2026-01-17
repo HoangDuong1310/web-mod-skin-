@@ -21,9 +21,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const orders = await prisma.order.findMany({
+    const now = new Date();
+    // Lấy tất cả orders hợp lệ
+    const allOrders = await prisma.order.findMany({
       where: {
         userId: session.user.id,
+        OR: [
+          { status: { not: 'PENDING' } },
+          {
+            status: 'PENDING',
+            createdAt: {
+              gte: new Date(now.getTime() - 30 * 60 * 1000),
+            },
+          },
+        ],
       },
       include: {
         plan: {
@@ -47,10 +58,19 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc',
       },
-    })
+    });
+
+    // Lọc: chỉ giữ đơn PENDING mới nhất cho mỗi plan, các đơn đã xử lý thì giữ hết
+    const seenPendingPlans = new Set();
+    const filteredOrders = allOrders.filter(order => {
+      if (order.status !== 'PENDING') return true;
+      if (seenPendingPlans.has(order.planId)) return false;
+      seenPendingPlans.add(order.planId);
+      return true;
+    });
 
     return NextResponse.json({
-      orders: orders.map((order: any) => ({
+      orders: filteredOrders.map((order: any) => ({
         ...order,
         totalAmount: Number(order.totalAmount),
       })),
