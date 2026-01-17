@@ -1,0 +1,251 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { calculateExpirationDate } from '@/lib/license-key'
+
+// GET - Get order details
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userRole = (session.user as any).role
+
+    // Build query - admin can see all, users only their own
+    const whereClause: any = { id: params.id }
+    if (userRole !== 'ADMIN' && userRole !== 'STAFF') {
+      whereClause.userId = session.user.id
+    }
+
+    const order = await prisma.order.findFirst({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        plan: true,
+        licenseKey: {
+          include: {
+            activations: true,
+          },
+        },
+      },
+    })
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      order: {
+        ...order,
+        totalAmount: Number(order.totalAmount),
+      },
+    })
+  } catch (error) {
+    console.error('Get order error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch order' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH - Update order (admin only)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userRole = (session.user as any).role
+    if (userRole !== 'ADMIN' && userRole !== 'STAFF') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { status, paymentStatus, notes } = body
+
+    const order = await prisma.order.findUnique({
+      where: { id: params.id },
+      include: {
+        licenseKey: true,
+        plan: true,
+      },
+    })
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    // Prepare update data
+    const updateData: any = {}
+    if (status) updateData.status = status
+    if (paymentStatus) updateData.paymentStatus = paymentStatus
+    if (notes !== undefined) updateData.notes = notes
+
+    // If confirming payment, activate the license key
+    if (paymentStatus === 'COMPLETED' && order.paymentStatus !== 'COMPLETED') {
+      updateData.status = 'COMPLETED'
+      updateData.paidAt = new Date()
+
+      // Activate license key
+      if (order.licenseKey && order.plan) {
+        const expiresAt = calculateExpirationDate(
+          order.plan.durationType,
+          order.plan.durationValue
+        )
+
+        await prisma.licenseKey.update({
+          where: { id: order.licenseKey.id },
+          data: {
+            status: 'ACTIVE',
+            activatedAt: new Date(),
+            expiresAt,
+          },
+        })
+
+        // Log the activation
+        await prisma.keyUsageLog.create({
+          data: {
+            licenseKeyId: order.licenseKey.id,
+            action: 'ACTIVATED',
+            details: JSON.stringify({
+              orderId: order.id,
+              orderCode: order.orderCode,
+              activatedBy: session.user.id,
+            }),
+          },
+        })
+      }
+    }
+
+    // If refunding/cancelling, revoke the license
+    if ((paymentStatus === 'REFUNDED' || status === 'CANCELLED') && 
+        order.licenseKey && 
+        order.paymentStatus === 'COMPLETED') {
+      await prisma.licenseKey.update({
+        where: { id: order.licenseKey.id },
+        data: {
+          status: 'REVOKED',
+        },
+      })
+
+      await prisma.keyUsageLog.create({
+        data: {
+          licenseKeyId: order.licenseKey.id,
+          action: 'REVOKED',
+          details: JSON.stringify({
+            reason: paymentStatus === 'REFUNDED' ? 'Refunded' : 'Order cancelled',
+            revokedBy: session.user.id,
+          }),
+        },
+      })
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: params.id },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        plan: true,
+        licenseKey: true,
+      },
+    })
+
+    return NextResponse.json({
+      order: {
+        ...updatedOrder,
+        totalAmount: Number(updatedOrder.totalAmount),
+      },
+      message: 'Order updated successfully',
+    })
+  } catch (error) {
+    console.error('Update order error:', error)
+    return NextResponse.json(
+      { error: 'Failed to update order' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - Cancel/delete order
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userRole = (session.user as any).role
+    if (userRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: params.id },
+      include: { licenseKey: true },
+    })
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete associated license key if not used
+    if (order.licenseKey && order.licenseKey.status === 'INACTIVE') {
+      await prisma.licenseKey.delete({
+        where: { id: order.licenseKey.id },
+      })
+    }
+
+    // Delete order
+    await prisma.order.delete({
+      where: { id: params.id },
+    })
+
+    return NextResponse.json({
+      message: 'Order deleted successfully',
+    })
+  } catch (error) {
+    console.error('Delete order error:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete order' },
+      { status: 500 }
+    )
+  }
+}

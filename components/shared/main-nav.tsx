@@ -12,15 +12,15 @@ import { getPostLogoutRedirectUrl } from '@/lib/redirect-utils'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
-import { User, LogOut, FileImage, Settings } from 'lucide-react'
+import { MobileMenu } from '@/components/shared/mobile-menu'
+import { User, LogOut, FileImage, Settings, Key, ShoppingCart } from 'lucide-react'
 
 const navigation: { name: string; href: Route }[] = [
   { name: 'Home', href: '/' },
   { name: 'Apps', href: '/products' },
   { name: 'Custom Skins', href: '/custom-skins' },
-  { name: 'Categories', href: '/categories' },
+  { name: 'Pricing', href: '/pricing' },
   { name: 'Blog', href: '/blog' },
-  { name: 'About', href: '/about' },
   { name: 'Contact', href: '/contact' },
 ]
 
@@ -31,7 +31,10 @@ export function MainNav() {
 
   return (
     <div className="flex w-full items-center justify-between">
-      <div className="flex items-center space-x-8">
+      <div className="flex items-center space-x-4 md:space-x-8">
+        {/* Mobile Menu */}
+        <MobileMenu />
+        
         <Link href={'/' as Route} className="flex items-center">
           <Image
             src="/images/logo.ico"
@@ -85,6 +88,18 @@ export function MainNav() {
                   <Link href={'/profile' as Route} className="cursor-pointer">
                     <Settings className="h-4 w-4 mr-2" />
                     Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={'/profile/licenses' as Route} className="cursor-pointer">
+                    <Key className="h-4 w-4 mr-2" />
+                    My Licenses
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={'/profile/orders' as Route} className="cursor-pointer">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Order History
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

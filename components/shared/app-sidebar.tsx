@@ -26,7 +26,9 @@ import {
   PenTool,
   Heart,
   Palette,
-  Megaphone
+  Megaphone,
+  Key,
+  CreditCard
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -93,6 +95,16 @@ const adminNavigation: NavigationItem[] = [
     subItems: [
       { name: 'Blog Posts', href: '/dashboard/blog' },
       { name: 'Tags', href: '/dashboard/tags' }
+    ]
+  },
+  { 
+    name: 'Licenses', 
+    href: '/dashboard/licenses', 
+    icon: Key,
+    subItems: [
+      { name: 'All Licenses', href: '/dashboard/licenses' },
+      { name: 'Plans', href: '/dashboard/plans' },
+      { name: 'Orders', href: '/dashboard/orders' }
     ]
   },
   { name: 'Users', href: '/dashboard/users', icon: Users },

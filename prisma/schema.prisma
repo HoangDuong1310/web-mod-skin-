@@ -65,6 +65,8 @@ model User {
   skinSubmissions   SkinSubmission[]
   reviewedSubmissions SkinSubmission[] @relation("SkinReviewer")
   skinDownloads     SkinDownload[]
+  licenseKeys       LicenseKey[]
+  orders            Order[]
 
   @@index([email])
   @@index([createdAt])
@@ -690,4 +692,291 @@ enum BannerAudience {
   ALL         // Everyone
   AUTHENTICATED // Logged in users only
   GUEST       // Guest users only
+}
+// ============================================
+// LICENSE KEY & SUBSCRIPTION SYSTEM
+// ============================================
+
+// Subscription Plans - Các gói cước
+model SubscriptionPlan {
+  id              String          @id @default(cuid())
+  name            String          // Tên gói: "Basic", "Pro", "Lifetime"
+  nameEn          String?         // Tên tiếng Anh
+  slug            String          @unique
+  description     String?         @db.Text
+  descriptionEn   String?         @db.Text // Mô tả tiếng Anh
+  
+  // Pricing VND (Việt Nam)
+  price           Decimal         @db.Decimal(10, 2)
+  comparePrice    Decimal?        @db.Decimal(10, 2) // Giá gốc (để hiện giảm giá)
+  currency        String          @default("VND")
+  
+  // Pricing USD (International)
+  priceUsd        Decimal?        @db.Decimal(10, 2) // Giá USD cho nước ngoài
+  comparePriceUsd Decimal?        @db.Decimal(10, 2) // Giá gốc USD
+  
+  // Duration
+  durationType    DurationType    @default(MONTH)
+  durationValue   Int             @default(1) // Số lượng (VD: 3 tháng = MONTH + 3)
+  
+  // Features & Limits
+  features        String?         @db.Text // JSON array of features (Vietnamese)
+  featuresEn      String?         @db.Text // JSON array of features (English)
+  maxDevices      Int             @default(1) // Số thiết bị tối đa
+  
+  // Display
+  isActive        Boolean         @default(true)
+  isPopular       Boolean         @default(false) // Đánh dấu gói phổ biến
+  isFeatured      Boolean         @default(false) // Gói nổi bật
+  priority        Int             @default(0) // Thứ tự hiển thị
+  color           String?         // Màu badge/highlight
+  
+  // Metadata
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+  
+  // Relations
+  licenseKeys     LicenseKey[]
+  orders          Order[]
+  
+  @@index([slug])
+  @@index([isActive, priority])
+  @@index([durationType])
+  @@map("subscription_plans")
+}
+
+// License Keys - Key bản quyền
+model LicenseKey {
+  id              String          @id @default(cuid())
+  key             String          @unique // Format: XXXX-XXXX-XXXX-XXXX
+  
+  // Owner
+  userId          String?
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Plan
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  // Status
+  status          KeyStatus       @default(INACTIVE)
+  
+  // Activation
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  
+  // Device Management
+  maxDevices      Int             @default(1)
+  currentDevices  Int             @default(0)
+  
+  // Usage tracking
+  lastUsedAt      DateTime?
+  lastUsedIp      String?
+  lastHwid        String?         // Last hardware ID used
+  totalActivations Int            @default(0)
+  
+  // Admin
+  notes           String?         @db.Text
+  createdBy       String?         // Admin who created this key
+  
+  // Metadata
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  activations     KeyActivation[]
+  order           Order?
+  usageLogs       KeyUsageLog[]
+  
+  @@index([key])
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@map("license_keys")
+}
+
+// Key Activations - Thiết bị đã kích hoạt
+model KeyActivation {
+  id              String          @id @default(cuid())
+  keyId           String
+  key             LicenseKey      @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  
+  // Device Info
+  hwid            String          // Hardware ID từ app
+  deviceName      String?         // Tên thiết bị (optional)
+  deviceInfo      String?         @db.Text // JSON: OS, CPU, RAM, etc.
+  
+  // Network
+  ipAddress       String?
+  userAgent       String?
+  
+  // Status
+  status          ActivationStatus @default(ACTIVE)
+  
+  // Timestamps
+  activatedAt     DateTime        @default(now())
+  deactivatedAt   DateTime?
+  lastSeenAt      DateTime        @default(now())
+  
+  @@unique([keyId, hwid])
+  @@index([keyId])
+  @@index([hwid])
+  @@index([status])
+  @@index([lastSeenAt])
+  @@map("key_activations")
+}
+
+// Key Usage Logs - Lịch sử sử dụng key
+model KeyUsageLog {
+  id              String          @id @default(cuid())
+  keyId           String
+  key             LicenseKey      @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  
+  // Action
+  action          KeyAction
+  
+  // Context
+  hwid            String?
+  ipAddress       String?
+  userAgent       String?
+  details         String?         @db.Text // JSON additional details
+  
+  // Result
+  success         Boolean         @default(true)
+  errorMessage    String?
+  
+  // Timestamp
+  createdAt       DateTime        @default(now())
+  
+  @@index([keyId, createdAt])
+  @@index([action])
+  @@index([createdAt])
+  @@map("key_usage_logs")
+}
+
+// Orders - Đơn hàng
+model Order {
+  id              String          @id @default(cuid())
+  orderNumber     String          @unique // Format: ORD-YYYYMMDD-XXXXX
+  
+  // Customer
+  userId          String?
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerEmail   String          // Email để gửi key
+  customerName    String?
+  customerPhone   String?
+  
+  // Product
+  planId          String
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  // Generated Key
+  keyId           String?         @unique
+  licenseKey      LicenseKey?     @relation(fields: [keyId], references: [id])
+  
+  // Pricing
+  amount          Decimal         @db.Decimal(10, 2)
+  discount        Decimal         @default(0) @db.Decimal(10, 2)
+  finalAmount     Decimal         @db.Decimal(10, 2)
+  currency        String          @default("VND")
+  
+  // Payment
+  paymentMethod   OrderPaymentMethod @default(BANK_TRANSFER)
+  paymentStatus   PaymentStatus   @default(PENDING)
+  transactionId   String?         // External transaction ID
+  paidAt          DateTime?
+  
+  // Coupon
+  couponCode      String?
+  couponDiscount  Decimal?        @db.Decimal(10, 2)
+  
+  // Status
+  status          OrderStatus     @default(PENDING)
+  
+  // Notes
+  customerNote    String?         @db.Text
+  adminNote       String?         @db.Text
+  
+  // Metadata
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  completedAt     DateTime?
+  
+  @@index([orderNumber])
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+// Enums for License System
+enum DurationType {
+  DAY
+  WEEK
+  MONTH
+  QUARTER   // 3 months
+  YEAR
+  LIFETIME
+}
+
+enum KeyStatus {
+  INACTIVE    // Chưa kích hoạt
+  ACTIVE      // Đang hoạt động
+  EXPIRED     // Hết hạn
+  SUSPENDED   // Tạm khóa
+  REVOKED     // Thu hồi vĩnh viễn
+  BANNED      // Bị cấm (vi phạm)
+}
+
+enum ActivationStatus {
+  ACTIVE
+  DEACTIVATED
+  EXPIRED
+}
+
+enum KeyAction {
+  VALIDATE      // Kiểm tra key
+  ACTIVATE      // Kích hoạt thiết bị
+  DEACTIVATE    // Hủy kích hoạt
+  HEARTBEAT     // App ping định kỳ
+  LOGIN         // Đăng nhập app
+  RESET_HWID    // Reset HWID
+  EXTEND        // Gia hạn
+  SUSPEND       // Tạm khóa
+  REVOKE        // Thu hồi
+}
+
+enum OrderStatus {
+  PENDING       // Chờ xử lý
+  PROCESSING    // Đang xử lý
+  COMPLETED     // Hoàn thành
+  CANCELLED     // Đã hủy
+  REFUNDED      // Đã hoàn tiền
+  FAILED        // Thất bại
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum OrderPaymentMethod {
+  BANK_TRANSFER
+  MOMO
+  VNPAY
+  ZALOPAY
+  PAYPAL
+  CRYPTO
+  MANUAL        // Admin tạo thủ công
 }
