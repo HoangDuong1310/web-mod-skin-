@@ -182,7 +182,10 @@ export async function createLicenseKey(params: {
   if (!plan) {
     throw new Error('Plan not found')
   }
-  
+
+  // DEBUG LOG
+  console.log('DEBUG plan:', plan.durationType, plan.durationValue)
+
   // Tạo key unique
   let key = generateKeyString()
   let attempts = 0
@@ -209,6 +212,8 @@ export async function createLicenseKey(params: {
     if (plan.durationType !== 'LIFETIME') {
       expiresAt = calculateExpirationDate(plan.durationType, plan.durationValue)
     }
+    // DEBUG LOG
+    console.log('DEBUG expiresAt:', expiresAt)
 
     const licenseKey = await prisma.licenseKey.create({
       data: {

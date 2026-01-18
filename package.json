@@ -23,6 +23,7 @@
     "seed:champions": "tsx scripts/seed-champions.ts",
     "seed:banners": "tsx scripts/seed-banners.ts",
     "seed:plans": "tsx scripts/seed-plans.ts",
+    "fix-license-keys": "tsx scripts/fix-license-keys.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"

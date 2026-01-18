@@ -96,15 +96,35 @@ export async function POST(req: NextRequest) {
 
     // Nếu đơn hàng chưa thanh toán, cập nhật trạng thái
     if (foundOrder.paymentStatus === 'PENDING') {
-      const { generateKeyString } = await import('@/lib/license-key');
+      const { generateKeyString, calculateExpirationDate } = await import('@/lib/license-key');
+
+      // Lấy thông tin plan để thiết lập đúng maxDevices và expiresAt
+      const plan = await prisma.subscriptionPlan.findUnique({
+        where: { id: foundOrder.planId },
+      });
+
+      if (!plan) {
+        console.error('Không tìm thấy plan cho đơn hàng:', orderNumber);
+        continue;
+      }
+
+      // Tính ngày hết hạn dựa trên plan
+      const expiresAt = calculateExpirationDate(
+        plan.durationType,
+        plan.durationValue,
+        new Date()
+      );
+
       const keyString = generateKeyString();
       const licenseKey = await prisma.licenseKey.create({
         data: {
           key: keyString,
           userId: foundOrder.userId,
           planId: foundOrder.planId,
+          maxDevices: plan.maxDevices, // Thiết lập đúng maxDevices từ plan
           status: 'ACTIVE',
           activatedAt: new Date(),
+          expiresAt, // Thiết lập đúng expiresAt từ plan
         },
       });
 
@@ -120,6 +140,7 @@ export async function POST(req: NextRequest) {
       });
 
       console.log('Đã xác nhận thanh toán và cấp key cho đơn:', orderNumber, 'Key:', keyString);
+      console.log('Plan:', plan.name, 'MaxDevices:', plan.maxDevices, 'ExpiresAt:', expiresAt);
       // TODO: Gửi email hoặc thông báo cho user nếu cần
     } else {
       console.log('Đơn hàng đã thanh toán hoặc trạng thái không hợp lệ:', orderNumber);

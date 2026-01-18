@@ -11,7 +11,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -72,7 +72,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -122,6 +122,7 @@ export async function PATCH(
             status: 'ACTIVE',
             activatedAt: new Date(),
             expiresAt,
+            maxDevices: order.plan.maxDevices, // Thiết lập đúng maxDevices từ plan
           },
         });
         // Log the activation
@@ -148,6 +149,7 @@ export async function PATCH(
             key: keyString,
             userId: order.userId,
             planId: order.plan.id,
+            maxDevices: order.plan.maxDevices, // Thiết lập đúng maxDevices từ plan
             status: 'ACTIVE',
             activatedAt: new Date(),
             expiresAt,
@@ -169,9 +171,9 @@ export async function PATCH(
         });
       }
     }
-    if ((paymentStatus === 'REFUNDED' || status === 'CANCELLED') && 
-        order.licenseKey && 
-        order.paymentStatus === 'COMPLETED') {
+    if ((paymentStatus === 'REFUNDED' || status === 'CANCELLED') &&
+      order.licenseKey &&
+      order.paymentStatus === 'COMPLETED') {
       await prisma.licenseKey.update({
         where: { id: order.licenseKey.id },
         data: {
@@ -229,7 +231,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

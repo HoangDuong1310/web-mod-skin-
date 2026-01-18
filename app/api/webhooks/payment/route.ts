@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         amount: payload.amount,
         transactionId: payload.transactionId,
       })
-      
+
       if (!verifySignature(dataToVerify, payload.signature)) {
         console.error('Invalid webhook signature')
         return NextResponse.json(
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Find order by code
     const order = await prisma.order.findFirst({
       where: {
-        orderCode: orderCode,
+        orderNumber: orderCode,
         status: 'PENDING',
       },
       include: {
@@ -94,8 +94,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify amount matches
-    if (Number(order.totalAmount) !== amount) {
-      console.error(`Amount mismatch for order ${orderCode}: expected ${order.totalAmount}, got ${amount}`)
+    if (Number(order.finalAmount) !== amount) {
+      console.error(`Amount mismatch for order ${orderCode}: expected ${order.finalAmount}, got ${amount}`)
       return NextResponse.json(
         { error: 'Amount mismatch' },
         { status: 400 }
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         status: 'COMPLETED',
         paymentStatus: 'COMPLETED',
         paidAt: paidAt ? new Date(paidAt) : new Date(),
-        notes: transactionId ? `Transaction ID: ${transactionId}` : undefined,
+        adminNote: transactionId ? `Transaction ID: ${transactionId}` : undefined,
       },
     })
 
@@ -126,17 +126,18 @@ export async function POST(request: NextRequest) {
           status: 'ACTIVE',
           activatedAt: new Date(),
           expiresAt,
+          maxDevices: order.plan.maxDevices, // Thiết lập đúng maxDevices từ plan
         },
       })
 
       // Log activation
       await prisma.keyUsageLog.create({
         data: {
-          licenseKeyId: order.licenseKey.id,
-          action: 'ACTIVATED',
+          keyId: order.licenseKey.id,
+          action: 'ACTIVATE',
           details: JSON.stringify({
             orderId: order.id,
-            orderCode: order.orderCode,
+            orderNumber: order.orderNumber,
             transactionId,
             activatedVia: 'webhook',
           }),
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
       })
 
       console.log(`License ${order.licenseKey.key} activated for order ${orderCode}`)
+      console.log(`Plan: ${order.plan.name}, MaxDevices: ${order.plan.maxDevices}, ExpiresAt: ${expiresAt}`)
     }
 
     return NextResponse.json({
