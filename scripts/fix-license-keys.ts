@@ -51,7 +51,7 @@ async function main() {
 
                 const updates: any = {}
 
-                // Check if maxDevices needs fixing
+                // ALWAYS check if maxDevices needs fixing (regardless of activation status)
                 if (key.maxDevices !== key.plan.maxDevices) {
                     needsUpdate.maxDevices = true
                     updates.maxDevices = key.plan.maxDevices
@@ -92,7 +92,11 @@ async function main() {
                         data: updates
                     })
 
-                    console.log(`  ✅ Fixed key ${key.key}`)
+                    const updatedFields = []
+                    if (needsUpdate.maxDevices) updatedFields.push('maxDevices')
+                    if (needsUpdate.expiresAt) updatedFields.push('expiresAt')
+
+                    console.log(`  ✅ Fixed key ${key.key} (updated: ${updatedFields.join(', ')})`)
                     fixedCount++
                 } else {
                     skippedCount++
