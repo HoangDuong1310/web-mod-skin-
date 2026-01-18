@@ -204,29 +204,36 @@ export async function createLicenseKey(params: {
   }
   
   // Tạo license key
-  const licenseKey = await prisma.licenseKey.create({
-    data: {
-      key,
-      planId,
-      userId,
-      maxDevices: plan.maxDevices,
-      notes,
-      createdBy,
-      status: 'INACTIVE',
-    },
-    include: {
-      plan: true,
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
+    // Tính ngày hết hạn
+    let expiresAt: Date | null = null
+    if (plan.durationType !== 'LIFETIME') {
+      expiresAt = calculateExpirationDate(plan.durationType, plan.durationValue)
+    }
+
+    const licenseKey = await prisma.licenseKey.create({
+      data: {
+        key,
+        planId,
+        userId,
+        maxDevices: plan.maxDevices,
+        notes,
+        createdBy,
+        status: 'INACTIVE',
+        expiresAt,
+      },
+      include: {
+        plan: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
         },
       },
-    },
-  })
-  
-  return licenseKey
+    })
+
+    return licenseKey
 }
 
 /**
