@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
 
   // Xử lý từng giao dịch
   for (const transaction of data.transactions) {
+    // Log ra console để kiểm tra server đã nhận được webhook
+    console.log('PAY2S WEBHOOK RECEIVED:', transaction);
     // TODO: Lưu transaction vào database, kiểm tra nội dung, tạo đơn hàng, v.v.
     // transaction.id, transaction.gateway, transaction.transactionDate, ...
   }
