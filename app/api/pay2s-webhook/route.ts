@@ -111,11 +111,11 @@ export async function POST(req: NextRequest) {
       await prisma.order.update({
         where: { orderNumber },
         data: {
-          paymentStatus: 'PAID',
+          paymentStatus: 'COMPLETED', // Đúng enum PaymentStatus
           transactionId: transaction.id.toString(),
           paidAt: new Date(transaction.transactionDate),
           keyId: licenseKey.id,
-          status: 'COMPLETED',
+          status: 'COMPLETED', // Đúng enum OrderStatus
         },
       });
 
