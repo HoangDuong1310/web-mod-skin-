@@ -36,11 +36,60 @@ export async function POST(req: NextRequest) {
   }
 
   // Xử lý từng giao dịch
+  // Import prisma
+  const { prisma } = await import('@/lib/prisma');
+
   for (const transaction of data.transactions) {
-    // Log ra console để kiểm tra server đã nhận được webhook
     console.log('PAY2S WEBHOOK RECEIVED:', transaction);
-    // TODO: Lưu transaction vào database, kiểm tra nội dung, tạo đơn hàng, v.v.
-    // transaction.id, transaction.gateway, transaction.transactionDate, ...
+
+    // Ví dụ: kiểm tra nội dung chuyển khoản có mã đơn hàng (orderNumber)
+    const match = transaction.content.match(/ORD\d+/);
+    const orderNumber = match ? match[0] : null;
+    if (!orderNumber) {
+      console.log('Không tìm thấy mã đơn hàng trong nội dung:', transaction.content);
+      continue;
+    }
+
+    // Tìm đơn hàng theo orderNumber
+    const order = await prisma.order.findUnique({ where: { orderNumber } });
+    if (!order) {
+      console.log('Không tìm thấy đơn hàng:', orderNumber);
+      continue;
+    }
+
+    // Nếu đơn hàng chưa thanh toán, cập nhật trạng thái
+    if (order.paymentStatus === 'PENDING') {
+      // Tạo license key mới
+      const { generateKeyString } = await import('@/lib/license-key');
+      const keyString = generateKeyString();
+      // Tạo bản ghi key
+      const licenseKey = await prisma.licenseKey.create({
+        data: {
+          key: keyString,
+          userId: order.userId,
+          planId: order.planId,
+          status: 'ACTIVE',
+          activatedAt: new Date(),
+        },
+      });
+
+      // Gán key cho đơn hàng
+      await prisma.order.update({
+        where: { orderNumber },
+        data: {
+          paymentStatus: 'PAID',
+          transactionId: transaction.id.toString(),
+          paidAt: new Date(transaction.transactionDate),
+          keyId: licenseKey.id,
+          status: 'COMPLETED',
+        },
+      });
+
+      console.log('Đã xác nhận thanh toán và cấp key cho đơn:', orderNumber, 'Key:', keyString);
+      // TODO: Gửi email hoặc thông báo cho user nếu cần
+    } else {
+      console.log('Đơn hàng đã thanh toán hoặc trạng thái không hợp lệ:', orderNumber);
+    }
   }
 
   return NextResponse.json(
