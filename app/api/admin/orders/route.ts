@@ -37,8 +37,15 @@ export async function GET(request: NextRequest) {
         { user: { name: { contains: search } } },
       ]
     }
-    // Ẩn đơn PENDING quá 30 phút
+    // Xóa các đơn PENDING quá 30 phút
     const now = new Date();
+    await prisma.order.deleteMany({
+      where: {
+        status: 'PENDING',
+        createdAt: { lt: new Date(now.getTime() - 30 * 60 * 1000) },
+      },
+    });
+    // Ẩn đơn PENDING quá 30 phút
     where.OR = [
       { status: { not: 'PENDING' } },
       {
