@@ -80,7 +80,6 @@ export async function POST(req: NextRequest) {
         where: {
           orderNumber: {
             contains: orderNumber.replace('ORD-', '').replace('ORD', ''),
-            mode: 'insensitive',
           },
           paymentStatus: 'PENDING',
         },
