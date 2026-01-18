@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
     console.log('Đã tách được orderNumber:', orderNumber);
 
     // Tìm đơn hàng theo orderNumber
-    const order = await prisma.order.findUnique({ where: { orderNumber } });
-    if (!order) {
+    let foundOrder = await prisma.order.findUnique({ where: { orderNumber } });
+    if (!foundOrder) {
       // Nếu không tìm thấy, thử tìm đơn hàng có orderNumber chứa trong content (fuzzy)
       const fuzzyOrder = await prisma.order.findFirst({
         where: {
@@ -90,29 +90,24 @@ export async function POST(req: NextRequest) {
         continue;
       }
       console.log('Tìm thấy đơn hàng gần đúng:', fuzzyOrder.orderNumber);
-      // Gán lại order và orderNumber
       orderNumber = fuzzyOrder.orderNumber;
-      // eslint-disable-next-line no-var
-      var order = fuzzyOrder;
+      foundOrder = fuzzyOrder;
     }
 
     // Nếu đơn hàng chưa thanh toán, cập nhật trạng thái
-    if (order.paymentStatus === 'PENDING') {
-      // Tạo license key mới
+    if (foundOrder.paymentStatus === 'PENDING') {
       const { generateKeyString } = await import('@/lib/license-key');
       const keyString = generateKeyString();
-      // Tạo bản ghi key
       const licenseKey = await prisma.licenseKey.create({
         data: {
           key: keyString,
-          userId: order.userId,
-          planId: order.planId,
+          userId: foundOrder.userId,
+          planId: foundOrder.planId,
           status: 'ACTIVE',
           activatedAt: new Date(),
         },
       });
 
-      // Gán key cho đơn hàng
       await prisma.order.update({
         where: { orderNumber },
         data: {
