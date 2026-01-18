@@ -159,43 +159,22 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session || session.user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    // Check if plan has active licenses
-    const activeKeys = await prisma.licenseKey.count({
-      where: {
-        planId: params.id,
-        status: { in: ['ACTIVE', 'INACTIVE'] },
+
+    // Luôn soft delete: cập nhật deletedAt và isActive
+    await prisma.subscriptionPlan.update({
+      where: { id: params.id },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
       },
     })
-    
-    if (activeKeys > 0) {
-      // Soft delete
-      await prisma.subscriptionPlan.update({
-        where: { id: params.id },
-        data: { 
-          deletedAt: new Date(),
-          isActive: false,
-        },
-      })
-      
-      return NextResponse.json({
-        success: true,
-        message: `Đã ẩn gói cước (có ${activeKeys} keys đang sử dụng)`,
-      })
-    }
-    
-    // Hard delete if no active keys
-    await prisma.subscriptionPlan.delete({
-      where: { id: params.id },
-    })
-    
+
     return NextResponse.json({
       success: true,
-      message: 'Đã xóa gói cước',
+      message: 'Đã ẩn gói cước',
     })
   } catch (error) {
     console.error('Delete plan error:', error)

@@ -32,11 +32,22 @@ export async function GET(request: NextRequest) {
     if (paymentStatus) where.paymentStatus = paymentStatus
     if (search) {
       where.OR = [
-        { orderCode: { contains: search } },
+        { orderNumber: { contains: search } },
         { user: { email: { contains: search } } },
         { user: { name: { contains: search } } },
       ]
     }
+    // Ẩn đơn PENDING quá 30 phút
+    const now = new Date();
+    where.OR = [
+      { status: { not: 'PENDING' } },
+      {
+        status: 'PENDING',
+        createdAt: {
+          gte: new Date(now.getTime() - 30 * 60 * 1000),
+        },
+      },
+    ];
 
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
@@ -83,7 +94,7 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       prisma.order.aggregate({
         where: { paymentStatus: 'COMPLETED' },
-        _sum: { totalAmount: true },
+        _sum: { finalAmount: true },
       }),
       prisma.order.count({ where: { status: 'PENDING' } }),
       prisma.order.count({ where: { status: 'COMPLETED' } }),
@@ -108,7 +119,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
       stats: {
-        totalRevenue: Number(totalRevenue._sum.totalAmount || 0),
+        totalRevenue: Number(totalRevenue._sum.finalAmount || 0),
         pendingCount,
         completedCount,
         todayOrders,

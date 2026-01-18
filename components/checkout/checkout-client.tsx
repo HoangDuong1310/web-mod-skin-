@@ -51,15 +51,30 @@ interface CheckoutClientProps {
 type PaymentMethod = 'kofi' | 'paypal' | 'bank'
 
 export function CheckoutClient({ plan }: CheckoutClientProps) {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const { toast } = useToast()
-  
-  const [orderCode, setOrderCode] = useState('')
+  const [orderNumber, setOrderNumber] = useState('')
   const [isCreatingOrder, setIsCreatingOrder] = useState(false)
   const [orderCreated, setOrderCreated] = useState(false)
   const [orderId, setOrderId] = useState('')
   const [copied, setCopied] = useState(false)
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const { toast } = useToast()
+
+  // Polling để tự động redirect khi đơn hàng đã có key
+  useEffect(() => {
+    if (!orderNumber) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders?orderNumber=${orderNumber}`);
+        const data = await res.json();
+        const order = data.orders?.[0];
+        if (order && order.licenseKey && order.paymentStatus === 'COMPLETED') {
+          router.push('/profile/licenses');
+        }
+      } catch (e) {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [orderNumber, router]);
 
   // Determine if using VND or USD display
   const isVN = plan.currency === 'VND'
@@ -80,7 +95,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
 
   // Create order when component mounts
   useEffect(() => {
-    if (session?.user && !orderCode) {
+    if (session?.user && !orderNumber) {
       createOrder()
     }
   }, [session])
@@ -114,7 +129,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
       }
 
       setOrderId(data.order.id)
-      setOrderCode(data.order.orderNumber)
+      setOrderNumber(data.order.orderNumber)
       setOrderCreated(true)
     } catch (error: any) {
       toast({
@@ -197,7 +212,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
 
   // Generate Ko-fi link with pre-filled amount
   const getKofiLink = () => {
-    const message = encodeURIComponent(`Order: ${orderCode} ${plan.name}`)
+    const message = encodeURIComponent(`Order: ${orderNumber} ${plan.name}`)
     return `${KOFI_CONFIG.pageUrl}?hidefeed=true&widget=true&embed=true&preview=true&amount=${paymentPriceUSD}&message=${message}`
   }
 
@@ -205,7 +220,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
   const getVietQRUrl = () => {
     const params = new URLSearchParams()
     params.append('amount', String(paymentPriceVND))
-    params.append('addInfo', orderCode)
+    params.append('addInfo', orderNumber)
     params.append('accountName', BANK_CONFIG.accountName)
     return `https://img.vietqr.io/image/${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNo}-${BANK_CONFIG.template}.jpg?${params.toString()}`
   }
@@ -222,8 +237,8 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
     return null
   }
 
-  // Strip any '-' from orderCode for display
-  const displayOrderCode = orderCode.replace(/-/g, '')
+  // Strip any '-' from orderNumber for display
+  const displayOrderCode = orderNumber.replace(/-/g, '')
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
@@ -311,7 +326,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
                 </div>
 
                 {/* Order Code */}
-                {orderCode && (
+                {orderNumber && (
                   <>
                     <Separator />
                     <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
