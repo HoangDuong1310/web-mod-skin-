@@ -24,6 +24,7 @@
     "seed:banners": "tsx scripts/seed-banners.ts",
     "seed:plans": "tsx scripts/seed-plans.ts",
     "check-license-keys": "tsx scripts/check-license-keys.ts",
+    "verify-expiration-dates": "tsx scripts/verify-expiration-dates.ts",
     "fix-license-keys": "tsx scripts/fix-license-keys.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",

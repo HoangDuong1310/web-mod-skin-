@@ -17,7 +17,7 @@ const KEY_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Bỏ I, O, 0, 1 để tr
  */
 export function generateKeyString(): string {
   const segments: string[] = []
-  
+
   for (let i = 0; i < KEY_SEGMENTS; i++) {
     let segment = ''
     for (let j = 0; j < KEY_SEGMENT_LENGTH; j++) {
@@ -26,7 +26,7 @@ export function generateKeyString(): string {
     }
     segments.push(segment)
   }
-  
+
   return segments.join('-')
 }
 
@@ -36,7 +36,7 @@ export function generateKeyString(): string {
 export function generateMultipleKeys(count: number): string[] {
   const keys: string[] = []
   const usedKeys = new Set<string>()
-  
+
   while (keys.length < count) {
     const key = generateKeyString()
     if (!usedKeys.has(key)) {
@@ -44,7 +44,7 @@ export function generateMultipleKeys(count: number): string[] {
       keys.push(key)
     }
   }
-  
+
   return keys
 }
 
@@ -86,9 +86,9 @@ export function calculateExpirationDate(
   if (durationType === 'LIFETIME') {
     return null // null = không hết hạn
   }
-  
+
   const expirationDate = new Date(fromDate)
-  
+
   switch (durationType) {
     case 'DAY':
       expirationDate.setDate(expirationDate.getDate() + durationValue)
@@ -106,7 +106,7 @@ export function calculateExpirationDate(
       expirationDate.setFullYear(expirationDate.getFullYear() + durationValue)
       break
   }
-  
+
   return expirationDate
 }
 
@@ -123,11 +123,11 @@ export function isKeyExpired(expiresAt: Date | null): boolean {
  */
 export function getDaysRemaining(expiresAt: Date | null): number | null {
   if (expiresAt === null) return null // Lifetime
-  
+
   const now = new Date()
   const diffTime = expiresAt.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   return diffDays > 0 ? diffDays : 0
 }
 
@@ -141,7 +141,7 @@ export function formatDuration(
   if (durationType === 'LIFETIME') {
     return 'Vĩnh viễn'
   }
-  
+
   const labels: Record<string, string> = {
     DAY: 'ngày',
     WEEK: 'tuần',
@@ -149,7 +149,7 @@ export function formatDuration(
     QUARTER: 'quý',
     YEAR: 'năm',
   }
-  
+
   return `${durationValue} ${labels[durationType]}`
 }
 
@@ -173,12 +173,12 @@ export async function createLicenseKey(params: {
   createdBy?: string
 }) {
   const { planId, userId, notes, createdBy } = params
-  
+
   // Lấy thông tin plan
   const plan = await prisma.subscriptionPlan.findUnique({
     where: { id: planId },
   })
-  
+
   if (!plan) {
     throw new Error('Plan not found')
   }
@@ -190,55 +190,55 @@ export async function createLicenseKey(params: {
   let key = generateKeyString()
   let attempts = 0
   const maxAttempts = 10
-  
+
   while (attempts < maxAttempts) {
     const existing = await prisma.licenseKey.findUnique({
       where: { key },
     })
-    
+
     if (!existing) break
-    
+
     key = generateKeyString()
     attempts++
   }
-  
+
   if (attempts >= maxAttempts) {
     throw new Error('Failed to generate unique key')
   }
-  
-  // Tạo license key
-    // Tính ngày hết hạn
-    let expiresAt: Date | null = null
-    if (plan.durationType !== 'LIFETIME') {
-      expiresAt = calculateExpirationDate(plan.durationType, plan.durationValue)
-    }
-    // DEBUG LOG
-    console.log('DEBUG expiresAt:', expiresAt)
 
-    const licenseKey = await prisma.licenseKey.create({
-      data: {
-        key,
-        planId,
-        userId,
-        maxDevices: plan.maxDevices,
-        notes,
-        createdBy,
-        status: 'INACTIVE',
-        expiresAt,
-      },
-      include: {
-        plan: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+  // Tạo license key
+  // Tính ngày hết hạn
+  let expiresAt: Date | null = null
+  if (plan.durationType !== 'LIFETIME') {
+    expiresAt = calculateExpirationDate(plan.durationType, plan.durationValue)
+  }
+  // DEBUG LOG
+  console.log('DEBUG expiresAt:', expiresAt)
+
+  const licenseKey = await prisma.licenseKey.create({
+    data: {
+      key,
+      planId,
+      userId,
+      maxDevices: plan.maxDevices,
+      notes,
+      createdBy,
+      status: 'INACTIVE',
+      expiresAt,
+    },
+    include: {
+      plan: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
-    })
+    },
+  })
 
-    return licenseKey
+  return licenseKey
 }
 
 /**
@@ -251,9 +251,9 @@ export async function createMultipleLicenseKeys(params: {
   createdBy?: string
 }) {
   const { planId, count, notes, createdBy } = params
-  
+
   const keys = []
-  
+
   for (let i = 0; i < count; i++) {
     const key = await createLicenseKey({
       planId,
@@ -262,7 +262,7 @@ export async function createMultipleLicenseKeys(params: {
     })
     keys.push(key)
   }
-  
+
   return keys
 }
 
@@ -278,10 +278,10 @@ export async function activateKey(params: {
   userAgent?: string
 }) {
   const { key, hwid, deviceName, deviceInfo, ipAddress, userAgent } = params
-  
+
   const normalizedKey = normalizeKey(key)
   const hashedHwid = hashHwid(hwid)
-  
+
   // Tìm key
   const licenseKey = await prisma.licenseKey.findUnique({
     where: { key: normalizedKey },
@@ -292,24 +292,24 @@ export async function activateKey(params: {
       },
     },
   })
-  
+
   if (!licenseKey) {
     return { success: false, error: 'INVALID_KEY', message: 'Key không hợp lệ' }
   }
-  
+
   // Kiểm tra status
   if (licenseKey.status === 'REVOKED') {
     return { success: false, error: 'KEY_REVOKED', message: 'Key đã bị thu hồi' }
   }
-  
+
   if (licenseKey.status === 'BANNED') {
     return { success: false, error: 'KEY_BANNED', message: 'Key đã bị cấm' }
   }
-  
+
   if (licenseKey.status === 'SUSPENDED') {
     return { success: false, error: 'KEY_SUSPENDED', message: 'Key đang bị tạm khóa' }
   }
-  
+
   // Kiểm tra hết hạn
   if (licenseKey.status === 'EXPIRED' || (licenseKey.expiresAt && isKeyExpired(licenseKey.expiresAt))) {
     // Update status nếu chưa đánh dấu expired
@@ -321,19 +321,19 @@ export async function activateKey(params: {
     }
     return { success: false, error: 'KEY_EXPIRED', message: 'Key đã hết hạn' }
   }
-  
+
   // Kiểm tra xem HWID đã được kích hoạt chưa
   const existingActivation = licenseKey.activations.find(
     a => a.hwid === hashedHwid && a.status === 'ACTIVE'
   )
-  
+
   if (existingActivation) {
     // Update last seen
     await prisma.keyActivation.update({
       where: { id: existingActivation.id },
       data: { lastSeenAt: new Date() },
     })
-    
+
     await prisma.licenseKey.update({
       where: { id: licenseKey.id },
       data: {
@@ -342,7 +342,7 @@ export async function activateKey(params: {
         lastHwid: hashedHwid,
       },
     })
-    
+
     // Log usage
     await logKeyUsage({
       keyId: licenseKey.id,
@@ -352,7 +352,7 @@ export async function activateKey(params: {
       userAgent,
       success: true,
     })
-    
+
     return {
       success: true,
       message: 'Đã đăng nhập',
@@ -364,7 +364,7 @@ export async function activateKey(params: {
       },
     }
   }
-  
+
   // Kiểm tra số thiết bị
   const activeDevices = licenseKey.activations.length
   if (activeDevices >= licenseKey.maxDevices) {
@@ -377,7 +377,7 @@ export async function activateKey(params: {
       success: false,
       errorMessage: 'Đã đạt giới hạn thiết bị',
     })
-    
+
     return {
       success: false,
       error: 'MAX_DEVICES_REACHED',
@@ -386,11 +386,11 @@ export async function activateKey(params: {
       maxDevices: licenseKey.maxDevices,
     }
   }
-  
+
   // Nếu key chưa được kích hoạt lần nào, set activation date và expiration
   let expiresAt = licenseKey.expiresAt
   let activatedAt = licenseKey.activatedAt
-  
+
   if (licenseKey.status === 'INACTIVE') {
     activatedAt = new Date()
     expiresAt = calculateExpirationDate(
@@ -399,12 +399,27 @@ export async function activateKey(params: {
       activatedAt
     )
   }
-  
+
   // Tạo activation mới
   await prisma.$transaction(async (tx) => {
-    // Tạo activation
-    await tx.keyActivation.create({
-      data: {
+    // Tạo activation mới hoặc kích hoạt lại thiết bị cũ
+    await tx.keyActivation.upsert({
+      where: {
+        keyId_hwid: {
+          keyId: licenseKey.id,
+          hwid: hashedHwid,
+        },
+      },
+      update: {
+        deviceName,
+        deviceInfo,
+        ipAddress,
+        userAgent,
+        status: 'ACTIVE',
+        deactivatedAt: null,
+        lastSeenAt: new Date(),
+      },
+      create: {
         keyId: licenseKey.id,
         hwid: hashedHwid,
         deviceName,
@@ -414,7 +429,7 @@ export async function activateKey(params: {
         status: 'ACTIVE',
       },
     })
-    
+
     // Update license key
     await tx.licenseKey.update({
       where: { id: licenseKey.id },
@@ -429,7 +444,7 @@ export async function activateKey(params: {
         lastHwid: hashedHwid,
       },
     })
-    
+
     // Log
     await tx.keyUsageLog.create({
       data: {
@@ -442,7 +457,7 @@ export async function activateKey(params: {
       },
     })
   })
-  
+
   return {
     success: true,
     message: 'Kích hoạt thành công',
@@ -467,10 +482,10 @@ export async function validateKey(params: {
   userAgent?: string
 }) {
   const { key, hwid, ipAddress, userAgent } = params
-  
+
   const normalizedKey = normalizeKey(key)
   const hashedHwid = hwid ? hashHwid(hwid) : null
-  
+
   // Tìm key
   const licenseKey = await prisma.licenseKey.findUnique({
     where: { key: normalizedKey },
@@ -481,11 +496,11 @@ export async function validateKey(params: {
       },
     },
   })
-  
+
   if (!licenseKey) {
     return { valid: false, error: 'INVALID_KEY', message: 'Key không hợp lệ' }
   }
-  
+
   // Log validate attempt
   await logKeyUsage({
     keyId: licenseKey.id,
@@ -495,14 +510,14 @@ export async function validateKey(params: {
     userAgent,
     success: true,
   })
-  
+
   // Kiểm tra status
   const statusErrors: Record<string, string> = {
     REVOKED: 'Key đã bị thu hồi',
     BANNED: 'Key đã bị cấm',
     SUSPENDED: 'Key đang bị tạm khóa',
   }
-  
+
   if (statusErrors[licenseKey.status]) {
     return {
       valid: false,
@@ -510,7 +525,7 @@ export async function validateKey(params: {
       message: statusErrors[licenseKey.status],
     }
   }
-  
+
   // Kiểm tra hết hạn
   if (licenseKey.expiresAt && isKeyExpired(licenseKey.expiresAt)) {
     if (licenseKey.status !== 'EXPIRED') {
@@ -521,7 +536,7 @@ export async function validateKey(params: {
     }
     return { valid: false, error: 'KEY_EXPIRED', message: 'Key đã hết hạn' }
   }
-  
+
   // Nếu có HWID, kiểm tra xem có được phép không
   if (hashedHwid) {
     const isActivated = licenseKey.activations.some(a => a.hwid === hashedHwid)
@@ -537,7 +552,7 @@ export async function validateKey(params: {
       }
     }
   }
-  
+
   return {
     valid: true,
     data: {
@@ -571,10 +586,10 @@ export async function deactivateDevice(params: {
   userAgent?: string
 }) {
   const { key, hwid, ipAddress, userAgent } = params
-  
+
   const normalizedKey = normalizeKey(key)
   const hashedHwid = hashHwid(hwid)
-  
+
   const licenseKey = await prisma.licenseKey.findUnique({
     where: { key: normalizedKey },
     include: {
@@ -583,16 +598,16 @@ export async function deactivateDevice(params: {
       },
     },
   })
-  
+
   if (!licenseKey) {
     return { success: false, error: 'INVALID_KEY', message: 'Key không hợp lệ' }
   }
-  
+
   const activation = licenseKey.activations[0]
   if (!activation) {
     return { success: false, error: 'NOT_ACTIVATED', message: 'Thiết bị này chưa được kích hoạt' }
   }
-  
+
   await prisma.$transaction(async (tx) => {
     // Update activation
     await tx.keyActivation.update({
@@ -602,7 +617,7 @@ export async function deactivateDevice(params: {
         deactivatedAt: new Date(),
       },
     })
-    
+
     // Update key
     await tx.licenseKey.update({
       where: { id: licenseKey.id },
@@ -610,7 +625,7 @@ export async function deactivateDevice(params: {
         currentDevices: { decrement: 1 },
       },
     })
-    
+
     // Log
     await tx.keyUsageLog.create({
       data: {
@@ -623,7 +638,7 @@ export async function deactivateDevice(params: {
       },
     })
   })
-  
+
   return { success: true, message: 'Đã hủy kích hoạt thiết bị' }
 }
 
@@ -667,10 +682,10 @@ export async function heartbeat(params: {
   ipAddress?: string
 }) {
   const { key, hwid, ipAddress } = params
-  
+
   const normalizedKey = normalizeKey(key)
   const hashedHwid = hashHwid(hwid)
-  
+
   const licenseKey = await prisma.licenseKey.findUnique({
     where: { key: normalizedKey },
     include: {
@@ -680,25 +695,25 @@ export async function heartbeat(params: {
       },
     },
   })
-  
+
   if (!licenseKey) {
     return { valid: false, error: 'INVALID_KEY' }
   }
-  
+
   // Kiểm tra hết hạn
   if (licenseKey.expiresAt && isKeyExpired(licenseKey.expiresAt)) {
     return { valid: false, error: 'KEY_EXPIRED' }
   }
-  
+
   if (!['ACTIVE', 'INACTIVE'].includes(licenseKey.status)) {
     return { valid: false, error: `KEY_${licenseKey.status}` }
   }
-  
+
   const activation = licenseKey.activations[0]
   if (!activation) {
     return { valid: false, error: 'HWID_NOT_ACTIVATED' }
   }
-  
+
   // Update last seen
   await prisma.$transaction([
     prisma.keyActivation.update({
@@ -722,7 +737,7 @@ export async function heartbeat(params: {
       },
     }),
   ])
-  
+
   return {
     valid: true,
     data: {
