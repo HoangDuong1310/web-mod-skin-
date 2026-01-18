@@ -42,19 +42,59 @@ export async function POST(req: NextRequest) {
   for (const transaction of data.transactions) {
     console.log('PAY2S WEBHOOK RECEIVED:', transaction);
 
-    // Ví dụ: kiểm tra nội dung chuyển khoản có mã đơn hàng (orderNumber)
-    const match = transaction.content.match(/ORD\d+/);
-    const orderNumber = match ? match[0] : null;
+
+    // Kiểm tra các định dạng orderNumber có thể có trong hệ thống
+    // 1. ORD-YYYYMMDD-XXXXX
+    // 2. ORD-<timestamp> (ORD-1700000000000)
+    // 3. ORDxxxxxx (ORD1768687670263)
+    // Ưu tiên tìm theo đúng format đã tạo trong /api/orders/route.ts
+    let orderNumber: string | null = null;
+    // Tìm theo ORD-<timestamp>
+    const matchTimestamp = transaction.content.match(/ORD-\d{13}/);
+    if (matchTimestamp) {
+      orderNumber = matchTimestamp[0];
+    } else {
+      // Tìm theo ORD-YYYYMMDD-XXXXX
+      const matchDate = transaction.content.match(/ORD-\d{8}-\d{5}/);
+      if (matchDate) {
+        orderNumber = matchDate[0];
+      } else {
+        // Tìm theo ORD\d+
+        const matchSimple = transaction.content.match(/ORD\d+/);
+        if (matchSimple) {
+          orderNumber = matchSimple[0];
+        }
+      }
+    }
     if (!orderNumber) {
       console.log('Không tìm thấy mã đơn hàng trong nội dung:', transaction.content);
       continue;
     }
+    console.log('Đã tách được orderNumber:', orderNumber);
 
     // Tìm đơn hàng theo orderNumber
     const order = await prisma.order.findUnique({ where: { orderNumber } });
     if (!order) {
-      console.log('Không tìm thấy đơn hàng:', orderNumber);
-      continue;
+      // Nếu không tìm thấy, thử tìm đơn hàng có orderNumber chứa trong content (fuzzy)
+      const fuzzyOrder = await prisma.order.findFirst({
+        where: {
+          orderNumber: {
+            contains: orderNumber.replace('ORD-', '').replace('ORD', ''),
+            mode: 'insensitive',
+          },
+          paymentStatus: 'PENDING',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (!fuzzyOrder) {
+        console.log('Không tìm thấy đơn hàng:', orderNumber);
+        continue;
+      }
+      console.log('Tìm thấy đơn hàng gần đúng:', fuzzyOrder.orderNumber);
+      // Gán lại order và orderNumber
+      orderNumber = fuzzyOrder.orderNumber;
+      // eslint-disable-next-line no-var
+      var order = fuzzyOrder;
     }
 
     // Nếu đơn hàng chưa thanh toán, cập nhật trạng thái
