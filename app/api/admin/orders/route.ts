@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       orders: orders.map(order => ({
         ...order,
-        totalAmount: Number(order.totalAmount),
+        totalAmount: Number(order.finalAmount),
       })),
       pagination: {
         page,

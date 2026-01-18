@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       orders: filteredOrders.map((order: any) => ({
         ...order,
-        totalAmount: Number(order.totalAmount),
+        totalAmount: Number(order.finalAmount),
       })),
     })
   } catch (error) {

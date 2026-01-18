@@ -72,7 +72,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
           router.push('/profile/licenses');
         }
       } catch (e) {}
-    }, 5000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [orderNumber, router]);
 
@@ -571,12 +571,12 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
                   {/* Contact Section */}
                   <div className="space-y-4">
                     <h4 className="font-medium text-center">
-                      {isVN ? '📬 Liên hệ nhận License Key' : '📬 Contact to receive License Key'}
+                      {isVN ? '📬 Hỗ trợ nhận License Key' : '📬 License Key Support'}
                     </h4>
                     <p className="text-sm text-muted-foreground text-center">
-                      {isVN 
-                        ? `Sau khi thanh toán, gửi mã "${displayOrderCode}" qua một trong các kênh sau:`
-                        : `After payment, send code "${displayOrderCode}" through:`}
+                      {isVN
+                        ? `Thông thường, License Key sẽ được cấp tự động sau khi thanh toán thành công. Nếu đơn hàng chưa tự động hoàn thành hoặc bạn chưa nhận được key, vui lòng liên hệ với chúng tôi để được hỗ trợ. Khi liên hệ, bạn có thể cung cấp mã đơn hàng nếu cần thiết để tra cứu nhanh hơn.`
+                        : `Normally, your License Key will be delivered automatically after successful payment. If your order is not completed automatically or you haven't received your key, please contact us for support. You may provide your order code if needed for faster lookup.`}
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <Button variant="outline" asChild>
