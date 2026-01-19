@@ -47,21 +47,28 @@ export async function POST(request: NextRequest) {
     const body = await request.text()
     const payload: PaymentWebhookPayload = JSON.parse(body)
 
-    // Verify signature if provided
-    if (payload.signature) {
-      const dataToVerify = JSON.stringify({
-        orderCode: payload.orderCode,
-        amount: payload.amount,
-        transactionId: payload.transactionId,
-      })
+    //REVIEWME:
+    if (!payload.signature) {
+      console.error('Thieu truong signature')
+      return NextResponse.json(
+        { error: 'NO CHEAT PLS' },
+        { status: 401 }
+      )
+    }
 
-      if (!verifySignature(dataToVerify, payload.signature)) {
-        console.error('Invalid webhook signature')
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 401 }
-        )
-      }
+    // Verify signature
+    const dataToVerify = JSON.stringify({
+      orderCode: payload.orderCode,
+      amount: payload.amount,
+      transactionId: payload.transactionId,
+    })
+
+    if (!verifySignature(dataToVerify, payload.signature)) {
+      console.error('Invalid webhook signature')
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      )
     }
 
     const { orderCode, amount, transactionId, paidAt } = payload
