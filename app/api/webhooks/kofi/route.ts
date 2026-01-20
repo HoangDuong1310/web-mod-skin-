@@ -12,6 +12,19 @@ import { calculateExpirationDate } from '@/lib/license-key';
  */
 export async function POST(request: NextRequest) {
   try {
+
+    // Dùng lại rate limit của ông
+    const { strictLimiter } = await import('@/lib/rate-limit');
+    const limiter = await strictLimiter(request);
+
+    if (!limiter.success) {
+      console.warn('Ko-fi webhook rate limited');
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429 }
+      );
+    }
+
     console.log('Ko-fi webhook received request');
     console.log('Headers:', Object.fromEntries(request.headers.entries()));
 

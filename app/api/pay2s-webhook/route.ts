@@ -3,7 +3,25 @@ import { NextRequest, NextResponse } from 'next/server';
 const EXPECTED_TOKEN = process.env.PAY2S_WEBHOOK_TOKEN || 'your_expected_token_here';
 
 export async function POST(req: NextRequest) {
+
+  // Dùng lại ratelimit của ông
+  const { strictLimiter } = await import('@/lib/rate-limit');
+  const limiter = await strictLimiter(req);
+
+  if (!limiter.success) {
+    return NextResponse.json(
+      { success: false, message: 'Too many requests' },
+      { status: 429 }
+    );
+  }
+
   const authHeader = req.headers.get('authorization');
+
+  //TODO: HMAC Signature Verification
+  /*
+  Nếu p2s có hỗ trợ dùng chữ kí HMAC thì nên dùng vì dùng beartoken dễ bị sniff
+  */
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return NextResponse.json(
       { success: false, message: 'Authorization header not found or invalid format' },
@@ -48,7 +66,7 @@ export async function POST(req: NextRequest) {
     // 2. ORD<timestamp><random> (mới, không dấu gạch, format: ORD + base36 timestamp + 4 chars)
     // Ưu tiên tìm theo đúng format đã tạo trong /api/orders/route.ts
     let orderNumber: string | null = null;
-    
+
     // Tìm theo format mới: ORD + alphanumeric (base36 timestamp + random)
     // Timestamp base36 có thể chứa 0-9 và A-Z
     const matchNew = transaction.content.match(/ORD[A-Z0-9]{10,20}/i);
@@ -70,7 +88,7 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-    
+
     if (!orderNumber) {
       console.log('Không tìm thấy mã đơn hàng trong nội dung:', transaction.content);
       continue;
@@ -79,11 +97,13 @@ export async function POST(req: NextRequest) {
 
     // Tìm đơn hàng theo orderNumber
     let foundOrder = await prisma.order.findUnique({ where: { orderNumber } });
-    
+
     console.log('Tìm đơn hàng với orderNumber:', orderNumber);
     console.log('foundOrder:', foundOrder ? `ID: ${foundOrder.id}, Status: ${foundOrder.status}, PaymentStatus: ${foundOrder.paymentStatus}` : 'KHÔNG TÌM THẤY');
-    
+
     if (!foundOrder) {
+      // Đoạn này tui ko rõ để làm gì, dễ gây lỗi người này thanh toán cho người khác. nếu ông thấy ổn thì cứ để lại
+      /*
       // Nếu không tìm thấy, thử tìm đơn hàng gần đúng (fuzzy search)
       console.log('Thử tìm kiếm fuzzy...');
       const fuzzyOrder = await prisma.order.findFirst({
@@ -95,14 +115,14 @@ export async function POST(req: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
       });
-      
+
       if (fuzzyOrder) {
         console.log('Tìm thấy đơn hàng gần đúng:', fuzzyOrder.orderNumber);
         orderNumber = fuzzyOrder.orderNumber;
         foundOrder = fuzzyOrder;
       } else {
         console.log('Không tìm thấy đơn hàng PENDING nào matching:', orderNumber);
-        
+
         // Debug: Hiển thị một số đơn hàng PENDING gần đây
         const recentPending = await prisma.order.findMany({
           where: { paymentStatus: 'PENDING' },
@@ -111,9 +131,11 @@ export async function POST(req: NextRequest) {
           select: { orderNumber: true, createdAt: true, finalAmount: true }
         });
         console.log('5 đơn hàng PENDING gần đây:', recentPending);
-        
+
         continue;
       }
+      */
+      continue;
     }
 
     // KIỂM TRA BẢO MẬT: Xác minh giao dịch đã được xử lý chưa
