@@ -107,6 +107,14 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
     }
   }, [isVN]);
 
+  // Auto-redirect to Ko-fi when order is created and Ko-fi is selected
+  useEffect(() => {
+    if (orderCreated && orderNumber && paymentMethod === 'kofi') {
+      const kofiLink = getKofiLink();
+      window.open(kofiLink, '_blank');
+    }
+  }, [orderCreated, orderNumber, paymentMethod]);
+
   const createOrder = async () => {
     if (isCreatingOrder) return
     setIsCreatingOrder(true)
@@ -117,7 +125,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
-          paymentMethod: 'PENDING',
+          paymentMethod: paymentMethod === 'kofi' ? 'KOFI' : paymentMethod === 'paypal' ? 'PAYPAL' : 'BANK_TRANSFER',
           currency: plan.currency,
         }),
       })
