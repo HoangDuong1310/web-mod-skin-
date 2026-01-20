@@ -107,16 +107,33 @@ export function UserLicensesClient() {
     return parts.map((part, i) => i === 0 ? part : '****').join('-')
   }
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
     // Parse as UTC to match server timezone
-    const utcDate = new Date(date + 'Z')
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
     return format(utcDate, 'dd/MM/yyyy HH:mm', { locale: vi })
   }
 
   // Format relative time for last seen
-  const formatLastSeen = (date: string) => {
-    const utcDate = new Date(date + 'Z')
+  const formatLastSeen = (date: string | Date | null | undefined) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
     return formatDistanceToNow(utcDate, { addSuffix: true, locale: vi })
   }
 
