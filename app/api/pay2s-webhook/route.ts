@@ -94,6 +94,21 @@ export async function POST(req: NextRequest) {
       foundOrder = fuzzyOrder;
     }
 
+    // KIỂM TRA BẢO MẬT: Xác minh giao dịch đã được xử lý chưa
+    const existingOrderWithTx = await prisma.order.findFirst({
+      where: { transactionId: transaction.id.toString() }
+    });
+    if (existingOrderWithTx) {
+      console.log(`Giao dịch ${transaction.id} đã được xử lý cho đơn ${existingOrderWithTx.orderNumber}`);
+      continue;
+    }
+
+    // KIỂM TRA BẢO MẬT: Xác minh số tiền giao dịch khớp với đơn hàng
+    if (Number(foundOrder.finalAmount) !== Number(transaction.amount)) {
+      console.error(`Số tiền không khớp cho đơn ${orderNumber}: expected ${foundOrder.finalAmount}, got ${transaction.amount}`);
+      continue;
+    }
+
     // Nếu đơn hàng chưa thanh toán, cập nhật trạng thái
     if (foundOrder.paymentStatus === 'PENDING') {
       const { generateKeyString, calculateExpirationDate } = await import('@/lib/license-key');
@@ -139,8 +154,17 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log('Đã xác nhận thanh toán và cấp key cho đơn:', orderNumber, 'Key:', keyString);
-      console.log('Plan:', plan.name, 'MaxDevices:', plan.maxDevices, 'ExpiresAt:', expiresAt);
+      // Log chi tiết để dễ truy vết
+      console.log('=== THANH TOÁN THÀNH CÔNG ===');
+      console.log('Order Number:', orderNumber);
+      console.log('Transaction ID:', transaction.id);
+      console.log('Amount:', transaction.amount, 'VND');
+      console.log('License Key:', keyString);
+      console.log('User ID:', foundOrder.userId);
+      console.log('Plan:', plan.name, '(MaxDevices:', plan.maxDevices, ', Expires:', expiresAt, ')');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('=============================');
+
       // TODO: Gửi email hoặc thông báo cho user nếu cần
     } else {
       console.log('Đơn hàng đã thanh toán hoặc trạng thái không hợp lệ:', orderNumber);
