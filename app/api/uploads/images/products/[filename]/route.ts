@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { join, resolve } from 'path'
 
 export async function GET(
   request: NextRequest,
@@ -8,9 +8,19 @@ export async function GET(
 ) {
   try {
     const filename = params.filename
-    // Use absolute base path from env if provided, fallback to project/uploads for local
+    //Nên validate chống path traversal
+    //Tui ko rõ có ảnh hưởng gì đến logic gửi file lên không nhưng ông nên check lại flow
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return new NextResponse('Access denied', { status: 400 });
+    }
+
     const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
-    const filePath = join(base, 'images', 'products', filename)
+    const imagesBase = join(base, 'images', 'products');
+    const filePath = resolve(imagesBase, filename)
+
+    if (!filePath.startsWith(resolve(imagesBase))) {
+      return new NextResponse('Access denied', { status: 403 });
+    }
 
     // Read the file
     const fileBuffer = await readFile(filePath)
