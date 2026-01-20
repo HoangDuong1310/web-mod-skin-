@@ -128,7 +128,7 @@ export async function PATCH(
         // Log the activation
         await prisma.keyUsageLog.create({
           data: {
-            key: { connect: { id: order.licenseKey.id } },
+            keyId: order.licenseKey.id,
             action: 'ACTIVATE',
             details: JSON.stringify({
               orderId: order.id,
@@ -156,11 +156,11 @@ export async function PATCH(
             order: { connect: { id: order.id } },
           },
         });
-        updateData.licenseKeyId = newKey.id;
+        updateData.keyId = newKey.id;
         // Log the activation
         await prisma.keyUsageLog.create({
           data: {
-            key: { connect: { id: newKey.id } },
+            keyId: newKey.id,
             action: 'ACTIVATE',
             details: JSON.stringify({
               orderId: order.id,
@@ -183,7 +183,7 @@ export async function PATCH(
 
       await prisma.keyUsageLog.create({
         data: {
-          key: { connect: { id: order.licenseKey.id } },
+          keyId: order.licenseKey.id,
           action: 'REVOKE',
           details: JSON.stringify({
             reason: paymentStatus === 'REFUNDED' ? 'Refunded' : 'Order cancelled',

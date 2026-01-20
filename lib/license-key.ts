@@ -77,6 +77,7 @@ export function generateOrderNumber(): string {
 
 /**
  * Tính ngày hết hạn dựa trên duration type
+ * Sử dụng UTC để tránh vấn đề timezone
  */
 export function calculateExpirationDate(
   durationType: 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'LIFETIME',
@@ -87,23 +88,32 @@ export function calculateExpirationDate(
     return null // null = không hết hạn
   }
 
-  const expirationDate = new Date(fromDate)
+  // Chuyển đổi sang UTC để đảm bảo tính nhất quán
+  const expirationDate = new Date(Date.UTC(
+    fromDate.getFullYear(),
+    fromDate.getMonth(),
+    fromDate.getDate(),
+    fromDate.getHours(),
+    fromDate.getMinutes(),
+    fromDate.getSeconds(),
+    fromDate.getMilliseconds()
+  ))
 
   switch (durationType) {
     case 'DAY':
-      expirationDate.setDate(expirationDate.getDate() + durationValue)
+      expirationDate.setUTCDate(expirationDate.getUTCDate() + durationValue)
       break
     case 'WEEK':
-      expirationDate.setDate(expirationDate.getDate() + (durationValue * 7))
+      expirationDate.setUTCDate(expirationDate.getUTCDate() + (durationValue * 7))
       break
     case 'MONTH':
-      expirationDate.setMonth(expirationDate.getMonth() + durationValue)
+      expirationDate.setUTCMonth(expirationDate.getUTCMonth() + durationValue)
       break
     case 'QUARTER':
-      expirationDate.setMonth(expirationDate.getMonth() + (durationValue * 3))
+      expirationDate.setUTCMonth(expirationDate.getUTCMonth() + (durationValue * 3))
       break
     case 'YEAR':
-      expirationDate.setFullYear(expirationDate.getFullYear() + durationValue)
+      expirationDate.setUTCFullYear(expirationDate.getUTCFullYear() + durationValue)
       break
   }
 
@@ -120,12 +130,15 @@ export function isKeyExpired(expiresAt: Date | null): boolean {
 
 /**
  * Tính số ngày còn lại
+ * Sử dụng UTC để tránh vấn đề timezone
  */
 export function getDaysRemaining(expiresAt: Date | null): number | null {
   if (expiresAt === null) return null // Lifetime
 
-  const now = new Date()
-  const diffTime = expiresAt.getTime() - now.getTime()
+  // Chuyển đổi sang UTC milliseconds để tính toán chính xác
+  const now = Date.now()
+  const expiresAtTime = new Date(expiresAt).getTime()
+  const diffTime = expiresAtTime - now
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays > 0 ? diffDays : 0

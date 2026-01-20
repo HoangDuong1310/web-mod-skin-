@@ -109,7 +109,15 @@ export function UserLicensesClient() {
 
   const formatDate = (date: string | null) => {
     if (!date) return '-'
-    return format(new Date(date), 'dd/MM/yyyy HH:mm', { locale: vi })
+    // Parse as UTC to match server timezone
+    const utcDate = new Date(date + 'Z')
+    return format(utcDate, 'dd/MM/yyyy HH:mm', { locale: vi })
+  }
+
+  // Format relative time for last seen
+  const formatLastSeen = (date: string) => {
+    const utcDate = new Date(date + 'Z')
+    return formatDistanceToNow(utcDate, { addSuffix: true, locale: vi })
   }
 
   const formatDuration = (type: string, value: number) => {
@@ -248,7 +256,7 @@ export function UserLicensesClient() {
                           <span>{activation.deviceName || 'Thiết bị không tên'}</span>
                         </div>
                         <span className="text-muted-foreground text-xs">
-                          Online {formatDistanceToNow(new Date(activation.lastSeenAt), { addSuffix: true, locale: vi })}
+                          Online {formatLastSeen(activation.lastSeenAt)}
                         </span>
                       </div>
                     ))}
