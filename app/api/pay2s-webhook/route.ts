@@ -126,8 +126,9 @@ export async function POST(req: NextRequest) {
     }
 
     // KIỂM TRA BẢO MẬT: Xác minh số tiền giao dịch khớp với đơn hàng
-    if (Number(foundOrder.finalAmount) !== Number(transaction.amount)) {
-      console.error(`Số tiền không khớp cho đơn ${orderNumber}: expected ${foundOrder.finalAmount}, got ${transaction.amount}`);
+    // Pay2S trả về field là 'transferAmount'
+    if (Number(foundOrder.finalAmount) !== Number(transaction.transferAmount)) {
+      console.error(`Số tiền không khớp cho đơn ${orderNumber}: expected ${foundOrder.finalAmount}, got ${transaction.transferAmount}`);
       continue;
     }
 
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
       console.log('=== THANH TOÁN THÀNH CÔNG ===');
       console.log('Order Number:', orderNumber);
       console.log('Transaction ID:', transaction.id);
-      console.log('Amount:', transaction.amount, 'VND');
+      console.log('Amount:', transaction.transferAmount, 'VND');
       console.log('License Key:', keyString);
       console.log('User ID:', foundOrder.userId);
       console.log('Plan:', plan.name, '(MaxDevices:', plan.maxDevices, ', Expires:', expiresAt, ')');
