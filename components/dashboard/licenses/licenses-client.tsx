@@ -64,12 +64,12 @@ interface License {
   id: string
   key: string
   status: string
-  activatedAt: string | null
-  expiresAt: string | null
+  activatedAt: string | Date | null
+  expiresAt: string | Date | null
   maxDevices: number
   currentDevices: number
   totalActivations: number
-  lastUsedAt: string | null
+  lastUsedAt: string | Date | null
   notes: string | null
   createdAt: string
   plan: {
@@ -372,9 +372,92 @@ export function LicensesClient() {
     fetchLicenseDetail(license.id)
   }
   
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: vi })
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    // Parse as UTC to match server timezone
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
+    return formatDistanceToNow(utcDate, { addSuffix: true, locale: vi })
+  }
+
+  // Format datetime for expiration dates - shows actual date instead of relative time
+  const formatExpirationDate = (date: string | Date | null | undefined) => {
+    // Handle null/undefined/null string
+    if (!date || date === 'null' || date === 'undefined') return 'Vĩnh viễn'
+    
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    
+    // Parse as UTC to match server timezone
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return 'Vĩnh viễn'
+    
+    // Show actual date in Vietnam timezone
+    return utcDate.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  // Format datetime in Vietnam timezone (UTC+7)
+  const formatDateTime = (date: string | Date | null | undefined) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    // Parse as UTC and display in Vietnam timezone (UTC+7)
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
+    return utcDate.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  // Format datetime for logs
+  const formatLogDateTime = (date: string | Date) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
+    return utcDate.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   return (
@@ -551,7 +634,7 @@ export function LicensesClient() {
                       {license._count.activations}/{license.maxDevices}
                     </TableCell>
                     <TableCell>
-                      {license.expiresAt ? formatDate(license.expiresAt) : 'Vĩnh viễn'}
+                      {formatExpirationDate(license.expiresAt)}
                     </TableCell>
                     <TableCell>
                       {license.user ? (
@@ -720,11 +803,11 @@ export function LicensesClient() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Ngày kích hoạt</Label>
-                  <p className="mt-1">{selectedLicenseDetail.activatedAt ? new Date(selectedLicenseDetail.activatedAt).toLocaleString('vi-VN') : '-'}</p>
+                  <p className="mt-1">{formatDateTime(selectedLicenseDetail.activatedAt)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Ngày hết hạn</Label>
-                  <p className="mt-1">{selectedLicenseDetail.expiresAt ? new Date(selectedLicenseDetail.expiresAt).toLocaleString('vi-VN') : 'Vĩnh viễn'}</p>
+                  <p className="mt-1">{selectedLicenseDetail.expiresAt ? formatDateTime(selectedLicenseDetail.expiresAt) : 'Vĩnh viễn'}</p>
                 </div>
               </div>
               
@@ -794,12 +877,12 @@ export function LicensesClient() {
                             </div>
                             <div>
                               <span className="text-muted-foreground">Kích hoạt:</span>
-                              <span className="ml-2">{new Date(activation.activatedAt).toLocaleString('vi-VN')}</span>
+                              <span className="ml-2">{formatDateTime(activation.activatedAt)}</span>
                             </div>
                             {activation.deactivatedAt && (
                               <div>
                                 <span className="text-muted-foreground">Gỡ lúc:</span>
-                                <span className="ml-2">{new Date(activation.deactivatedAt).toLocaleString('vi-VN')}</span>
+                                <span className="ml-2">{formatDateTime(activation.deactivatedAt)}</span>
                               </div>
                             )}
                           </div>
@@ -877,7 +960,7 @@ export function LicensesClient() {
                       <TableBody>
                         {selectedLicenseDetail.usageLogs.map((log: any) => (
                           <TableRow key={log.id}>
-                            <TableCell className="text-xs">{new Date(log.createdAt).toLocaleString('vi-VN')}</TableCell>
+                            <TableCell className="text-xs">{formatLogDateTime(log.createdAt)}</TableCell>
                             <TableCell className="text-xs">
                               <Badge variant="outline" className="text-xs">{log.action}</Badge>
                             </TableCell>

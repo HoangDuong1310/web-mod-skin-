@@ -63,16 +63,29 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
   // Polling để tự động redirect khi đơn hàng đã có key
   useEffect(() => {
     if (!orderNumber) return;
+    let redirecting = false;
+    
     const interval = setInterval(async () => {
+      if (redirecting) return; // Prevent multiple redirects
+      
       try {
         const res = await fetch(`/api/orders?orderNumber=${orderNumber}`);
+        if (!res.ok) return;
+        
         const data = await res.json();
         const order = data.orders?.[0];
-        if (order && order.licenseKey && order.paymentStatus === 'COMPLETED') {
+        
+        // Kiểm tra đơn hàng đã hoàn thành chưa
+        if (order && order.paymentStatus === 'COMPLETED' && order.keyId) {
+          redirecting = true;
+          clearInterval(interval);
           router.push('/profile/licenses');
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('Polling error:', e);
+      }
     }, 3000);
+    
     return () => clearInterval(interval);
   }, [orderNumber, router]);
 
@@ -107,6 +120,14 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
     }
   }, [isVN]);
 
+  // Auto-redirect to Ko-fi when order is created and Ko-fi is selected
+  useEffect(() => {
+    if (orderCreated && orderNumber && paymentMethod === 'kofi') {
+      const kofiLink = getKofiLink();
+      window.open(kofiLink, '_blank');
+    }
+  }, [orderCreated, orderNumber, paymentMethod]);
+
   const createOrder = async () => {
     if (isCreatingOrder) return
     setIsCreatingOrder(true)
@@ -117,7 +138,7 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
-          paymentMethod: 'PENDING',
+          paymentMethod: paymentMethod === 'kofi' ? 'KOFI' : paymentMethod === 'paypal' ? 'PAYPAL' : 'BANK_TRANSFER',
           currency: plan.currency,
         }),
       })

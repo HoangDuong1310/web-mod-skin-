@@ -107,9 +107,34 @@ export function UserLicensesClient() {
     return parts.map((part, i) => i === 0 ? part : '****').join('-')
   }
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '-'
-    return format(new Date(date), 'dd/MM/yyyy HH:mm', { locale: vi })
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    // Parse as UTC to match server timezone
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
+    return format(utcDate, 'dd/MM/yyyy HH:mm', { locale: vi })
+  }
+
+  // Format relative time for last seen
+  const formatLastSeen = (date: string | Date | null | undefined) => {
+    if (!date || date === 'null' || date === 'undefined') return '-'
+    // Convert to string if it's a Date object
+    let dateStr: string
+    if (date instanceof Date) {
+      dateStr = date.toISOString()
+    } else {
+      dateStr = date
+    }
+    const utcDate = new Date(dateStr)
+    if (isNaN(utcDate.getTime())) return '-'
+    return formatDistanceToNow(utcDate, { addSuffix: true, locale: vi })
   }
 
   const formatDuration = (type: string, value: number) => {
@@ -248,7 +273,7 @@ export function UserLicensesClient() {
                           <span>{activation.deviceName || 'Thiết bị không tên'}</span>
                         </div>
                         <span className="text-muted-foreground text-xs">
-                          Online {formatDistanceToNow(new Date(activation.lastSeenAt), { addSuffix: true, locale: vi })}
+                          Online {formatLastSeen(activation.lastSeenAt)}
                         </span>
                       </div>
                     ))}

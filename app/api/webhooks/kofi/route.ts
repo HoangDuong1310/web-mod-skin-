@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyKofiWebhook, parseKofiWebhook, validateKofiPayload, formatDonationForDB } from '@/lib/kofi';
 import { convertUSDToVND } from '@/lib/vietqr';
+import { calculateExpirationDate } from '@/lib/license-key';
 
 /**
  * Ko-fi Webhook Handler
@@ -168,6 +169,92 @@ export async function POST(request: NextRequest) {
           currentAmount
         }
       });
+    }
+
+    // ============================================
+    // XỬ LÝ ORDER VÀ LICENSE KEY TỪ DONATION
+    // ============================================
+
+    // Parse order number from donation message
+    // Message format: "Order: {orderNumber} {planName}"
+    let orderNumber = null;
+    const orderMatch = processed.message?.match(/Order:\s*(ORD[A-Z0-9]+)/i);
+    if (orderMatch) {
+      orderNumber = orderMatch[1];
+    }
+
+    if (orderNumber) {
+      console.log(`Tìm thấy mã đơn hàng trong donation: ${orderNumber}`);
+
+      // Tìm đơn hàng PENDING
+      const pendingOrder = await prisma.order.findFirst({
+        where: {
+          orderNumber: orderNumber,
+          status: 'PENDING',
+          paymentStatus: 'PENDING'
+        },
+        include: {
+          plan: true,
+          user: true
+        }
+      });
+
+      if (pendingOrder) {
+        // KIỂM TRA BẢO MẬT: Xác minh số tiền
+        // Convert plan price to USD for comparison
+        const expectedUSD = pendingOrder.currency === 'USD' 
+          ? Number(pendingOrder.finalAmount)
+          : Number(pendingOrder.finalAmount) / 25000; // Approximate VND to USD conversion
+
+        if (Math.abs(usdAmount - expectedUSD) > 1) { // Allow $1 tolerance
+          console.warn(`Số tiền không khớp cho đơn ${orderNumber}: expected ~$${expectedUSD}, got $${usdAmount}`);
+        } else {
+          // Tạo license key
+          const { generateKeyString } = await import('@/lib/license-key');
+          const keyString = generateKeyString();
+          const expiresAt = calculateExpirationDate(
+            pendingOrder.plan.durationType,
+            pendingOrder.plan.durationValue,
+            new Date()
+          );
+
+          const licenseKey = await prisma.licenseKey.create({
+            data: {
+              key: keyString,
+              userId: pendingOrder.userId,
+              planId: pendingOrder.planId,
+              maxDevices: pendingOrder.plan.maxDevices,
+              status: 'ACTIVE',
+              activatedAt: new Date(),
+              expiresAt,
+            }
+          });
+
+          // Cập nhật đơn hàng
+          await prisma.order.update({
+            where: { id: pendingOrder.id },
+            data: {
+              paymentStatus: 'COMPLETED',
+              status: 'COMPLETED',
+              transactionId: processed.kofiTransactionId,
+              paidAt: new Date(),
+              keyId: licenseKey.id,
+              completedAt: new Date()
+            }
+          });
+
+          console.log('=== KO-FI THANH TOÁN THÀNH CÔNG ===');
+          console.log('Order Number:', orderNumber);
+          console.log('Transaction ID:', processed.kofiTransactionId);
+          console.log('Amount:', usdAmount, 'USD');
+          console.log('License Key:', keyString);
+          console.log('User ID:', pendingOrder.userId);
+          console.log('Plan:', pendingOrder.plan.name);
+          console.log('===================================');
+        }
+      } else {
+        console.log(`Không tìm thấy đơn hàng PENDING: ${orderNumber}`);
+      }
     }
 
     // Log successful processing

@@ -44,28 +44,33 @@ export async function POST(req: NextRequest) {
 
 
     // Kiểm tra các định dạng orderNumber có thể có trong hệ thống
-    // 1. ORD-YYYYMMDD-XXXXX
-    // 2. ORD-<timestamp> (ORD-1700000000000)
-    // 3. ORDxxxxxx (ORD1768687670263)
+    // 1. ORD-YYYYMMDD-XXXXX (cũ, có dấu gạch)
+    // 2. ORD<timestamp><random> (mới, không dấu gạch, format: ORD + base36 timestamp + 4 chars)
     // Ưu tiên tìm theo đúng format đã tạo trong /api/orders/route.ts
     let orderNumber: string | null = null;
-    // Tìm theo ORD-<timestamp>
-    const matchTimestamp = transaction.content.match(/ORD-\d{13}/);
-    if (matchTimestamp) {
-      orderNumber = matchTimestamp[0];
+    
+    // Tìm theo format mới: ORD + alphanumeric (base36 timestamp + random)
+    // Timestamp base36 có thể chứa 0-9 và A-Z
+    const matchNew = transaction.content.match(/ORD[A-Z0-9]{10,20}/i);
+    if (matchNew) {
+      orderNumber = matchNew[0].toUpperCase();
+      console.log('Tìm thấy orderNumber (format mới):', orderNumber);
     } else {
-      // Tìm theo ORD-YYYYMMDD-XXXXX
-      const matchDate = transaction.content.match(/ORD-\d{8}-\d{5}/);
-      if (matchDate) {
-        orderNumber = matchDate[0];
+      // Fallback: Tìm theo format cũ ORD-<timestamp>
+      const matchTimestamp = transaction.content.match(/ORD-\d{13}/);
+      if (matchTimestamp) {
+        orderNumber = matchTimestamp[0];
+        console.log('Tìm thấy orderNumber (format cũ timestamp):', orderNumber);
       } else {
-        // Tìm theo ORD\d+
-        const matchSimple = transaction.content.match(/ORD\d+/);
-        if (matchSimple) {
-          orderNumber = matchSimple[0];
+        // Fallback: Tìm theo format cũ ORD-YYYYMMDD-XXXXX
+        const matchDate = transaction.content.match(/ORD-\d{8}-\d{5}/);
+        if (matchDate) {
+          orderNumber = matchDate[0];
+          console.log('Tìm thấy orderNumber (format cũ date):', orderNumber);
         }
       }
     }
+    
     if (!orderNumber) {
       console.log('Không tìm thấy mã đơn hàng trong nội dung:', transaction.content);
       continue;
@@ -74,8 +79,13 @@ export async function POST(req: NextRequest) {
 
     // Tìm đơn hàng theo orderNumber
     let foundOrder = await prisma.order.findUnique({ where: { orderNumber } });
+    
+    console.log('Tìm đơn hàng với orderNumber:', orderNumber);
+    console.log('foundOrder:', foundOrder ? `ID: ${foundOrder.id}, Status: ${foundOrder.status}, PaymentStatus: ${foundOrder.paymentStatus}` : 'KHÔNG TÌM THẤY');
+    
     if (!foundOrder) {
-      // Nếu không tìm thấy, thử tìm đơn hàng có orderNumber chứa trong content (fuzzy)
+      // Nếu không tìm thấy, thử tìm đơn hàng gần đúng (fuzzy search)
+      console.log('Thử tìm kiếm fuzzy...');
       const fuzzyOrder = await prisma.order.findFirst({
         where: {
           orderNumber: {
@@ -85,13 +95,41 @@ export async function POST(req: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
       });
-      if (!fuzzyOrder) {
-        console.log('Không tìm thấy đơn hàng:', orderNumber);
+      
+      if (fuzzyOrder) {
+        console.log('Tìm thấy đơn hàng gần đúng:', fuzzyOrder.orderNumber);
+        orderNumber = fuzzyOrder.orderNumber;
+        foundOrder = fuzzyOrder;
+      } else {
+        console.log('Không tìm thấy đơn hàng PENDING nào matching:', orderNumber);
+        
+        // Debug: Hiển thị một số đơn hàng PENDING gần đây
+        const recentPending = await prisma.order.findMany({
+          where: { paymentStatus: 'PENDING' },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: { orderNumber: true, createdAt: true, finalAmount: true }
+        });
+        console.log('5 đơn hàng PENDING gần đây:', recentPending);
+        
         continue;
       }
-      console.log('Tìm thấy đơn hàng gần đúng:', fuzzyOrder.orderNumber);
-      orderNumber = fuzzyOrder.orderNumber;
-      foundOrder = fuzzyOrder;
+    }
+
+    // KIỂM TRA BẢO MẬT: Xác minh giao dịch đã được xử lý chưa
+    const existingOrderWithTx = await prisma.order.findFirst({
+      where: { transactionId: transaction.id.toString() }
+    });
+    if (existingOrderWithTx) {
+      console.log(`Giao dịch ${transaction.id} đã được xử lý cho đơn ${existingOrderWithTx.orderNumber}`);
+      continue;
+    }
+
+    // KIỂM TRA BẢO MẬT: Xác minh số tiền giao dịch khớp với đơn hàng
+    // Pay2S trả về field là 'transferAmount'
+    if (Number(foundOrder.finalAmount) !== Number(transaction.transferAmount)) {
+      console.error(`Số tiền không khớp cho đơn ${orderNumber}: expected ${foundOrder.finalAmount}, got ${transaction.transferAmount}`);
+      continue;
     }
 
     // Nếu đơn hàng chưa thanh toán, cập nhật trạng thái
@@ -139,8 +177,17 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log('Đã xác nhận thanh toán và cấp key cho đơn:', orderNumber, 'Key:', keyString);
-      console.log('Plan:', plan.name, 'MaxDevices:', plan.maxDevices, 'ExpiresAt:', expiresAt);
+      // Log chi tiết để dễ truy vết
+      console.log('=== THANH TOÁN THÀNH CÔNG ===');
+      console.log('Order Number:', orderNumber);
+      console.log('Transaction ID:', transaction.id);
+      console.log('Amount:', transaction.transferAmount, 'VND');
+      console.log('License Key:', keyString);
+      console.log('User ID:', foundOrder.userId);
+      console.log('Plan:', plan.name, '(MaxDevices:', plan.maxDevices, ', Expires:', expiresAt, ')');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('=============================');
+
       // TODO: Gửi email hoặc thông báo cho user nếu cần
     } else {
       console.log('Đơn hàng đã thanh toán hoặc trạng thái không hợp lệ:', orderNumber);

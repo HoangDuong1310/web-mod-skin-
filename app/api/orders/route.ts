@@ -155,11 +155,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Generate order code
+    // Generate order code (unified format using generateOrderCode)
     const orderCode = generateOrderCode()
-
-    // Generate order number (sequential or timestamp-based)
-    const orderNumber = `ORD-${Date.now()}`
+    const orderNumber = orderCode // Use the same format for consistency
 
     // Create order (no license key yet)
     const validPaymentMethod = ['BANK_TRANSFER','MOMO','VNPAY','ZALOPAY','PAYPAL','CRYPTO','MANUAL'].includes(paymentMethod)
