@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyKofiWebhook, parseKofiWebhook, validateKofiPayload, formatDonationForDB } from '@/lib/kofi';
+import { verifyKofiWebhook, parseKofiWebhook, validateKofiPayload, formatDonationForDB, validateKofiTimestamp } from '@/lib/kofi';
 import { convertUSDToVND } from '@/lib/vietqr';
 import { calculateExpirationDate } from '@/lib/license-key';
 
@@ -12,15 +12,28 @@ import { calculateExpirationDate } from '@/lib/license-key';
  */
 export async function POST(request: NextRequest) {
   try {
+
+    // Dùng lại rate limit của ông
+    const { strictLimiter } = await import('@/lib/rate-limit');
+    const limiter = await strictLimiter(request);
+
+    if (!limiter.success) {
+      console.warn('Ko-fi webhook rate limited');
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429 }
+      );
+    }
+
     console.log('Ko-fi webhook received request');
     console.log('Headers:', Object.fromEntries(request.headers.entries()));
-    
+
     // Parse Ko-fi webhook form data
     const formData = await request.formData();
     console.log('Form data keys:', [...formData.keys()]);
     const dataString = formData.get('data') as string;
     console.log('Data string length:', dataString?.length || 0);
-    
+
     if (!dataString) {
       console.error('Ko-fi webhook missing data field');
       return NextResponse.json(
@@ -40,7 +53,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     // Validate payload structure
     const validation = validateKofiPayload(payload);
     if (!validation.isValid) {
@@ -70,6 +83,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    //Validate timestamp chống replay attack
+    if (payload.timestamp && !validateKofiTimestamp(payload.timestamp)) {
+      console.error(`Ko-fi webhook verification failed: Stale/Invalid Timestamp (${payload.timestamp})`);
+      return NextResponse.json(
+        { error: 'Bad request' },
+        { status: 401 }
+      );
+    }
+
     // Parse webhook data
     const webhookData = validation.data!;
     const processed = parseKofiWebhook(webhookData);
@@ -83,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     if (existingDonation) {
       console.log(`Ko-fi transaction ${processed.kofiTransactionId} already processed`);
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Transaction already processed',
         donationId: existingDonation.id
       });
@@ -127,8 +149,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Convert amount to USD if needed (Ko-fi handles multiple currencies)
-    const usdAmount = processed.currency === 'USD' 
-      ? processed.amount 
+    const usdAmount = processed.currency === 'USD'
+      ? processed.amount
       : processed.amount; // For now, assume Ko-fi gives us USD equivalent
 
     // Create donation record
@@ -202,7 +224,7 @@ export async function POST(request: NextRequest) {
       if (pendingOrder) {
         // KIỂM TRA BẢO MẬT: Xác minh số tiền
         // Convert plan price to USD for comparison
-        const expectedUSD = pendingOrder.currency === 'USD' 
+        const expectedUSD = pendingOrder.currency === 'USD'
           ? Number(pendingOrder.finalAmount)
           : Number(pendingOrder.finalAmount) / 25000; // Approximate VND to USD conversion
 
@@ -271,10 +293,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Ko-fi webhook processing error:', error);
-    
+
     // Return error response
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' ? String(error) : 'Webhook processing failed'
       },
@@ -289,7 +311,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const token = searchParams.get('token');
-  
+
   // Simple webhook verification endpoint
   if (token && token === process.env.KOFI_WEBHOOK_TOKEN) {
     return NextResponse.json({

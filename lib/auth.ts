@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
 import { compare } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { ROLES } from '@/lib/auth-utils'
 
 export const authOptions: NextAuthOptions = {
   // Note: Database adapter cannot be used with CredentialsProvider
@@ -29,7 +30,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           const user = await prisma.user.findUnique({
-            where: { 
+            where: {
               email: credentials.email,
               deletedAt: null,
             },
@@ -41,11 +42,11 @@ export const authOptions: NextAuthOptions = {
 
           // Verify password with hashed version
           const isPasswordValid = await compare(credentials.password, user.password)
-          
+
           if (!isPasswordValid) {
             throw new Error('Invalid password')
           }
-          
+
           return {
             id: user.id,
             email: user.email,
@@ -62,19 +63,19 @@ export const authOptions: NextAuthOptions = {
     }),
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
+        GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
+      ]
       : []),
     ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET
       ? [
-          GitHubProvider({
-            clientId: process.env.GITHUB_ID,
-            clientSecret: process.env.GITHUB_SECRET,
-          }),
-        ]
+        GitHubProvider({
+          clientId: process.env.GITHUB_ID,
+          clientSecret: process.env.GITHUB_SECRET,
+        }),
+      ]
       : []),
   ],
   callbacks: {
@@ -99,6 +100,23 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!
         session.user.role = token.role as string
         session.user.createdAt = token.createdAt as string
+
+        // Kiểm tra role trong token và doublecheck với database nếu token claim role admin hoặc staff. Tránh JWT forging nếu ông bị lộ secret
+        if (token.role === ROLES.ADMIN || token.role === ROLES.STAFF) {
+          try {
+            const freshUser = await prisma.user.findUnique({
+              where: { id: token.sub! },
+              select: { role: true }
+            })
+            if (!freshUser || freshUser.role !== token.role) {
+              console.warn(`Err: Role in token: ${token.role} role in DB: ${freshUser?.role || 'null'}.`);
+              session.user.role = ROLES.USER
+            }
+          } catch (error) {
+            //Hạ role nếu của session nếu lỗi
+            session.user.role = ROLES.USER
+          }
+        }
       }
       return session
     },

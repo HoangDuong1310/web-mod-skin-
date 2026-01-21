@@ -4,7 +4,7 @@
  */
 
 import { headers } from 'next/headers';
-
+import crypto from 'crypto';
 export interface KofiWebhookData {
   verification_token: string;
   message_id: string;
@@ -61,8 +61,31 @@ export function verifyKofiWebhook(webhookData: any, expectedToken: string): bool
   if (!webhookData.verification_token) {
     return false;
   }
-  
-  return webhookData.verification_token === expectedToken;
+
+  //return webhookData.verification_token === expectedToken;
+  //Đoạn này ông ko nên để === vì dễ bị bruteforce dựa trên response time
+  //ví dụ token đúng  5 kí tự đầu thì response time sẽ lâu hơn ko đúng kí tự nào
+  const receivedBuffer = Buffer.from(webhookData.verification_token);
+  const expectedBuffer = Buffer.from(expectedToken);
+
+  if (receivedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
+}
+
+/**
+ * HHàm validate tôi sẽ gọi bên route.ts
+ */
+export function validateKofiTimestamp(timestampStr: string): boolean {
+  const timestamp = new Date(timestampStr).getTime();
+  const now = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+
+  if (isNaN(timestamp)) return false;
+
+  return Math.abs(now - timestamp) <= fiveMinutes;
 }
 
 /**
@@ -95,19 +118,19 @@ export function generateKofiLink(username: string, options?: {
   color?: string;
 }): string {
   const baseUrl = `https://ko-fi.com/${username}`;
-  
+
   if (!options) {
     return baseUrl;
   }
 
   const params = new URLSearchParams();
-  
+
   if (options.amount) {
     params.append('hidefeed', 'true');
     params.append('currency', 'USD');
     params.append('amount', options.amount.toString());
   }
-  
+
   if (options.message) {
     params.append('message', options.message);
   }
@@ -158,7 +181,7 @@ export function validateKofiPayload(payload: any): {
   // Check required fields
   const requiredFields = [
     'verification_token',
-    'message_id', 
+    'message_id',
     'timestamp',
     'type',
     'from_name',

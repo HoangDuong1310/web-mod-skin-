@@ -1,8 +1,18 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
+  //REVIEWME: If this endpoint designed for public just remove this change
+  const session = await getServerSession(authOptions)
+  const userRole = (session?.user as any)?.role
+
+  if (userRole !== 'ADMIN') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     // Update all slugs that contain version numbers (have dots followed by numbers)
     const productsWithVersionInSlug = await prisma.product.findMany({
@@ -63,7 +73,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error updating slugs:', error)
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
       },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { join, resolve } from 'path'
 
 export async function GET(
   request: NextRequest,
@@ -9,9 +9,22 @@ export async function GET(
   try {
     const filename = params.filename
 
+    // SECURITY: Prevent Path Traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      console.warn(`Path traversal attempt blocked: ${filename}`);
+      return new NextResponse('Invalid filename', { status: 400 });
+    }
+
     // Use absolute base path from env if provided, fallback to public/uploads for local
     const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'public', 'uploads')
-    const filePath = join(base, 'previews', filename)
+    const previewsBase = join(base, 'previews');
+    const filePath = resolve(previewsBase, filename)
+
+    // Verify resolved path is strictly within the intended directory
+    if (!filePath.startsWith(resolve(previewsBase))) {
+      console.warn(`Path traversal attempt blocked (resolved path mismatch): ${filePath}`);
+      return new NextResponse('Access denied', { status: 403 });
+    }
 
     // Read the file
     const fileBuffer = await readFile(filePath)
