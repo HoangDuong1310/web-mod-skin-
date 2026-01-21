@@ -2,7 +2,9 @@
 
 import { Button } from '@/components/ui/button'
 import { DownloadTimer } from '@/components/ui/download-timer'
-import { ExternalLink } from 'lucide-react'
+import { GetFreeKeyButton } from '@/components/product/get-free-key-button'
+import { Separator } from '@/components/ui/separator'
+import { ExternalLink, Key } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 
@@ -10,6 +12,9 @@ interface DownloadActionsProps {
   productId: string
   hasDownloadUrl: boolean
   hasExternalUrl: boolean
+  requiresKey?: boolean      // Product requires license key
+  hasFreeKeyPlan?: boolean   // Product has free key plan configured
+  adBypassEnabled?: boolean  // Ad bypass enabled for download
   className?: string
 }
 
@@ -17,6 +22,9 @@ export default function DownloadActions({
   productId,
   hasDownloadUrl,
   hasExternalUrl,
+  requiresKey = false,
+  hasFreeKeyPlan = false,
+  adBypassEnabled = false,
   className = ""
 }: DownloadActionsProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -52,18 +60,18 @@ export default function DownloadActions({
 
     try {
       setIsLoading(true)
-      
+
       // Trigger download via API
       const response = await fetch(`/api/products/${productId}/download`, {
         method: 'POST'
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to initiate download')
       }
-      
+
       const data = await response.json()
-      
+
       // Handle different response types
       if (data.redirect) {
         // External download - redirect to URL
@@ -82,23 +90,18 @@ export default function DownloadActions({
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        
+
         toast.success('Bắt đầu tải xuống!')
       } else {
         toast.error('Không tìm thấy file để tải xuống')
       }
-      
+
     } catch (error) {
       console.error('Download error:', error)
       toast.error('Lỗi khi tải xuống. Vui lòng thử lại.')
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleViewOnStore = () => {
-    // Open in same tab to avoid extra tab
-    window.location.href = '#'
   }
 
   if (!hasDownloadUrl && !hasExternalUrl) {
@@ -129,7 +132,7 @@ export default function DownloadActions({
           </div>
         )}
       </DownloadTimer>
-      
+
       <Button variant="outline" size="lg" className="w-full" onClick={() => {
         const el = document.getElementById('product-reviews') || document.querySelector('[data-section="product-reviews"]') as HTMLElement | null
         if (el) {
@@ -139,6 +142,21 @@ export default function DownloadActions({
         <ExternalLink className="mr-2 h-4 w-4" />
         Đánh giá ngay
       </Button>
+
+      {/* Show Get Free Key button if product requires key and has free key plan */}
+      {requiresKey && hasFreeKeyPlan && (
+        <>
+          <Separator className="my-2" />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Key className="h-4 w-4" />
+              <span>Cần license key để sử dụng</span>
+            </div>
+            <GetFreeKeyButton productId={productId} />
+          </div>
+        </>
+      )}
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -8,7 +8,7 @@ import { canManageSoftware } from '@/lib/auth-utils'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user || !canManageSoftware(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -95,11 +95,15 @@ export async function GET(request: NextRequest) {
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
       status: product.status,
-      images: product.images || []
+      images: product.images || [],
+      // Key settings
+      requiresKey: product.requiresKey || false,
+      adBypassEnabled: product.adBypassEnabled || false,
+      freeKeyPlanId: product.freeKeyPlanId || null
     }))
 
-    return NextResponse.json({ 
-      software, 
+    return NextResponse.json({
+      software,
       stats,
       pagination: {
         page,
@@ -117,20 +121,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user || !canManageSoftware(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const data = await request.json()
-    const { 
-      title, 
+    const {
+      title,
       slug,
-      description, 
+      description,
       content,
-      price, 
-      categoryId, 
-      stock, 
+      price,
+      categoryId,
+      stock,
       status,
       images,
       metaTitle,
@@ -183,7 +187,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user || !canManageSoftware(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -254,7 +258,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     // Only ADMIN can delete software
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -273,8 +277,8 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (downloads) {
-      return NextResponse.json({ 
-        error: 'Cannot delete product that has been downloaded. Archive it instead.' 
+      return NextResponse.json({
+        error: 'Cannot delete product that has been downloaded. Archive it instead.'
       }, { status: 400 })
     }
 

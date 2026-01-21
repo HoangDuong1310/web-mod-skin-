@@ -19,7 +19,11 @@ const updateProductSchema = z.object({
   metaDescription: z.string().optional(),
   downloadUrl: z.string().url().optional().or(z.literal('')),
   externalUrl: z.string().url().optional().or(z.literal('')),
-  images: z.string().optional() // Add images field for JSON string
+  images: z.string().optional(), // Add images field for JSON string
+  // Key settings for Get Key Free feature
+  requiresKey: z.boolean().optional(),
+  adBypassEnabled: z.boolean().optional(),
+  freeKeyPlanId: z.string().optional().or(z.literal('')),
 })
 
 export async function GET(
@@ -68,7 +72,7 @@ export async function PUT(
 
     const body = await request.json()
     console.log('PUT request body:', JSON.stringify(body, null, 2)) // Debug log
-    
+
     const validatedData = updateProductSchema.parse(body)
     console.log('Validated data:', JSON.stringify(validatedData, null, 2)) // Debug log
 
@@ -100,7 +104,7 @@ export async function PUT(
       const categoryExists = await prisma.category.findUnique({
         where: { id: validatedData.categoryId }
       })
-      
+
       if (!categoryExists) {
         return NextResponse.json({ message: 'Category not found' }, { status: 400 })
       }
@@ -132,12 +136,23 @@ export async function PUT(
       updateData.version = validatedData.version || null
     }
 
+    // Handle key settings fields
+    if ('requiresKey' in validatedData) {
+      updateData.requiresKey = validatedData.requiresKey ?? false
+    }
+    if ('adBypassEnabled' in validatedData) {
+      updateData.adBypassEnabled = validatedData.adBypassEnabled ?? false
+    }
+    if ('freeKeyPlanId' in validatedData) {
+      updateData.freeKeyPlanId = validatedData.freeKeyPlanId || null
+    }
+
     // Handle images JSON field properly
     if ('images' in validatedData && validatedData.images) {
       try {
         // If it's already a string, use as is. If it's parsed JSON, stringify it
-        updateData.images = typeof validatedData.images === 'string' 
-          ? validatedData.images 
+        updateData.images = typeof validatedData.images === 'string'
+          ? validatedData.images
           : JSON.stringify(validatedData.images)
       } catch (error) {
         console.error('Error handling images:', error)
@@ -182,38 +197,38 @@ export async function PUT(
       console.warn('Revalidate after update failed:', e)
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Product updated successfully',
-      product: updatedProduct 
+      product: updatedProduct
     })
 
   } catch (error) {
     console.error('Update product error:', error)
-    
+
     // Enhanced error logging
     if (error instanceof Error) {
       console.error('Error message:', error.message)
       console.error('Error stack:', error.stack)
     }
-    
+
     // Handle Zod validation errors
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Validation error',
         details: error.issues
       }, { status: 400 })
     }
-    
+
     // Handle Prisma errors
     if (error && typeof error === 'object' && 'code' in error) {
       console.error('Prisma error code:', error.code)
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Database error',
         code: error.code
       }, { status: 500 })
     }
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       message: 'Internal server error',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
@@ -257,9 +272,9 @@ export async function DELETE(
       console.warn('Revalidate after delete failed:', e)
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Product deleted successfully',
-      product: deletedProduct 
+      product: deletedProduct
     })
 
   } catch (error) {

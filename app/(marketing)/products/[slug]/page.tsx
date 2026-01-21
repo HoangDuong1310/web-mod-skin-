@@ -11,11 +11,11 @@ import { formatPrice, formatDate } from '@/lib/utils'
 import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { generateProductSchema } from '@/lib/seo'
 import {
-  Download, 
-  Star, 
-  Shield, 
-  Smartphone, 
-  Monitor, 
+  Download,
+  Star,
+  Shield,
+  Smartphone,
+  Monitor,
   Calendar,
   Package,
   Users,
@@ -55,12 +55,12 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
         // Safely parse images for metadata
         if (product.images) {
           try {
-            const images = Array.isArray(product.images) 
-              ? product.images 
-              : typeof product.images === 'string' 
+            const images = Array.isArray(product.images)
+              ? product.images
+              : typeof product.images === 'string'
                 ? JSON.parse(product.images)
                 : []
-            
+
             if (images.length > 0 && typeof images[0] === 'string' && images[0].length > 1) {
               const imageUrl = images[0]
               return (imageUrl.startsWith('/') || imageUrl.startsWith('http')) ? imageUrl : undefined
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 export default async function ProductPage({ params }: ProductPageProps) {
   console.log('🔍 ProductPage called with params:', params)
   console.log('🔍 Looking for slug:', params.slug)
-  
+
   try {
     const product = await prisma.product.findUnique({
       where: {
@@ -99,6 +99,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           select: {
             name: true,
             slug: true,
+          },
+        },
+        freeKeyPlan: {
+          select: {
+            id: true,
           },
         },
       },
@@ -155,7 +160,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
         />
-        
+
         <div className="container py-8">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
@@ -184,12 +189,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     let iconUrl = null
                     if (product.images) {
                       try {
-                        const images = Array.isArray(product.images) 
-                          ? product.images 
-                          : typeof product.images === 'string' 
+                        const images = Array.isArray(product.images)
+                          ? product.images
+                          : typeof product.images === 'string'
                             ? JSON.parse(product.images)
                             : []
-                        
+
                         if (images.length > 0 && typeof images[0] === 'string' && images[0].length > 1) {
                           iconUrl = images[0]
                         }
@@ -197,7 +202,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         console.error('Error parsing product images for icon:', error)
                       }
                     }
-                    
+
                     return iconUrl && (iconUrl.startsWith('/') || iconUrl.startsWith('http')) ? (
                       <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                         <Image
@@ -216,7 +221,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
                   <div className="flex-1">
                     <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-                    
+
                     <div className="flex items-center gap-4 mb-3">
                       {product.category && (
                         <Badge variant="secondary">
@@ -249,23 +254,23 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   let screenshots: string[] = []
                   if (product.images) {
                     try {
-                      const images = Array.isArray(product.images) 
-                        ? product.images 
-                        : typeof product.images === 'string' 
+                      const images = Array.isArray(product.images)
+                        ? product.images
+                        : typeof product.images === 'string'
                           ? JSON.parse(product.images)
                           : []
-                      
-                      screenshots = images.filter((img: any, index: number) => 
-                        index > 0 && 
-                        typeof img === 'string' && 
-                        img.length > 1 && 
+
+                      screenshots = images.filter((img: any, index: number) =>
+                        index > 0 &&
+                        typeof img === 'string' &&
+                        img.length > 1 &&
                         (img.startsWith('/') || img.startsWith('http'))
                       )
                     } catch (error) {
                       console.error('Error parsing product images for screenshots:', error)
                     }
                   }
-                  
+
                   return screenshots.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                       {screenshots.map((image: string, index: number) => (
@@ -290,7 +295,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </CardHeader>
                 <CardContent>
                   {product.content ? (
-                    <div 
+                    <div
                       className="prose prose-neutral dark:prose-invert max-w-none"
                       dangerouslySetInnerHTML={{ __html: product.content }}
                     />
@@ -357,10 +362,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <DownloadActions 
+                  <DownloadActions
                     productId={product.id}
                     hasDownloadUrl={!!(product as any).downloadUrl}
                     hasExternalUrl={!!(product as any).externalUrl}
+                    requiresKey={product.requiresKey}
+                    hasFreeKeyPlan={!!product.freeKeyPlanId}
+                    adBypassEnabled={product.adBypassEnabled}
                   />
                 </CardContent>
               </Card>
@@ -375,27 +383,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <span className="text-muted-foreground">Category</span>
                     <span>{product.category?.name || 'Software'}</span>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Last Updated</span>
-                    <span>{formatDate(product.updatedAt, { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      year: 'numeric' 
+                    <span>{formatDate(product.updatedAt, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
                     })}</span>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Downloads</span>
                     <span>{downloadCount.toLocaleString()}</span>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Rating</span>
                     <div className="flex items-center">

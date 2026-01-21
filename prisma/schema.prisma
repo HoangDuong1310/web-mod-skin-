@@ -40,33 +40,34 @@ model Session {
 }
 
 model User {
-  id                String            @id @default(cuid())
-  name              String?
-  email             String            @unique
-  emailVerified     DateTime?
-  image             String?
-  role              Role              @default(USER)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  deletedAt         DateTime?
-  password          String?
-  passwordUpdatedAt DateTime?
-  accounts          Account[]
-  auditLogs         AuditLog[]
-  downloads         Download[]
-  notifications     notifications[]
-  passwordHistory   PasswordHistory[]
-  posts             Post[]
-  reviews           Review[]
-  sessions          Session[]
-  donations         Donation[]
-  donationGoals     DonationGoal[]
-  customSkins       CustomSkin[]
-  skinSubmissions   SkinSubmission[]
-  reviewedSubmissions SkinSubmission[] @relation("SkinReviewer")
-  skinDownloads     SkinDownload[]
-  licenseKeys       LicenseKey[]
-  orders            Order[]
+  id                  String            @id @default(cuid())
+  name                String?
+  email               String            @unique
+  emailVerified       DateTime?
+  image               String?
+  role                Role              @default(USER)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?
+  password            String?
+  passwordUpdatedAt   DateTime?
+  accounts            Account[]
+  auditLogs           AuditLog[]
+  downloads           Download[]
+  notifications       notifications[]
+  passwordHistory     PasswordHistory[]
+  posts               Post[]
+  reviews             Review[]
+  sessions            Session[]
+  donations           Donation[]
+  donationGoals       DonationGoal[]
+  customSkins         CustomSkin[]
+  skinSubmissions     SkinSubmission[]
+  reviewedSubmissions SkinSubmission[]  @relation("SkinReviewer")
+  skinDownloads       SkinDownload[]
+  licenseKeys         LicenseKey[]
+  orders              Order[]
+  freeKeySessions     FreeKeySession[]
 
   @@index([email])
   @@index([createdAt])
@@ -107,32 +108,40 @@ model Category {
 }
 
 model Product {
-  id              String     @id @default(cuid())
+  id              String    @id @default(cuid())
   title           String
-  slug            String     @unique
-  description     String?    @db.Text
-  content         String?    @db.Text
-  status          Status     @default(DRAFT)
-  price           Decimal    @db.Decimal(10, 2)
-  comparePrice    Decimal?   @db.Decimal(10, 2)
-  stock           Int        @default(0)
-  images          String?    @db.LongText
+  slug            String    @unique
+  description     String?   @db.Text
+  content         String?   @db.Text
+  status          Status    @default(DRAFT)
+  price           Decimal   @db.Decimal(10, 2)
+  comparePrice    Decimal?  @db.Decimal(10, 2)
+  stock           Int       @default(0)
+  images          String?   @db.LongText
   categoryId      String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
   metaTitle       String?
-  metaDescription String?    @db.Text
-  averageRating   Decimal    @default(0.00) @db.Decimal(3, 2)
-  totalReviews    Int        @default(0)
+  metaDescription String?   @db.Text
+  averageRating   Decimal   @default(0.00) @db.Decimal(3, 2)
+  totalReviews    Int       @default(0)
   version         String?
   downloadUrl     String?
   externalUrl     String?
   fileSize        String?
   filename        String?
+
+  // Key requirement settings (for Get Key Free feature)
+  requiresKey     Boolean           @default(false) // Sản phẩm cần key để sử dụng
+  adBypassEnabled Boolean           @default(false) // Bật vượt quảng cáo để tải
+  freeKeyPlanId   String? // Plan dùng cho free key
+  freeKeyPlan     SubscriptionPlan? @relation("FreeKeyPlan", fields: [freeKeyPlanId], references: [id])
+
   downloads       Download[]
-  category        Category?  @relation(fields: [categoryId], references: [id])
+  category        Category?        @relation(fields: [categoryId], references: [id])
   reviews         Review[]
+  freeKeySessions FreeKeySession[]
 
   @@index([slug])
   @@index([categoryId])
@@ -359,47 +368,47 @@ enum notifications_targetAudience {
 
 // Donation models for fundraising system
 model Donation {
-  id           String   @id @default(cuid())
-  amount       Decimal  @db.Decimal(10, 2)
-  currency     String   @default("USD")
-  
+  id       String  @id @default(cuid())
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
+
   // Donor information (optional for anonymous donations)
-  userId       String?
-  donorName    String?   // For anonymous or guest donations
-  donorEmail   String?   // For anonymous donations (optional)
-  isAnonymous  Boolean   @default(false)
-  
+  userId      String?
+  donorName   String? // For anonymous or guest donations
+  donorEmail  String? // For anonymous donations (optional)
+  isAnonymous Boolean @default(false)
+
   // Payment information
-  paymentMethod PaymentMethod @default(MANUAL)
-  transactionId String?  @unique // External transaction ID
+  paymentMethod     PaymentMethod @default(MANUAL)
+  transactionId     String?       @unique // External transaction ID
   kofiTransactionId String? // Ko-fi specific transaction ID
-  
+
   // VietQR information (for bank transfers)
-  bankCode     String?   // Bank identifier for VietQR
-  qrCodeUrl    String?   // Generated VietQR URL
-  transferNote String?   // Bank transfer note/reference
-  
+  bankCode     String? // Bank identifier for VietQR
+  qrCodeUrl    String? // Generated VietQR URL
+  transferNote String? // Bank transfer note/reference
+
   // Status
-  status       DonationStatus @default(PENDING)
-  
+  status DonationStatus @default(PENDING)
+
   // Message (optional)
-  message      String?   @db.Text
+  message         String? @db.Text
   isMessagePublic Boolean @default(true)
-  
+
   // Metadata
-  ipAddress    String?
-  userAgent    String?
-  
+  ipAddress String?
+  userAgent String?
+
   // Timestamps
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  completedAt  DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
   // Relations
-  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  goal         DonationGoal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
-  goalId       String?
-  
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  goal   DonationGoal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goalId String?
+
   @@index([userId])
   @@index([goalId])
   @@index([status])
@@ -411,36 +420,36 @@ model Donation {
 }
 
 model DonationGoal {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?  @db.Text
-  targetAmount Decimal  @db.Decimal(10, 2)
+  id            String  @id @default(cuid())
+  title         String
+  description   String? @db.Text
+  targetAmount  Decimal @db.Decimal(10, 2)
   currentAmount Decimal @default(0) @db.Decimal(10, 2)
-  currency     String   @default("USD")
-  
+  currency      String  @default("USD")
+
   // Goal settings
-  isActive     Boolean  @default(true)
-  isVisible    Boolean  @default(true)
-  priority     Int      @default(0) // Higher priority goals show first
-  
+  isActive  Boolean @default(true)
+  isVisible Boolean @default(true)
+  priority  Int     @default(0) // Higher priority goals show first
+
   // Timeframe
-  startDate    DateTime @default(now())
-  endDate      DateTime?
-  
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+
   // Display settings
-  showProgress Boolean  @default(true)
-  showAmount   Boolean  @default(true)
-  showDonors   Boolean  @default(true)
-  
+  showProgress Boolean @default(true)
+  showAmount   Boolean @default(true)
+  showDonors   Boolean @default(true)
+
   // Metadata
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  createdBy    String
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String
+
   // Relations
-  creator      User     @relation(fields: [createdBy], references: [id])
-  donations    Donation[]
-  
+  creator   User       @relation(fields: [createdBy], references: [id])
+  donations Donation[]
+
   @@index([isActive, isVisible])
   @@index([priority])
   @@index([startDate, endDate])
@@ -468,17 +477,17 @@ enum notifications_position {
 
 // Custom Skins Models for League of Legends
 model Champion {
-  id              Int             @id
-  name            String
-  description     String?
-  alias           String
-  contentId       String
+  id                 Int              @id
+  name               String
+  description        String?
+  alias              String
+  contentId          String
   squarePortraitPath String
-  roles           String?         @db.Text // JSON array of roles
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  customSkins     CustomSkin[]
-  skinSubmissions SkinSubmission[]
+  roles              String?          @db.Text // JSON array of roles
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  customSkins        CustomSkin[]
+  skinSubmissions    SkinSubmission[]
 
   @@index([alias])
   @@index([name])
@@ -486,13 +495,13 @@ model Champion {
 }
 
 model SkinCategory {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  slug        String     @unique
-  description String?    @db.Text
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  customSkins CustomSkin[]
+  id              String           @id @default(cuid())
+  name            String           @unique
+  slug            String           @unique
+  description     String?          @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  customSkins     CustomSkin[]
   skinSubmissions SkinSubmission[]
 
   @@index([slug])
@@ -500,39 +509,39 @@ model SkinCategory {
 }
 
 model CustomSkin {
-  id              String           @id @default(cuid())
-  name            String
-  description     String           @db.Text
-  version         String
-  championId      Int
-  categoryId      String
-  authorId        String
-  
+  id          String @id @default(cuid())
+  name        String
+  description String @db.Text
+  version     String
+  championId  Int
+  categoryId  String
+  authorId    String
+
   // File information
-  fileName        String
-  filePath        String           // Path to uploaded file
-  fileSize        String           // Human readable file size
-  fileType        SkinFileType     // zip, rar, fantome
-  
+  fileName String
+  filePath String // Path to uploaded file
+  fileSize String // Human readable file size
+  fileType SkinFileType // zip, rar, fantome
+
   // Preview images
-  previewImages   String?          @db.LongText // JSON array of image paths
-  thumbnailImage  String?          // Main preview image
-  
+  previewImages  String? @db.LongText // JSON array of image paths
+  thumbnailImage String? // Main preview image
+
   // Status and metadata
-  status          SkinStatus       @default(APPROVED)
-  downloadCount   Int              @default(0)
-  
+  status        SkinStatus @default(APPROVED)
+  downloadCount Int        @default(0)
+
   // Timestamps
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   // Relations
-  champion        Champion         @relation(fields: [championId], references: [id])
-  category        SkinCategory     @relation(fields: [categoryId], references: [id])
-  author          User             @relation(fields: [authorId], references: [id])
-  downloads       SkinDownload[]
-  
+  champion  Champion       @relation(fields: [championId], references: [id])
+  category  SkinCategory   @relation(fields: [categoryId], references: [id])
+  author    User           @relation(fields: [authorId], references: [id])
+  downloads SkinDownload[]
+
   @@index([championId])
   @@index([categoryId])
   @@index([authorId])
@@ -543,42 +552,42 @@ model CustomSkin {
 }
 
 model SkinSubmission {
-  id              String           @id @default(cuid())
-  name            String
-  description     String           @db.Text
-  version         String
-  championId      Int
-  categoryId      String
-  submitterId     String
-  
+  id          String @id @default(cuid())
+  name        String
+  description String @db.Text
+  version     String
+  championId  Int
+  categoryId  String
+  submitterId String
+
   // File information
-  fileName        String
-  filePath        String           // Path to uploaded file
-  fileSize        String
-  fileType        SkinFileType
-  
+  fileName String
+  filePath String // Path to uploaded file
+  fileSize String
+  fileType SkinFileType
+
   // Preview images
-  previewImages   String?          @db.LongText // JSON array of image paths
-  thumbnailImage  String?
-  
+  previewImages  String? @db.LongText // JSON array of image paths
+  thumbnailImage String?
+
   // Review information
   status          SubmissionStatus @default(PENDING)
   reviewedById    String?
   reviewedAt      DateTime?
-  adminNotes      String?          @db.Text     // Internal admin notes
-  feedbackMessage String?          @db.Text     // Feedback for submitter
-  
+  adminNotes      String?          @db.Text // Internal admin notes
+  feedbackMessage String?          @db.Text // Feedback for submitter
+
   // Timestamps
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   // Relations
-  champion        Champion         @relation(fields: [championId], references: [id])
-  category        SkinCategory     @relation(fields: [categoryId], references: [id])
-  submitter       User             @relation(fields: [submitterId], references: [id])
-  reviewer        User?            @relation("SkinReviewer", fields: [reviewedById], references: [id])
-  
+  champion  Champion     @relation(fields: [championId], references: [id])
+  category  SkinCategory @relation(fields: [categoryId], references: [id])
+  submitter User         @relation(fields: [submitterId], references: [id])
+  reviewer  User?        @relation("SkinReviewer", fields: [reviewedById], references: [id])
+
   @@index([championId])
   @@index([categoryId])
   @@index([submitterId])
@@ -589,16 +598,16 @@ model SkinSubmission {
 }
 
 model SkinDownload {
-  id         String     @id @default(cuid())
+  id         String   @id @default(cuid())
   userId     String?
   skinId     String
   downloadIp String?
   userAgent  String?
-  createdAt  DateTime   @default(now())
-  
-  skin       CustomSkin @relation(fields: [skinId], references: [id])
-  user       User?      @relation(fields: [userId], references: [id])
-  
+  createdAt  DateTime @default(now())
+
+  skin CustomSkin @relation(fields: [skinId], references: [id])
+  user User?      @relation(fields: [userId], references: [id])
+
   @@index([userId, createdAt])
   @@index([skinId, createdAt])
   @@index([createdAt])
@@ -626,45 +635,45 @@ enum SubmissionStatus {
 
 // Banner model for announcements, livestream notifications, etc.
 model Banner {
-  id              String       @id @default(cuid())
-  title           String       // Banner title
-  content         String?      @db.Text // Banner content/description
-  linkUrl         String?      // Link to navigate when clicked
-  linkText        String?      // Text for the link button
-  imageUrl        String?      // Banner image URL
-  backgroundColor String?      // Custom background color (hex)
-  textColor       String?      // Custom text color (hex)
-  
+  id              String  @id @default(cuid())
+  title           String // Banner title
+  content         String? @db.Text // Banner content/description
+  linkUrl         String? // Link to navigate when clicked
+  linkText        String? // Text for the link button
+  imageUrl        String? // Banner image URL
+  backgroundColor String? // Custom background color (hex)
+  textColor       String? // Custom text color (hex)
+
   // Display settings
-  type            BannerType   @default(INFO)
-  position        BannerPosition @default(TOP)
-  isActive        Boolean      @default(true)
-  isDismissible   Boolean      @default(true)
-  showOnMobile    Boolean      @default(true)
-  
+  type          BannerType     @default(INFO)
+  position      BannerPosition @default(TOP)
+  isActive      Boolean        @default(true)
+  isDismissible Boolean        @default(true)
+  showOnMobile  Boolean        @default(true)
+
   // Scheduling
-  startDate       DateTime?    // When to start showing
-  endDate         DateTime?    // When to stop showing
-  
+  startDate DateTime? // When to start showing
+  endDate   DateTime? // When to stop showing
+
   // Priority (higher = more important)
-  priority        Int          @default(0)
-  
+  priority Int @default(0)
+
   // Target audience
-  targetAudience  BannerAudience @default(ALL)
-  
+  targetAudience BannerAudience @default(ALL)
+
   // For mobile app integration
-  appVisible      Boolean      @default(true) // Show in mobile app
-  appData         String?      @db.Text // JSON data for app customization
-  
+  appVisible Boolean @default(true) // Show in mobile app
+  appData    String? @db.Text // JSON data for app customization
+
   // Statistics
-  viewCount       Int          @default(0)
-  clickCount      Int          @default(0)
-  
+  viewCount  Int @default(0)
+  clickCount Int @default(0)
+
   // Metadata
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  deletedAt       DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   @@index([isActive, startDate, endDate])
   @@index([priority])
   @@index([type])
@@ -674,72 +683,74 @@ model Banner {
 }
 
 enum BannerType {
-  INFO        // General information
-  LIVESTREAM  // Livestream announcement
-  PROMOTION   // Promotional banner
-  WARNING     // Warning/Alert
-  SUCCESS     // Success message
-  EVENT       // Special event
+  INFO // General information
+  LIVESTREAM // Livestream announcement
+  PROMOTION // Promotional banner
+  WARNING // Warning/Alert
+  SUCCESS // Success message
+  EVENT // Special event
 }
 
 enum BannerPosition {
-  TOP         // Fixed at top
-  BOTTOM      // Fixed at bottom
-  MODAL       // Show as modal/popup
+  TOP // Fixed at top
+  BOTTOM // Fixed at bottom
+  MODAL // Show as modal/popup
 }
 
 enum BannerAudience {
-  ALL         // Everyone
+  ALL // Everyone
   AUTHENTICATED // Logged in users only
-  GUEST       // Guest users only
+  GUEST // Guest users only
 }
+
 // ============================================
 // LICENSE KEY & SUBSCRIPTION SYSTEM
 // ============================================
 
 // Subscription Plans - Các gói cước
 model SubscriptionPlan {
-  id              String          @id @default(cuid())
-  name            String          // Tên gói: "Basic", "Pro", "Lifetime"
-  nameEn          String?         // Tên tiếng Anh
-  slug            String          @unique
-  description     String?         @db.Text
-  descriptionEn   String?         @db.Text // Mô tả tiếng Anh
-  
+  id            String  @id @default(cuid())
+  name          String // Tên gói: "Basic", "Pro", "Lifetime"
+  nameEn        String? // Tên tiếng Anh
+  slug          String  @unique
+  description   String? @db.Text
+  descriptionEn String? @db.Text // Mô tả tiếng Anh
+
   // Pricing VND (Việt Nam)
-  price           Decimal         @db.Decimal(10, 2)
-  comparePrice    Decimal?        @db.Decimal(10, 2) // Giá gốc (để hiện giảm giá)
-  currency        String          @default("VND")
-  
+  price        Decimal  @db.Decimal(10, 2)
+  comparePrice Decimal? @db.Decimal(10, 2) // Giá gốc (để hiện giảm giá)
+  currency     String   @default("VND")
+
   // Pricing USD (International)
-  priceUsd        Decimal?        @db.Decimal(10, 2) // Giá USD cho nước ngoài
-  comparePriceUsd Decimal?        @db.Decimal(10, 2) // Giá gốc USD
-  
+  priceUsd        Decimal? @db.Decimal(10, 2) // Giá USD cho nước ngoài
+  comparePriceUsd Decimal? @db.Decimal(10, 2) // Giá gốc USD
+
   // Duration
-  durationType    DurationType    @default(MONTH)
-  durationValue   Int             @default(1) // Số lượng (VD: 3 tháng = MONTH + 3)
-  
+  durationType  DurationType @default(MONTH)
+  durationValue Int          @default(1) // Số lượng (VD: 3 tháng = MONTH + 3)
+
   // Features & Limits
-  features        String?         @db.Text // JSON array of features (Vietnamese)
-  featuresEn      String?         @db.Text // JSON array of features (English)
-  maxDevices      Int             @default(1) // Số thiết bị tối đa
-  
+  features   String? @db.Text // JSON array of features (Vietnamese)
+  featuresEn String? @db.Text // JSON array of features (English)
+  maxDevices Int     @default(1) // Số thiết bị tối đa
+
   // Display
-  isActive        Boolean         @default(true)
-  isPopular       Boolean         @default(false) // Đánh dấu gói phổ biến
-  isFeatured      Boolean         @default(false) // Gói nổi bật
-  priority        Int             @default(0) // Thứ tự hiển thị
-  color           String?         // Màu badge/highlight
-  
+  isActive   Boolean @default(true)
+  isPopular  Boolean @default(false) // Đánh dấu gói phổ biến
+  isFeatured Boolean @default(false) // Gói nổi bật
+  priority   Int     @default(0) // Thứ tự hiển thị
+  color      String? // Màu badge/highlight
+
   // Metadata
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
   // Relations
   licenseKeys     LicenseKey[]
+  freeKeyProducts Product[]    @relation("FreeKeyPlan")
   orders          Order[]
-  
+
   @@index([slug])
   @@index([isActive, priority])
   @@index([durationType])
@@ -748,47 +759,48 @@ model SubscriptionPlan {
 
 // License Keys - Key bản quyền
 model LicenseKey {
-  id              String          @id @default(cuid())
-  key             String          @unique // Format: XXXX-XXXX-XXXX-XXXX
-  
+  id  String @id @default(cuid())
+  key String @unique // Format: XXXX-XXXX-XXXX-XXXX
+
   // Owner
-  userId          String?
-  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   // Plan
-  planId          String
-  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
-  
+  planId String
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
   // Status
-  status          KeyStatus       @default(INACTIVE)
-  
+  status KeyStatus @default(INACTIVE)
+
   // Activation
-  activatedAt     DateTime?
-  expiresAt       DateTime?
-  
+  activatedAt DateTime?
+  expiresAt   DateTime?
+
   // Device Management
-  maxDevices      Int             @default(1)
-  currentDevices  Int             @default(0)
-  
+  maxDevices     Int @default(1)
+  currentDevices Int @default(0)
+
   // Usage tracking
-  lastUsedAt      DateTime?
-  lastUsedIp      String?
-  lastHwid        String?         // Last hardware ID used
-  totalActivations Int            @default(0)
-  
+  lastUsedAt       DateTime?
+  lastUsedIp       String?
+  lastHwid         String? // Last hardware ID used
+  totalActivations Int       @default(0)
+
   // Admin
-  notes           String?         @db.Text
-  createdBy       String?         // Admin who created this key
-  
+  notes     String? @db.Text
+  createdBy String? // Admin who created this key
+
   // Metadata
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  activations     KeyActivation[]
-  order           Order?
-  usageLogs       KeyUsageLog[]
-  
+  activations    KeyActivation[]
+  order          Order?
+  usageLogs      KeyUsageLog[]
+  freeKeySession FreeKeySession?
+
   @@index([key])
   @@index([userId])
   @@index([planId])
@@ -800,27 +812,27 @@ model LicenseKey {
 
 // Key Activations - Thiết bị đã kích hoạt
 model KeyActivation {
-  id              String          @id @default(cuid())
-  keyId           String
-  key             LicenseKey      @relation(fields: [keyId], references: [id], onDelete: Cascade)
-  
+  id    String     @id @default(cuid())
+  keyId String
+  key   LicenseKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+
   // Device Info
-  hwid            String          // Hardware ID từ app
-  deviceName      String?         // Tên thiết bị (optional)
-  deviceInfo      String?         @db.Text // JSON: OS, CPU, RAM, etc.
-  
+  hwid       String // Hardware ID từ app
+  deviceName String? // Tên thiết bị (optional)
+  deviceInfo String? @db.Text // JSON: OS, CPU, RAM, etc.
+
   // Network
-  ipAddress       String?
-  userAgent       String?
-  
+  ipAddress String?
+  userAgent String?
+
   // Status
-  status          ActivationStatus @default(ACTIVE)
-  
+  status ActivationStatus @default(ACTIVE)
+
   // Timestamps
-  activatedAt     DateTime        @default(now())
-  deactivatedAt   DateTime?
-  lastSeenAt      DateTime        @default(now())
-  
+  activatedAt   DateTime  @default(now())
+  deactivatedAt DateTime?
+  lastSeenAt    DateTime  @default(now())
+
   @@unique([keyId, hwid])
   @@index([keyId])
   @@index([hwid])
@@ -831,26 +843,26 @@ model KeyActivation {
 
 // Key Usage Logs - Lịch sử sử dụng key
 model KeyUsageLog {
-  id              String          @id @default(cuid())
-  keyId           String
-  key             LicenseKey      @relation(fields: [keyId], references: [id], onDelete: Cascade)
-  
+  id    String     @id @default(cuid())
+  keyId String
+  key   LicenseKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+
   // Action
-  action          KeyAction
-  
+  action KeyAction
+
   // Context
-  hwid            String?
-  ipAddress       String?
-  userAgent       String?
-  details         String?         @db.Text // JSON additional details
-  
+  hwid      String?
+  ipAddress String?
+  userAgent String?
+  details   String? @db.Text // JSON additional details
+
   // Result
-  success         Boolean         @default(true)
-  errorMessage    String?
-  
+  success      Boolean @default(true)
+  errorMessage String?
+
   // Timestamp
-  createdAt       DateTime        @default(now())
-  
+  createdAt DateTime @default(now())
+
   @@index([keyId, createdAt])
   @@index([action])
   @@index([createdAt])
@@ -859,54 +871,54 @@ model KeyUsageLog {
 
 // Orders - Đơn hàng
 model Order {
-  id              String          @id @default(cuid())
-  orderNumber     String          @unique // Format: ORD-YYYYMMDD-XXXXX
-  
+  id          String @id @default(cuid())
+  orderNumber String @unique // Format: ORD-YYYYMMDD-XXXXX
+
   // Customer
-  userId          String?
-  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  customerEmail   String          // Email để gửi key
-  customerName    String?
-  customerPhone   String?
-  
+  userId        String?
+  user          User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerEmail String // Email để gửi key
+  customerName  String?
+  customerPhone String?
+
   // Product
-  planId          String
-  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
-  
+  planId String
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
   // Generated Key
-  keyId           String?         @unique
-  licenseKey      LicenseKey?     @relation(fields: [keyId], references: [id])
-  
+  keyId      String?     @unique
+  licenseKey LicenseKey? @relation(fields: [keyId], references: [id])
+
   // Pricing
-  amount          Decimal         @db.Decimal(10, 2)
-  discount        Decimal         @default(0) @db.Decimal(10, 2)
-  finalAmount     Decimal         @db.Decimal(10, 2)
-  currency        String          @default("VND")
-  
+  amount      Decimal @db.Decimal(10, 2)
+  discount    Decimal @default(0) @db.Decimal(10, 2)
+  finalAmount Decimal @db.Decimal(10, 2)
+  currency    String  @default("VND")
+
   // Payment
-  paymentMethod   OrderPaymentMethod @default(BANK_TRANSFER)
-  paymentStatus   PaymentStatus   @default(PENDING)
-  transactionId   String?         // External transaction ID
-  paidAt          DateTime?
-  
+  paymentMethod OrderPaymentMethod @default(BANK_TRANSFER)
+  paymentStatus PaymentStatus      @default(PENDING)
+  transactionId String? // External transaction ID
+  paidAt        DateTime?
+
   // Coupon
-  couponCode      String?
-  couponDiscount  Decimal?        @db.Decimal(10, 2)
-  
+  couponCode     String?
+  couponDiscount Decimal? @db.Decimal(10, 2)
+
   // Status
-  status          OrderStatus     @default(PENDING)
-  
+  status OrderStatus @default(PENDING)
+
   // Notes
-  customerNote    String?         @db.Text
-  adminNote       String?         @db.Text
-  
+  customerNote String? @db.Text
+  adminNote    String? @db.Text
+
   // Metadata
-  ipAddress       String?
-  userAgent       String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  completedAt     DateTime?
-  
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
   @@index([orderNumber])
   @@index([userId])
   @@index([planId])
@@ -918,21 +930,22 @@ model Order {
 
 // Enums for License System
 enum DurationType {
+  HOUR // Giờ (for free keys)
   DAY
   WEEK
   MONTH
-  QUARTER   // 3 months
+  QUARTER // 3 months
   YEAR
   LIFETIME
 }
 
 enum KeyStatus {
-  INACTIVE    // Chưa kích hoạt
-  ACTIVE      // Đang hoạt động
-  EXPIRED     // Hết hạn
-  SUSPENDED   // Tạm khóa
-  REVOKED     // Thu hồi vĩnh viễn
-  BANNED      // Bị cấm (vi phạm)
+  INACTIVE // Chưa kích hoạt
+  ACTIVE // Đang hoạt động
+  EXPIRED // Hết hạn
+  SUSPENDED // Tạm khóa
+  REVOKED // Thu hồi vĩnh viễn
+  BANNED // Bị cấm (vi phạm)
 }
 
 enum ActivationStatus {
@@ -942,24 +955,24 @@ enum ActivationStatus {
 }
 
 enum KeyAction {
-  VALIDATE      // Kiểm tra key
-  ACTIVATE      // Kích hoạt thiết bị
-  DEACTIVATE    // Hủy kích hoạt
-  HEARTBEAT     // App ping định kỳ
-  LOGIN         // Đăng nhập app
-  RESET_HWID    // Reset HWID
-  EXTEND        // Gia hạn
-  SUSPEND       // Tạm khóa
-  REVOKE        // Thu hồi
+  VALIDATE // Kiểm tra key
+  ACTIVATE // Kích hoạt thiết bị
+  DEACTIVATE // Hủy kích hoạt
+  HEARTBEAT // App ping định kỳ
+  LOGIN // Đăng nhập app
+  RESET_HWID // Reset HWID
+  EXTEND // Gia hạn
+  SUSPEND // Tạm khóa
+  REVOKE // Thu hồi
 }
 
 enum OrderStatus {
-  PENDING       // Chờ xử lý
-  PROCESSING    // Đang xử lý
-  COMPLETED     // Hoàn thành
-  CANCELLED     // Đã hủy
-  REFUNDED      // Đã hoàn tiền
-  FAILED        // Thất bại
+  PENDING // Chờ xử lý
+  PROCESSING // Đang xử lý
+  COMPLETED // Hoàn thành
+  CANCELLED // Đã hủy
+  REFUNDED // Đã hoàn tiền
+  FAILED // Thất bại
 }
 
 enum PaymentStatus {
@@ -978,5 +991,48 @@ enum OrderPaymentMethod {
   ZALOPAY
   PAYPAL
   CRYPTO
-  MANUAL        // Admin tạo thủ công
+  MANUAL // Admin tạo thủ công
+}
+
+// ============================================
+// FREE KEY SESSION (for Get Key Free feature)
+// ============================================
+
+// Free Key Sessions - Theo dõi phiên lấy key miễn phí
+model FreeKeySession {
+  id        String  @id @default(cuid())
+  token     String  @unique // Unique token for verification
+  productId String
+  userId    String? // Optional: logged in user
+  ipAddress String
+  userAgent String?
+
+  status FreeKeyStatus @default(PENDING)
+
+  // Generated key (after completion)
+  licenseKeyId String?     @unique
+  licenseKey   LicenseKey? @relation(fields: [licenseKeyId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  claimedAt   DateTime?
+  expiresAt   DateTime // Session expires after 30 minutes
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([token])
+  @@index([productId])
+  @@index([userId])
+  @@index([ipAddress])
+  @@index([status])
+  @@index([createdAt])
+  @@map("free_key_sessions")
+}
+
+enum FreeKeyStatus {
+  PENDING // Waiting for ad bypass
+  COMPLETED // Ad bypass completed, ready to claim
+  CLAIMED // Key has been claimed
+  EXPIRED // Session expired
 }

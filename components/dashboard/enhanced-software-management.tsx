@@ -10,12 +10,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { getImageUrl } from '@/lib/utils'
 import { UPLOAD_BASE_URL } from '@/lib/upload-config'
-import { 
-  Package, Plus, Download, Search, Edit, Trash2, Eye, 
-  Upload, X, Image as ImageIcon, ExternalLink, File, Copy
+import {
+  Package, Plus, Download, Search, Edit, Trash2, Eye,
+  Upload, X, Image as ImageIcon, ExternalLink, File, Copy, Key
 } from 'lucide-react'
 import Image from 'next/image'
 
@@ -43,9 +44,19 @@ interface Software {
   downloads: number  // API returns downloads count
   averageRating: number
   totalReviews: number
+  // Key settings
+  requiresKey?: boolean
+  adBypassEnabled?: boolean
+  freeKeyPlanId?: string | null
 }
 
 interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
+interface SubscriptionPlan {
   id: string
   name: string
   slug: string
@@ -65,6 +76,10 @@ interface FormData {
   metaDescription: string
   downloadUrl: string
   externalUrl: string
+  // Key settings
+  requiresKey: boolean
+  adBypassEnabled: boolean
+  freeKeyPlanId: string
 }
 
 const apiTypes = [
@@ -88,6 +103,7 @@ export default function EnhancedSoftwareManagement() {
   const [downloadFile, setDownloadFile] = useState<File | null>(null)
   const [apiTypeIndex, setApiTypeIndex] = useState<Record<string, number>>({})
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([])
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -102,12 +118,16 @@ export default function EnhancedSoftwareManagement() {
     metaTitle: '',
     metaDescription: '',
     downloadUrl: '',
-    externalUrl: ''
+    externalUrl: '',
+    requiresKey: false,
+    adBypassEnabled: false,
+    freeKeyPlanId: ''
   })
 
   useEffect(() => {
     fetchSoftware()
     fetchCategories()
+    fetchSubscriptionPlans()
   }, [searchTerm, statusFilter])
 
   const fetchSoftware = async () => {
@@ -119,7 +139,7 @@ export default function EnhancedSoftwareManagement() {
 
       const response = await fetch(`/api/admin/software?${params}`)
       if (!response.ok) throw new Error('Failed to fetch software')
-      
+
       const data = await response.json()
       setSoftware(data.software || [])
     } catch (error) {
@@ -139,6 +159,19 @@ export default function EnhancedSoftwareManagement() {
       }
     } catch (error) {
       console.error('Categories fetch error:', error)
+    }
+  }
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const response = await fetch('/api/plans')
+      if (response.ok) {
+        const data = await response.json()
+        // API returns { success: true, data: plans[] }
+        setSubscriptionPlans(data.data || [])
+      }
+    } catch (error) {
+      console.error('Plans fetch error:', error)
     }
   }
 
@@ -165,7 +198,10 @@ export default function EnhancedSoftwareManagement() {
       metaTitle: '',
       metaDescription: '',
       downloadUrl: '',
-      externalUrl: ''
+      externalUrl: '',
+      requiresKey: false,
+      adBypassEnabled: false,
+      freeKeyPlanId: ''
     })
     setSelectedImages([])
     setDownloadFile(null)
@@ -205,7 +241,7 @@ export default function EnhancedSoftwareManagement() {
 
       // Remove image from array
       const updatedImages = currentImages.filter((_, i) => i !== index)
-      
+
       // Update editingSoftware state - keep as array since that's the interface
       setEditingSoftware({
         ...editingSoftware,
@@ -266,17 +302,17 @@ export default function EnhancedSoftwareManagement() {
       // Validate form data before processing
       const price = parseFloat(formData.price)
       const stock = parseInt(formData.stock)
-      
+
       if (isNaN(price) || price < 0) {
         toast.error('Please enter a valid price')
         return
       }
-      
+
       if (isNaN(stock) || stock < 0) {
         toast.error('Please enter a valid stock quantity')
         return
       }
-      
+
       if (!formData.categoryId || formData.categoryId === '') {
         toast.error('Please select a category')
         return
@@ -327,23 +363,23 @@ export default function EnhancedSoftwareManagement() {
         }
         const data = await response.json()
         productId = data.product.id
-        
+
         // Upload new download file if provided during edit
         if (downloadFile) {
           console.log(`🔄 Starting file upload: ${downloadFile.name} (${(downloadFile.size / 1024 / 1024).toFixed(2)}MB)`)
           setUploadStatus(`Uploading file: ${downloadFile.name}...`)
           setUploadProgress(10)
-          
+
           const fileFormData = new FormData()
           fileFormData.append('file', downloadFile)
-          
+
           // Create AbortController for timeout handling
           const controller = new AbortController()
           const timeoutId = setTimeout(() => {
             controller.abort()
             console.log('❌ File upload timeout after 10 minutes')
           }, 10 * 60 * 1000) // 10 minutes timeout (longer than server)
-          
+
           try {
             setUploadProgress(50) // Simulated progress
             const fileResponse = await fetch(`${UPLOAD_BASE_URL}/api/admin/software/${productId}/file`, {
@@ -355,10 +391,10 @@ export default function EnhancedSoftwareManagement() {
                 'CF-Cache-Status': 'BYPASS',
               }
             })
-            
+
             clearTimeout(timeoutId)
             setUploadProgress(100)
-            
+
             if (!fileResponse.ok) {
               const errorData = await fileResponse.json().catch(() => ({}))
               console.error('File upload failed:', errorData)
@@ -390,7 +426,7 @@ export default function EnhancedSoftwareManagement() {
           console.log(`🔄 Creating new product with file: ${downloadFile.name} (${(downloadFile.size / 1024 / 1024).toFixed(2)}MB)`)
           setUploadStatus(`Creating product with file: ${downloadFile.name}...`)
           setUploadProgress(10)
-          
+
           const uploadFormData = new FormData()
           uploadFormData.append('file', downloadFile)
           uploadFormData.append('name', formData.title)
@@ -428,12 +464,12 @@ export default function EnhancedSoftwareManagement() {
               setUploadStatus(`Creation failed: ${errorData.message || 'Unknown error'}`)
               throw new Error(errorData.message || 'Failed to create product with file')
             }
-            
+
             const data = await response.json()
             productId = data.software.id
             console.log(`✅ Product created with file successfully: ${data.software.id}`)
             setUploadStatus('Product with file created successfully!')
-            
+
           } catch (error) {
             clearTimeout(timeoutId)
             setUploadProgress(0)
@@ -499,10 +535,10 @@ export default function EnhancedSoftwareManagement() {
       images: parsedImages // Ensure images is always an array
     }
     setEditingSoftware(editingItem)
-    
+
     // Find category ID from category name
     const foundCategory = categories.find(cat => cat.name === item.category)
-    
+
     setFormData({
       title: item.name,  // API uses 'name'
       slug: item.slug,
@@ -516,9 +552,12 @@ export default function EnhancedSoftwareManagement() {
       metaTitle: item.metaTitle || '',
       metaDescription: item.metaDescription || '',
       downloadUrl: item.downloadUrl || '',
-      externalUrl: item.externalUrl || ''
+      externalUrl: item.externalUrl || '',
+      requiresKey: item.requiresKey || false,
+      adBypassEnabled: item.adBypassEnabled || false,
+      freeKeyPlanId: item.freeKeyPlanId || ''
     })
-    
+
     // Reset selected images for new upload (don't mix with existing)
     setSelectedImages([])
     setIsAddDialogOpen(true)
@@ -563,10 +602,10 @@ export default function EnhancedSoftwareManagement() {
       const apiType = apiTypes[currentIndex]
       const baseUrl = window.location.origin
       const endpoint = `${baseUrl}/api/products/${id}${apiType.path}`
-      
+
       await navigator.clipboard.writeText(endpoint)
       toast.success(`${apiType.label} copied!`)
-      
+
       // Cycle to next API type
       const nextIndex = (currentIndex + 1) % apiTypes.length
       setApiTypeIndex(prev => ({ ...prev, [id]: nextIndex }))
@@ -582,8 +621,8 @@ export default function EnhancedSoftwareManagement() {
           <h1 className="text-3xl font-bold">Software Management</h1>
           <p className="text-muted-foreground">Manage your software products and downloads</p>
         </div>
-        <Dialog 
-          open={isAddDialogOpen} 
+        <Dialog
+          open={isAddDialogOpen}
           onOpenChange={(open) => {
             setIsAddDialogOpen(open)
             if (!open) resetForm()
@@ -604,16 +643,17 @@ export default function EnhancedSoftwareManagement() {
                 {editingSoftware ? 'Update software information, images, and settings.' : 'Create a new software product with details, images, and download options.'}
               </DialogDescription>
             </DialogHeader>
-            
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="basic">Basic Info</TabsTrigger>
                   <TabsTrigger value="content">Content</TabsTrigger>
                   <TabsTrigger value="media">Media</TabsTrigger>
                   <TabsTrigger value="seo">SEO</TabsTrigger>
+                  <TabsTrigger value="key-settings">Key Settings</TabsTrigger>
                 </TabsList>
-                
+
                 {/* Basic Information Tab */}
                 <TabsContent value="basic" className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -624,8 +664,8 @@ export default function EnhancedSoftwareManagement() {
                         value={formData.title}
                         onChange={(e) => {
                           const title = e.target.value
-                          setFormData({ 
-                            ...formData, 
+                          setFormData({
+                            ...formData,
                             title,
                             slug: generateSlug(title)
                           })
@@ -634,7 +674,7 @@ export default function EnhancedSoftwareManagement() {
                         required
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="slug">Slug *</Label>
                       <Input
@@ -725,7 +765,7 @@ export default function EnhancedSoftwareManagement() {
                         rows={3}
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="content">Full Content</Label>
                       <Textarea
@@ -832,7 +872,7 @@ export default function EnhancedSoftwareManagement() {
                       } catch (error) {
                         console.error('Error parsing current images:', error)
                       }
-                      
+
                       return currentImages.length > 0 ? (
                         <div>
                           <Label>Current Images</Label>
@@ -840,7 +880,7 @@ export default function EnhancedSoftwareManagement() {
                             {currentImages.map((imageUrl, index) => {
                               // Convert to API URL format if needed  
                               const apiImageUrl = getImageUrl(imageUrl)
-                              
+
                               return (
                                 <div key={index} className="relative">
                                   <img
@@ -922,7 +962,7 @@ export default function EnhancedSoftwareManagement() {
                         {formData.metaTitle.length}/60 characters
                       </p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="metaDescription">Meta Description</Label>
                       <Textarea
@@ -939,19 +979,88 @@ export default function EnhancedSoftwareManagement() {
                     </div>
                   </div>
                 </TabsContent>
+
+                {/* Key Settings Tab */}
+                <TabsContent value="key-settings" className="space-y-4">
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1">
+                        <Label className="font-medium">Requires License Key</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Người dùng cần key để sử dụng sản phẩm này
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.requiresKey}
+                        onCheckedChange={(checked) => setFormData({ ...formData, requiresKey: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1">
+                        <Label className="font-medium">Ad Bypass for Download</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Bật vượt quảng cáo để tải xuống (dùng khi không cần key)
+                        </p>
+                      </div>
+                      <Switch
+                        checked={formData.adBypassEnabled}
+                        onCheckedChange={(checked) => setFormData({ ...formData, adBypassEnabled: checked })}
+                      />
+                    </div>
+
+                    {formData.requiresKey && (
+                      <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+                        <Label htmlFor="freeKeyPlanId">Free Key Plan</Label>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Chọn plan cho free key 4 tiếng (Get Key Free)
+                        </p>
+                        <Select
+                          value={formData.freeKeyPlanId || 'none'}
+                          onValueChange={(value) => setFormData({ ...formData, freeKeyPlanId: value === 'none' ? '' : value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select free key plan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No free key</SelectItem>
+                            {subscriptionPlans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Key className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Get Key Free Feature</p>
+                          <p className="text-sm text-blue-700 mt-1">
+                            Khi bật "Requires License Key" và chọn Free Key Plan, người dùng sẽ thấy nút "Get Key Free"
+                            trên trang sản phẩm. Họ có thể vượt quảng cáo YeuMoney để nhận key miễn phí 4 tiếng.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
               </Tabs>
-              
+
               <div className="flex justify-end gap-4 pt-6 border-t">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsAddDialogOpen(false)}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading || uploadingImages}>
-                  {loading 
-                    ? (uploadingImages ? 'Uploading images...' : 'Saving...') 
+                  {loading
+                    ? (uploadingImages ? 'Uploading images...' : 'Saving...')
                     : editingSoftware ? 'Update' : 'Create'
                   }
                 </Button>
@@ -972,9 +1081,9 @@ export default function EnhancedSoftwareManagement() {
                   </div>
                   {uploadProgress > 0 && (
                     <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        style={{width: `${uploadProgress}%`}}
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
                   )}
@@ -1089,7 +1198,7 @@ export default function EnhancedSoftwareManagement() {
                               {item.description?.slice(0, 100)}...
                             </p>
                           </div>
-                          
+
                           <div className="flex gap-2 ml-4">
                             <Badge variant={item.status === 'PUBLISHED' ? 'default' : 'secondary'}>
                               {item.status}
@@ -1115,9 +1224,9 @@ export default function EnhancedSoftwareManagement() {
 
                     {/* Actions */}
                     <div className="flex gap-2 ml-4">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => copyApiEndpoint(item.id)}
                         title={`Copy ${apiTypes[apiTypeIndex[item.id] || 0].label}`}
                       >
