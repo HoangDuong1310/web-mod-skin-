@@ -40,7 +40,8 @@ async function createTestSession() {
     console.log('📦 Product:', product.title)
     console.log('')
     console.log('🔗 Open this URL to see claim page:')
-    console.log('http://localhost:3000/free-key/claim?token=' + token)
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    console.log(`${baseUrl}/free-key/claim?token=${token}`)
 }
 
 createTestSession()
