@@ -56,9 +56,17 @@ export async function GET(request: NextRequest) {
                 completedAt: new Date()
             }
         })
+        let baseUrl: string;
+        if (process.env.NEXTAUTH_URL) {
+            baseUrl = process.env.NEXTAUTH_URL;
+        } else if (request.headers.get('host')) {
+            const proto = request.headers.get('x-forwarded-proto') || 'https';
+            baseUrl = `${proto}://${request.headers.get('host')}`;
+        } else {
+            baseUrl = request.url;
+        }
 
-        // Redirect to claim page
-        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, request.url))
+        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
 
     } catch (error) {
         console.error('Free key callback error:', error)
