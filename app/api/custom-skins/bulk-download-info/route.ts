@@ -9,12 +9,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'skinIds array is required' }, { status: 400 })
     }
 
-    // Limit to prevent abuse
     if (skinIds.length > 50) {
       return NextResponse.json({ error: 'Maximum 50 skins per request' }, { status: 400 })
     }
 
-    // Get skin information
     const skins = await prisma.skinSubmission.findMany({
       where: {
         id: { in: skinIds },
@@ -32,37 +30,33 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Format response
-    // Get base URL for generating absolute URLs - use a robust method
     let baseUrl = process.env.NEXTAUTH_URL
 
     if (!baseUrl) {
-        // Try to get from forwarded headers (for proxy/load balancer setups)
-        const forwardedHost = request.headers.get('x-forwarded-host')
-        const host = request.headers.get('host')
-        const protocol = request.headers.get('x-forwarded-proto') || 'https'
+      const forwardedHost = request.headers.get('x-forwarded-host')
+      const host = request.headers.get('host')
+      const protocol = request.headers.get('x-forwarded-proto') || 'https'
 
-        if (forwardedHost) {
-            baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
-        } else if (host) {
-            baseUrl = `${protocol}://${host}`
-        } else {
-            // Extract from request.url as fallback
-            try {
-                const url = new URL(request.url)
-                baseUrl = `${url.protocol}//${url.host}`
-            } catch {
-                // Cannot determine base URL - this is a configuration error
-                return NextResponse.json(
-                    { error: 'Server configuration error: Cannot determine base URL. NEXTAUTH_URL must be set.' },
-                    { status: 500 }
-                )
-            }
+      if (forwardedHost) {
+        baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
+      } else if (host) {
+        baseUrl = `${protocol}://${host}`
+      } else {
+        try {
+          const url = new URL(request.url)
+          baseUrl = `${url.protocol}//${url.host}`
+        } catch {
+          return NextResponse.json(
+            { error: 'Server configuration error: Cannot determine base URL. NEXTAUTH_URL must be set.' },
+            { status: 500 }
+          )
         }
+      }
+    }
 
     const result = skinIds.map(skinId => {
       const skin = skins.find(s => s.id === skinId)
-      
+
       if (!skin) {
         return {
           skinId,

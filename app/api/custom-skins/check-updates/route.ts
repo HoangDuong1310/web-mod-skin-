@@ -9,14 +9,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'skins array is required' }, { status: 400 })
     }
 
-    // Limit to prevent abuse
     if (skins.length > 50) {
       return NextResponse.json({ error: 'Maximum 50 skins per request' }, { status: 400 })
     }
 
     const skinIds = skins.map(s => s.skinId)
 
-    // Get current server information for these skins
     const serverSkins = await prisma.skinSubmission.findMany({
       where: {
         id: { in: skinIds },
@@ -31,37 +29,33 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Get base URL for generating absolute URLs - use a robust method
     let baseUrl = process.env.NEXTAUTH_URL
 
     if (!baseUrl) {
-        // Try to get from forwarded headers (for proxy/load balancer setups)
-        const forwardedHost = request.headers.get('x-forwarded-host')
-        const host = request.headers.get('host')
-        const protocol = request.headers.get('x-forwarded-proto') || 'https'
+      const forwardedHost = request.headers.get('x-forwarded-host')
+      const host = request.headers.get('host')
+      const protocol = request.headers.get('x-forwarded-proto') || 'https'
 
-        if (forwardedHost) {
-            baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
-        } else if (host) {
-            baseUrl = `${protocol}://${host}`
-        } else {
-            // Extract from request.url as fallback
-            try {
-                const url = new URL(request.url)
-                baseUrl = `${url.protocol}//${url.host}`
-            } catch {
-                // Cannot determine base URL - this is a configuration error
-                return NextResponse.json(
-                    { error: 'Server configuration error: Cannot determine base URL. NEXTAUTH_URL must be set.' },
-                    { status: 500 }
-                )
-            }
+      if (forwardedHost) {
+        baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
+      } else if (host) {
+        baseUrl = `${protocol}://${host}`
+      } else {
+        try {
+          const url = new URL(request.url)
+          baseUrl = `${url.protocol}//${url.host}`
+        } catch {
+          return NextResponse.json(
+            { error: 'Server configuration error: Cannot determine base URL. NEXTAUTH_URL must be set.' },
+            { status: 500 }
+          )
         }
+      }
+    }
 
-    // Compare each local skin with server version
     const updates = skins.map(localSkin => {
       const serverSkin = serverSkins.find(s => s.id === localSkin.skinId)
-      
+
       if (!serverSkin) {
         return {
           skinId: localSkin.skinId,
@@ -70,27 +64,23 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check for updates based on various criteria
       let hasUpdate = false
       const reasons = []
 
-      // Version comparison
       if (localSkin.localVersion && serverSkin.version !== localSkin.localVersion) {
         hasUpdate = true
         reasons.push('Version mismatch')
       }
 
-      // File size comparison
       if (localSkin.localFileSize && serverSkin.fileSize !== localSkin.localFileSize) {
         hasUpdate = true
         reasons.push('File size changed')
       }
 
-      // Last modified comparison
       if (localSkin.lastDownloaded) {
         const localDate = new Date(localSkin.lastDownloaded)
         const serverDate = new Date(serverSkin.updatedAt)
-        
+
         if (serverDate > localDate) {
           hasUpdate = true
           reasons.push('Server version is newer')
