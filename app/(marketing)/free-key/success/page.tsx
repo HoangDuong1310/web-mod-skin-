@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, Copy, Clock, ArrowLeft, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { formatDateVN } from '@/lib/utils'
 import Link from 'next/link'
 
 interface KeyData {
@@ -69,8 +69,7 @@ function SuccessPageContent() {
     }
 
     const formatExpiryTime = (expiresAt: string) => {
-        const date = new Date(expiresAt)
-        return date.toLocaleString('vi-VN')
+        return formatDateVN(expiresAt)
     }
 
     if (loading) {

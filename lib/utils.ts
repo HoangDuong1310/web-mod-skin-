@@ -194,14 +194,44 @@ export function pick<T extends Record<string, any>, K extends keyof T>(
 // Format bytes to human readable format
 export function formatBytes(bytes: number, decimals: number = 2): string {
   if (bytes === 0) return '0 Bytes'
-  
+
   const k = 1024
   const dm = decimals < 0 ? 0 : decimals
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-  
+
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
+/**
+ * Format date for Vietnamese timezone (Asia/Ho_Chi_Minh)
+ * Ensures consistent display regardless of server/browser timezone
+ */
+export function formatDateVN(date: Date | string): string {
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+
+    // Format: HH:mm DD/MM/YYYY
+    const hours = dateObj.getUTCHours().toString().padStart(2, '0')
+    const minutes = dateObj.getUTCMinutes().toString().padStart(2, '0')
+    const day = dateObj.getUTCDate().toString().padStart(2, '0')
+    const month = (dateObj.getUTCMonth() + 1).toString().padStart(2, '0')
+    const year = dateObj.getUTCFullYear()
+
+    return `${hours}:${minutes} ${day}/${month}/${year}`
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return String(date)
+  }
+}
+
+/**
+ * Format datetime for Vietnamese timezone (Asia/Ho_Chi_Minh)
+ * Full format: HH:mm DD/MM/YYYY
+ */
+export function formatDateTimeVN(date: Date | string): string {
+  return formatDateVN(date)
 }
 
 

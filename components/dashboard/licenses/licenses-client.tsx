@@ -59,6 +59,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { vi } from 'date-fns/locale'
+import { formatDateVN } from '@/lib/utils'
 
 interface License {
   id: string
@@ -415,27 +416,75 @@ export function LicensesClient() {
     })
   }
 
-  // Format datetime in Vietnam timezone (UTC+7)
+  // Format remaining time in human-readable format
+  const formatRemainingTime = (expiresAt: string | Date | null | undefined) => {
+    // Handle null/undefined/null string (lifetime keys)
+    if (!expiresAt || expiresAt === 'null' || expiresAt === 'undefined') {
+      return { text: 'Vĩnh viễn', className: 'text-green-600', expiresAt: null }
+    }
+
+    // Parse the date
+    let dateStr: string
+    if (expiresAt instanceof Date) {
+      dateStr = expiresAt.toISOString()
+    } else {
+      dateStr = expiresAt
+    }
+
+    const expiryDate = new Date(dateStr)
+    if (isNaN(expiryDate.getTime())) {
+      return { text: 'Vĩnh viễn', className: 'text-green-600', expiresAt: null }
+    }
+
+    // Calculate remaining time using UTC
+    const now = new Date(Date.now())
+    const diffMs = expiryDate.getTime() - now.getTime()
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    // If expired
+    if (diffMs <= 0) {
+      return { text: 'Đã hết hạn', className: 'text-red-600', expiresAt: formatDateVN(expiresAt) }
+    }
+
+    // Build remaining time string
+    let parts: string[] = []
+
+    if (diffDays > 0) {
+      parts.push(`${diffDays} ngày`)
+    }
+
+    const remainingHours = diffHours % 24
+    if (remainingHours > 0) {
+      parts.push(`${remainingHours} tiếng`)
+    }
+
+    const remainingMinutes = diffMinutes % 60
+    if (remainingMinutes > 0 && diffDays === 0) {
+      // Only show minutes if less than 1 day
+      parts.push(`${remainingMinutes} phút`)
+    }
+
+    const text = parts.join(' ') + ' còn lại'
+
+    // Add warning color if expiring soon (less than 1 day)
+    let className = 'text-foreground'
+    if (diffDays === 0) {
+      className = 'text-orange-600 font-medium'
+    }
+    if (diffHours < 1) {
+      className = 'text-red-600 font-bold'
+    }
+
+    return { text, className, expiresAt: formatDateVN(expiresAt) }
+  }
+
+  // Format datetime using UTC for consistent Vietnam timezone display
   const formatDateTime = (date: string | Date | null | undefined) => {
     if (!date || date === 'null' || date === 'undefined') return '-'
-    // Convert to string if it's a Date object
-    let dateStr: string
-    if (date instanceof Date) {
-      dateStr = date.toISOString()
-    } else {
-      dateStr = date
-    }
-    // Parse as UTC and display in Vietnam timezone (UTC+7)
-    const utcDate = new Date(dateStr)
-    if (isNaN(utcDate.getTime())) return '-'
-    return utcDate.toLocaleString('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    return formatDateVN(date)
   }
 
   // Format datetime for logs
@@ -634,7 +683,17 @@ export function LicensesClient() {
                       {license._count.activations}/{license.maxDevices}
                     </TableCell>
                     <TableCell>
-                      {formatExpirationDate(license.expiresAt)}
+                      {(() => {
+                        const { text, className, expiresAt } = formatRemainingTime(license.expiresAt)
+                        return (
+                          <div className="flex flex-col">
+                            <span className={className}>{text}</span>
+                            {expiresAt && (
+                              <span className="text-xs text-muted-foreground">Hết hạn: {expiresAt}</span>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell>
                       {license.user ? (
@@ -807,7 +866,19 @@ export function LicensesClient() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Ngày hết hạn</Label>
-                  <p className="mt-1">{selectedLicenseDetail.expiresAt ? formatDateTime(selectedLicenseDetail.expiresAt) : 'Vĩnh viễn'}</p>
+                  <p className="mt-1">
+                    {(() => {
+                      const { text, className, expiresAt } = formatRemainingTime(selectedLicenseDetail.expiresAt)
+                      return (
+                        <div className="flex flex-col">
+                          <span className={className}>{text}</span>
+                          {expiresAt && (
+                            <span className="text-xs text-muted-foreground">{expiresAt}</span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </p>
                 </div>
               </div>
               

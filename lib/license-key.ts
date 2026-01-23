@@ -229,9 +229,10 @@ export async function createLicenseKey(params: {
 
   // Tạo license key
   // Tính ngày hết hạn
+  // Use UTC timestamp to avoid timezone issues
   let expiresAt: Date | null = null
   if (plan.durationType !== 'LIFETIME') {
-    expiresAt = calculateExpirationDate(plan.durationType, plan.durationValue)
+    expiresAt = calculateExpirationDate(plan.durationType, plan.durationValue, new Date(Date.now()))
   }
 
   const licenseKey = await prisma.licenseKey.create({
@@ -407,11 +408,12 @@ export async function activateKey(params: {
   }
 
   // Nếu key chưa được kích hoạt lần nào, set activation date và expiration
+  // Use UTC timestamp to avoid timezone issues
   let expiresAt = licenseKey.expiresAt
   let activatedAt = licenseKey.activatedAt
 
   if (licenseKey.status === 'INACTIVE') {
-    activatedAt = new Date()
+    activatedAt = new Date(Date.now())
     expiresAt = calculateExpirationDate(
       licenseKey.plan.durationType,
       licenseKey.plan.durationValue,

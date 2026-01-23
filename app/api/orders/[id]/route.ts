@@ -109,18 +109,21 @@ export async function PATCH(
     // If confirming payment, activate the license key
     if (paymentStatus === 'COMPLETED' && order.paymentStatus !== 'COMPLETED') {
       updateData.status = 'COMPLETED';
-      updateData.paidAt = new Date();
+      updateData.paidAt = new Date(Date.now());
+      // Use UTC timestamp for activation to avoid timezone issues
+      const now = new Date(Date.now());
       // Nếu đã có key thì active, nếu chưa có thì tạo mới
       if (order.licenseKey && order.plan) {
         const expiresAt = calculateExpirationDate(
           order.plan.durationType,
-          order.plan.durationValue
+          order.plan.durationValue,
+          now
         );
         await prisma.licenseKey.update({
           where: { id: order.licenseKey.id },
           data: {
             status: 'ACTIVE',
-            activatedAt: new Date(),
+            activatedAt: now,
             expiresAt,
             maxDevices: order.plan.maxDevices, // Thiết lập đúng maxDevices từ plan
           },
@@ -142,7 +145,8 @@ export async function PATCH(
         const keyString = generateKeyString();
         const expiresAt = calculateExpirationDate(
           order.plan.durationType,
-          order.plan.durationValue
+          order.plan.durationValue,
+          now
         );
         const newKey = await prisma.licenseKey.create({
           data: {
@@ -151,7 +155,7 @@ export async function PATCH(
             planId: order.plan.id,
             maxDevices: order.plan.maxDevices, // Thiết lập đúng maxDevices từ plan
             status: 'ACTIVE',
-            activatedAt: new Date(),
+            activatedAt: now,
             expiresAt,
             order: { connect: { id: order.id } },
           },

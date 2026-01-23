@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Key, ExternalLink, Copy, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { formatDateVN } from '@/lib/utils'
 
 interface GetFreeKeyButtonProps {
     productId: string
@@ -172,8 +172,7 @@ export function GetFreeKeyButton({
     }
 
     const formatExpiryTime = (expiresAt: string) => {
-        const date = new Date(expiresAt)
-        return date.toLocaleString('vi-VN')
+        return formatDateVN(expiresAt)
     }
 
     // Render based on status

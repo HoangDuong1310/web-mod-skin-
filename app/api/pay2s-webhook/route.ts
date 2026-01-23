@@ -169,10 +169,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Tính ngày hết hạn dựa trên plan
+      // Use UTC timestamp to avoid timezone issues
+      const now = new Date(Date.now());
       const expiresAt = calculateExpirationDate(
         plan.durationType,
         plan.durationValue,
-        new Date()
+        now
       );
 
       const keyString = generateKeyString();
@@ -183,7 +185,7 @@ export async function POST(req: NextRequest) {
           planId: foundOrder.planId,
           maxDevices: plan.maxDevices, // Thiết lập đúng maxDevices từ plan
           status: 'ACTIVE',
-          activatedAt: new Date(),
+          activatedAt: now,
           expiresAt, // Thiết lập đúng expiresAt từ plan
         },
       });

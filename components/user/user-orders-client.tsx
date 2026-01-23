@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
+import { formatDateVN } from '@/lib/utils'
 import { 
   ArrowLeft, 
   ShoppingCart, 
@@ -102,7 +103,7 @@ export function UserOrdersClient() {
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleString('vi-VN')
+    return formatDateVN(date)
   }
 
   if (isLoading) {

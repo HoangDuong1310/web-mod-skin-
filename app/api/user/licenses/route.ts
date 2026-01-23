@@ -13,11 +13,26 @@ import { getDaysRemaining } from '@/lib/license-key'
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
+
+    // Tự động cập nhật các keys đã hết hạn nhưng status vẫn là ACTIVE
+    const now = new Date(Date.now())
+    await prisma.licenseKey.updateMany({
+      where: {
+        userId: session.user.id,
+        status: 'ACTIVE',
+        expiresAt: {
+          lt: now
+        }
+      },
+      data: {
+        status: 'EXPIRED'
+      }
+    })
+
     const licenses = await prisma.licenseKey.findMany({
       where: {
         userId: session.user.id,

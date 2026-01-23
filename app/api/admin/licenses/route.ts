@@ -18,7 +18,25 @@ export async function GET(request: Request) {
     if (!session || !['ADMIN', 'STAFF'].includes(session.user?.role || '')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
+
+    // Tự động cập nhật các keys đã hết hạn nhưng status vẫn là ACTIVE
+    const now = new Date(Date.now())
+    const updateResult = await prisma.licenseKey.updateMany({
+      where: {
+        status: 'ACTIVE',
+        expiresAt: {
+          lt: now
+        }
+      },
+      data: {
+        status: 'EXPIRED'
+      }
+    })
+
+    if (updateResult.count > 0) {
+      console.log(`[License Cron] Updated ${updateResult.count} expired keys`)
+    }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')

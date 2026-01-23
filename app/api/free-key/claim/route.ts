@@ -104,7 +104,8 @@ export async function POST(request: NextRequest) {
 
         // Calculate expiration using plan's duration settings
         // This ensures: 1 day = 24 hours, 4 hours = 4 hours, etc.
-        const now = new Date()
+        // Use Date.now() to create UTC timestamp, avoiding server timezone issues
+        const now = new Date(Date.now())
         const expiresAt = calculateExpirationDate(
             session.product.freeKeyPlan.durationType,
             session.product.freeKeyPlan.durationValue,

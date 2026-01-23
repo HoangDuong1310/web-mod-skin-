@@ -234,10 +234,12 @@ export async function POST(request: NextRequest) {
           // Tạo license key
           const { generateKeyString } = await import('@/lib/license-key');
           const keyString = generateKeyString();
+          // Use UTC timestamp to avoid timezone issues
+          const now = new Date(Date.now());
           const expiresAt = calculateExpirationDate(
             pendingOrder.plan.durationType,
             pendingOrder.plan.durationValue,
-            new Date()
+            now
           );
 
           const licenseKey = await prisma.licenseKey.create({
@@ -247,7 +249,7 @@ export async function POST(request: NextRequest) {
               planId: pendingOrder.planId,
               maxDevices: pendingOrder.plan.maxDevices,
               status: 'ACTIVE',
-              activatedAt: new Date(),
+              activatedAt: now,
               expiresAt,
             }
           });

@@ -10,5 +10,11 @@
       "maxDuration": 120
     }
   },
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/check-expired-licenses",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
