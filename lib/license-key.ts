@@ -78,9 +78,18 @@ export function generateOrderNumber(): string {
 /**
  * Tính ngày hết hạn dựa trên duration type
  * Sử dụng UTC để tránh vấn đề timezone
+ * 
+ * Supported duration types:
+ * - HOUR: Giờ (VD: 4 giờ = HOUR + 4)
+ * - DAY: Ngày
+ * - WEEK: Tuần
+ * - MONTH: Tháng
+ * - QUARTER: Quý (3 tháng)
+ * - YEAR: Năm
+ * - LIFETIME: Vĩnh viễn
  */
 export function calculateExpirationDate(
-  durationType: 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'LIFETIME',
+  durationType: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'LIFETIME',
   durationValue: number,
   fromDate: Date = new Date()
 ): Date | null {
@@ -88,36 +97,37 @@ export function calculateExpirationDate(
     return null // null = không hết hạn
   }
 
-  // Chuyển đổi sang UTC để đảm bảo tính nhất quán
-  const expirationDate = new Date(Date.UTC(
-    fromDate.getFullYear(),
-    fromDate.getMonth(),
-    fromDate.getDate(),
-    fromDate.getHours(),
-    fromDate.getMinutes(),
-    fromDate.getSeconds(),
-    fromDate.getMilliseconds()
-  ))
+  // Chuyển đổi sang UTC milliseconds để tính toán chính xác
+  // Sử dụng Date.UTC() để đảm bảo timezone nhất quán
+  const expirationMs = fromDate.getTime()
 
   switch (durationType) {
+    case 'HOUR':
+      // Thêm giờ: 1 ngày = 24 giờ, 4 giờ = 4 giờ
+      return new Date(expirationMs + (durationValue * 60 * 60 * 1000))
     case 'DAY':
-      expirationDate.setUTCDate(expirationDate.getUTCDate() + durationValue)
-      break
+      // Thêm ngày: Sử dụng UTC day để tránh DST issues
+      return new Date(expirationMs + (durationValue * 24 * 60 * 60 * 1000))
     case 'WEEK':
-      expirationDate.setUTCDate(expirationDate.getUTCDate() + (durationValue * 7))
-      break
+      return new Date(expirationMs + (durationValue * 7 * 24 * 60 * 60 * 1000))
     case 'MONTH':
-      expirationDate.setUTCMonth(expirationDate.getUTCMonth() + durationValue)
-      break
+      // Thêm tháng: Cộng tháng vào date hiện tại
+      const monthDate = new Date(fromDate)
+      monthDate.setUTCMonth(monthDate.getUTCMonth() + durationValue)
+      return monthDate
     case 'QUARTER':
-      expirationDate.setUTCMonth(expirationDate.getUTCMonth() + (durationValue * 3))
-      break
+      // Quý = 3 tháng
+      const quarterDate = new Date(fromDate)
+      quarterDate.setUTCMonth(quarterDate.getUTCMonth() + (durationValue * 3))
+      return quarterDate
     case 'YEAR':
-      expirationDate.setUTCFullYear(expirationDate.getUTCFullYear() + durationValue)
-      break
+      const yearDate = new Date(fromDate)
+      yearDate.setUTCFullYear(yearDate.getUTCFullYear() + durationValue)
+      return yearDate
+    default:
+      // Fallback - không thêm gì
+      return fromDate
   }
-
-  return expirationDate
 }
 
 /**
@@ -148,7 +158,7 @@ export function getDaysRemaining(expiresAt: Date | null): number | null {
  * Format duration để hiển thị
  */
 export function formatDuration(
-  durationType: 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'LIFETIME',
+  durationType: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'LIFETIME',
   durationValue: number
 ): string {
   if (durationType === 'LIFETIME') {
@@ -156,6 +166,7 @@ export function formatDuration(
   }
 
   const labels: Record<string, string> = {
+    HOUR: 'giờ',
     DAY: 'ngày',
     WEEK: 'tuần',
     MONTH: 'tháng',

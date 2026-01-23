@@ -60,8 +60,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Skip localhost validation for this endpoint (download info is less critical)}
-    
     const result = skinIds.map(skinId => {
       const skin = skins.find(s => s.id === skinId)
       

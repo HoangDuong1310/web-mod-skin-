@@ -58,8 +58,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Skip localhost validation for this endpoint (check updates is less critical)}
-
     // Compare each local skin with server version
     const updates = skins.map(localSkin => {
       const serverSkin = serverSkins.find(s => s.id === localSkin.skinId)

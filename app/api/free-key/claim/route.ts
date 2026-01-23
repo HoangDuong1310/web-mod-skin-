@@ -9,9 +9,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateKeyString, calculateExpirationDate } from '@/lib/license-key'
 
-// Free key duration: 4 hours
-const FREE_KEY_HOURS = 4
-
 export async function POST(request: NextRequest) {
     try {
         const { sessionToken } = await request.json()
@@ -105,9 +102,14 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Calculate expiration (4 hours from now)
+        // Calculate expiration using plan's duration settings
+        // This ensures: 1 day = 24 hours, 4 hours = 4 hours, etc.
         const now = new Date()
-        const expiresAt = new Date(now.getTime() + FREE_KEY_HOURS * 60 * 60 * 1000)
+        const expiresAt = calculateExpirationDate(
+            session.product.freeKeyPlan.durationType,
+            session.product.freeKeyPlan.durationValue,
+            now
+        )
 
         // Create the license key and update session in a transaction
         const result = await prisma.$transaction(async (tx) => {
@@ -118,7 +120,7 @@ export async function POST(request: NextRequest) {
                     planId: session.product.freeKeyPlanId!,
                     userId: session.userId,
                     status: 'INACTIVE', // Will be activated on first use
-                    maxDevices: 1, // Free keys only allow 1 device
+                    maxDevices: session.product.freeKeyPlan.maxDevices || 1,
                     expiresAt,
                     notes: `Free key from ad bypass. Product: ${session.product.title}`,
                     createdBy: 'SYSTEM_FREE_KEY'
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
             key: result.key,
             expiresAt: result.expiresAt,
             maxDevices: result.maxDevices,
-            duration: `${FREE_KEY_HOURS} hours`,
+            duration: `${session.product.freeKeyPlan.durationValue} ${session.product.freeKeyPlan.durationType.toLowerCase()}`,
             message: 'Your free key has been generated successfully!'
         })
 
