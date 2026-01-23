@@ -22,7 +22,29 @@ export async function GET(
     }
 
     // Return download information without triggering actual download
-    const baseUrl = process.env.NEXTAUTH_URL || `http://${request.headers.get('host')}`
+    // Get base URL for generating absolute URLs - use a robust method
+    let baseUrl = process.env.NEXTAUTH_URL
+
+    if (!baseUrl) {
+        // Try to get from forwarded headers (for proxy/load balancer setups)
+        const forwardedHost = request.headers.get('x-forwarded-host')
+        const host = request.headers.get('host')
+        const protocol = request.headers.get('x-forwarded-proto') || 'https'
+
+        if (forwardedHost) {
+            baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
+        } else if (host) {
+            baseUrl = `${protocol}://${host}`
+        } else {
+            // Extract from request.url as fallback
+            try {
+                const url = new URL(request.url)
+                baseUrl = `${url.protocol}//${url.host}`
+            } catch {
+                baseUrl = 'https://your-domain.com'
+            }
+        }
+    }
     
     return NextResponse.json({
       skinId: skin.id,

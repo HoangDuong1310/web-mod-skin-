@@ -118,10 +118,43 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        // Get base URL for callback
-        const baseUrl = process.env.NEXTAUTH_URL ||
-            request.headers.get('origin') ||
-            'http://localhost:3000'
+        // Get base URL for callback - use a robust method to determine the correct URL
+        // Priority: NEXTAUTH_URL > x-forwarded-host > host > request.url
+        let baseUrl = process.env.NEXTAUTH_URL
+
+        if (!baseUrl) {
+            // Try to get from forwarded headers (for proxy/load balancer setups)
+            const forwardedHost = request.headers.get('x-forwarded-host')
+            const host = request.headers.get('host')
+            const protocol = request.headers.get('x-forwarded-proto') || 'https'
+
+            if (forwardedHost) {
+                baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
+            } else if (host) {
+                baseUrl = `${protocol}://${host}`
+            } else {
+                // Last resort: extract from request.url
+                try {
+                    const url = new URL(request.url)
+                    baseUrl = `${url.protocol}//${url.host}`
+                } catch {
+                    console.error('CRITICAL: Cannot determine baseUrl. NEXTAUTH_URL must be set in production environment')
+                    return NextResponse.json(
+                        { error: 'Server configuration error: NEXTAUTH_URL not set' },
+                        { status: 500 }
+                    )
+                }
+            }
+        }
+
+        // Validate that we don't use localhost in production
+        if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+            console.error('CRITICAL: baseUrl is using localhost! NEXTAUTH_URL must be set correctly on production server')
+            return NextResponse.json(
+                { error: 'Server configuration error: NEXTAUTH_URL must be set to production domain' },
+                { status: 500 }
+            )
+        }
 
         // Create shortened URL
         const result = await createFreeKeyLink(token, baseUrl)

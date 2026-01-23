@@ -31,7 +31,34 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    const baseUrl = process.env.NEXTAUTH_URL || `http://${request.headers.get('host')}`
+    // Get base URL for generating absolute URLs - use a robust method
+    let baseUrl = process.env.NEXTAUTH_URL
+
+    if (!baseUrl) {
+        // Try to get from forwarded headers (for proxy/load balancer setups)
+        const forwardedHost = request.headers.get('x-forwarded-host')
+        const host = request.headers.get('host')
+        const protocol = request.headers.get('x-forwarded-proto') || 'https'
+
+        if (forwardedHost) {
+            baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
+        } else if (host) {
+            baseUrl = `${protocol}://${host}`
+        } else {
+            // Extract from request.url as fallback
+            try {
+                const url = new URL(request.url)
+                baseUrl = `${url.protocol}//${url.host}`
+            } catch {
+                // Cannot determine base URL - this is a configuration error
+                return NextResponse.json(
+                    { error: 'Server configuration error: Cannot determine base URL. NEXTAUTH_URL must be set.' },
+                    { status: 500 }
+                )
+            }
+        }
+
+        // Skip localhost validation for this endpoint (check updates is less critical)}
 
     // Compare each local skin with server version
     const updates = skins.map(localSkin => {
