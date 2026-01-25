@@ -6,6 +6,9 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+  // Connection pool settings for production
+  // Adjust connection_limit based on your server capacity
+  // Recommended: 10-20 for medium traffic, 50+ for high traffic
 }
 
 model Account {

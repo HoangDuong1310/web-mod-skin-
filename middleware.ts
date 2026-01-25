@@ -2,13 +2,34 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
+// In-memory cache for maintenance mode to avoid database queries on every request
+let maintenanceModeCache: { value: boolean; timestamp: number } | null = null
+const MAINTENANCE_CACHE_TTL = 60000 // 1 minute cache
+
+function isMaintenanceMode(): boolean {
+  // First check environment variable (can be set by admin without database)
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    return true
+  }
+
+  // Check cache
+  const now = Date.now()
+  if (maintenanceModeCache && (now - maintenanceModeCache.timestamp) < MAINTENANCE_CACHE_TTL) {
+    return maintenanceModeCache.value
+  }
+
+  // Cache miss or expired - will be updated on next API call
+  // Default to false to avoid blocking the site
+  return false
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Handle URL canonicalization (www vs non-www)
   const hostname = request.headers.get('host') || ''
   const url = request.nextUrl.clone()
-  
+
   // Force non-www (adjust based on your preference)
   if (hostname.startsWith('www.')) {
     url.hostname = hostname.replace('www.', '')
@@ -28,20 +49,10 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Check maintenance mode via API call (edge-runtime compatible)
-    const maintenanceResponse = await fetch(new URL('/api/maintenance', request.url), {
-      headers: {
-        'Authorization': request.headers.get('Authorization') || '',
-        'Cookie': request.headers.get('Cookie') || '',
-      }
-    }).catch(() => null)
+    // Check maintenance mode using cached/environment value
+    // This avoids database query on every request
+    const maintenanceMode = isMaintenanceMode()
 
-    let maintenanceMode = false
-    if (maintenanceResponse?.ok) {
-      const data = await maintenanceResponse.json()
-      maintenanceMode = data.maintenanceMode || false
-    }
-    
     if (maintenanceMode) {
       // Allow admins to access the site during maintenance
       const token = await getToken({
@@ -62,9 +73,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     }
-
-    // For admin routes, we'll handle IP whitelisting in the API routes instead
-    // since we can't use Prisma in Edge Runtime
 
     return NextResponse.next()
   } catch (error) {
