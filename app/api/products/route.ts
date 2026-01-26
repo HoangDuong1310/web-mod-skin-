@@ -1,4 +1,4 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -6,12 +6,13 @@ import { prisma } from '@/lib/prisma'
 import { apiLimiter } from '@/lib/rate-limit'
 import { productQuerySchema, createProductSchema } from '@/lib/validations'
 import { slugify } from '@/lib/utils'
+import { revalidatePath } from 'next/cache'
 
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting
     const rateLimitResult = await apiLimiter(request)
-    
+
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: 'Too many requests' },
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams)
-    
+
     const validatedQuery = productQuerySchema.parse(queryParams)
     const { page, limit, sort, order, q, categoryId, status, price_gte, price_lte, in_stock } = validatedQuery
 
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const rateLimitResult = await apiLimiter(request)
-    
+
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: 'Too many requests' },
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user || !['ADMIN', 'STAFF'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -176,20 +177,12 @@ export async function POST(request: NextRequest) {
     })
 
     // Revalidate relevant paths
-    const revalidateUrl = new URL('/api/revalidate', request.url)
-    revalidateUrl.searchParams.set('secret', process.env.REVALIDATE_SECRET!)
-    revalidateUrl.searchParams.set('path', '/products')
-    
-    try {
-      await fetch(revalidateUrl.toString(), { method: 'POST' })
-    } catch (revalidateError) {
-      console.warn('Failed to revalidate:', revalidateError)
-    }
+    revalidatePath('/products')
 
     return NextResponse.json(product, { status: 201 })
   } catch (error) {
     console.error('Create product error:', error)
-    
+
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error.message },
