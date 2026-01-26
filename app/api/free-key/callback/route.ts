@@ -3,6 +3,7 @@
  * GET /api/free-key/callback
  * 
  * Callback endpoint that YeuMoney redirects to after user completes ad bypass
+ * CRITICAL: Must verify secret to prevent bypass attacks
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -11,9 +12,10 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
     try {
         const token = request.nextUrl.searchParams.get('token')
+        const secret = request.nextUrl.searchParams.get('secret')
 
-        if (!token) {
-            return NextResponse.redirect(new URL('/free-key/error?reason=missing_token', request.url))
+        if (!token || !secret) {
+            return NextResponse.redirect(new URL('/free-key/error?reason=missing_params', request.url))
         }
 
         // Find the session
@@ -28,9 +30,15 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(new URL('/free-key/error?reason=invalid_token', request.url))
         }
 
+        // CRITICAL: Verify secret matches
+        // This prevents attackers from calling callback directly without viewing ads
+        if (session.callbackSecret !== secret) {
+            console.error(`SECURITY: Invalid callback secret for session ${token}`)
+            return NextResponse.redirect(new URL('/free-key/error?reason=invalid_secret', request.url))
+        }
+
         // Check if session is expired
         if (new Date() > session.expiresAt) {
-            // Update status to expired
             await prisma.freeKeySession.update({
                 where: { id: session.id },
                 data: { status: 'EXPIRED' }
@@ -56,17 +64,8 @@ export async function GET(request: NextRequest) {
                 completedAt: new Date()
             }
         })
-        let baseUrl: string;
-        if (process.env.NEXTAUTH_URL) {
-            baseUrl = process.env.NEXTAUTH_URL;
-        } else if (request.headers.get('host')) {
-            const proto = request.headers.get('x-forwarded-proto') || 'https';
-            baseUrl = `${proto}://${request.headers.get('host')}`;
-        } else {
-            baseUrl = request.url;
-        }
 
-        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
+        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, request.url))
 
     } catch (error) {
         console.error('Free key callback error:', error)

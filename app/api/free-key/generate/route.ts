@@ -3,6 +3,7 @@
  * POST /api/free-key/generate
  * 
  * Generates a YeuMoney shortened URL for the user to bypass ads and get a free key
+ * SECURITY: Does NOT expose sessionToken to prevent bypass attacks
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -100,6 +101,9 @@ export async function POST(request: NextRequest) {
 
         // Generate unique session token
         const token = crypto.randomBytes(32).toString('hex')
+        
+        // Generate secret for callback verification (prevents direct callback access)
+        const callbackSecret = crypto.randomBytes(16).toString('hex')
 
         // Calculate session expiry
         const expiresAt = new Date()
@@ -114,16 +118,15 @@ export async function POST(request: NextRequest) {
                 ipAddress,
                 userAgent,
                 status: 'PENDING',
-                expiresAt
+                expiresAt,
+                callbackSecret
             }
         })
 
-        // Get base URL for callback - use a robust method to determine the correct URL
-        // Priority: NEXTAUTH_URL > x-forwarded-host > host > request.url
+        // Get base URL for callback
         let baseUrl = process.env.NEXTAUTH_URL
 
         if (!baseUrl) {
-            // Try to get from forwarded headers (for proxy/load balancer setups)
             const forwardedHost = request.headers.get('x-forwarded-host')
             const host = request.headers.get('host')
             const protocol = request.headers.get('x-forwarded-proto') || 'https'
@@ -133,12 +136,11 @@ export async function POST(request: NextRequest) {
             } else if (host) {
                 baseUrl = `${protocol}://${host}`
             } else {
-                // Last resort: extract from request.url
                 try {
                     const url = new URL(request.url)
                     baseUrl = `${url.protocol}//${url.host}`
                 } catch {
-                    console.error('CRITICAL: Cannot determine baseUrl. NEXTAUTH_URL must be set in production environment')
+                    console.error('CRITICAL: Cannot determine baseUrl. NEXTAUTH_URL must be set')
                     return NextResponse.json(
                         { error: 'Server configuration error: NEXTAUTH_URL not set' },
                         { status: 500 }
@@ -149,15 +151,18 @@ export async function POST(request: NextRequest) {
 
         // Validate that we don't use localhost in production
         if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
-            console.error('CRITICAL: baseUrl is using localhost! NEXTAUTH_URL must be set correctly on production server')
+            console.error('CRITICAL: baseUrl is using localhost! NEXTAUTH_URL must be set correctly')
             return NextResponse.json(
                 { error: 'Server configuration error: NEXTAUTH_URL must be set to production domain' },
                 { status: 500 }
             )
         }
 
-        // Create shortened URL
-        const result = await createFreeKeyLink(token, baseUrl)
+        // Create full callback URL with token AND secret
+        const callbackUrl = `${baseUrl}/api/free-key/callback?token=${token}&secret=${callbackSecret}`
+
+        // Create shortened URL using the full callback URL
+        const result = await createFreeKeyLink(token, callbackUrl)
 
         if (!result.success || !result.shortenedUrl) {
             // Delete the session if we couldn't create the link
@@ -169,10 +174,11 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        // SECURITY: Do NOT expose sessionToken in response
+        // Only expose the shortened URL that contains the token internally
         return NextResponse.json({
             success: true,
             shortenedUrl: result.shortenedUrl,
-            sessionToken: token,
             expiresAt: expiresAt.toISOString(),
             message: 'Please complete the ad bypass to receive your free key'
         })

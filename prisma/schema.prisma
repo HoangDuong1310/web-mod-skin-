@@ -1005,6 +1005,7 @@ enum OrderPaymentMethod {
 model FreeKeySession {
   id        String  @id @default(cuid())
   token     String  @unique // Unique token for verification
+  callbackSecret String? // Secret for callback verification (prevents bypass)
   productId String
   userId    String? // Optional: logged in user
   ipAddress String
