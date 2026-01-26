@@ -1,263 +1,197 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { generateDonationQR, validateVietQRConfig } from '@/lib/vietqr';
-import { z } from 'zod';
+'use client'
 
-// Schema validation for donation creation
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import { strictLimiter } from '@/lib/rate-limit'
+import { z } from 'zod'
+
+// Validation schema cho donation
 const createDonationSchema = z.object({
-  amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  amount: z.number()
+    .min(1, 'Số tiền tối thiểu là 1')
+    .max(10000, 'Số tiền tối đa là 10,000 USD')
+    .positive('Số tiền phải lớn hơn 0'),
   currency: z.string().default('USD'),
   paymentMethod: z.enum(['KOFI', 'BANK_TRANSFER', 'MANUAL']),
-  donorName: z.string().optional(),
-  donorEmail: z.string().email().optional().or(z.literal('')),
-  message: z.string().optional(),
+  donorName: z.string()
+    .min(2, 'Tên phải có ít nhất 2 ký tự')
+    .max(100, 'Tên không được vượt quá 100 ký tự')
+    .regex(/^[\p{L}\p{N}\s\-_.\'()]+$/u, 'Tên chỉ được chứa chữ cái, số, khoảng trắng và một số ký tự đặc biệt'),
+  donorEmail: z.string()
+    .email('Email không hợp lệ')
+    .max(255, 'Email không được vượt quá 255 ký tự')
+    .or(z.literal('')),
+  message: z.string()
+    .max(500, 'Lời nhắn không được vượt quá 500 ký tự')
+    .optional(),
   isAnonymous: z.boolean().default(false),
   goalId: z.string().optional(),
-  qrUrl: z.string().optional(),
-  transferNote: z.string().optional()
-});
+  qrUrl: z.string().url().optional().or(z.literal('')),
+  transferNote: z.string().max(200).optional(),
+})
 
-const getDonationsSchema = z.object({
-  page: z.string().transform(Number).pipe(z.number().min(1)).default('1'),
-  limit: z.string().transform(Number).pipe(z.number().min(1).max(100)).default('10'),
-  status: z.enum(['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED', 'CANCELLED']).optional(),
-  paymentMethod: z.enum(['KOFI', 'BANK_TRANSFER', 'MANUAL']).optional(),
-  goalId: z.string().optional(),
-});
-
-/**
- * Create a new donation (for bank transfers and manual donations)
- * POST /api/donations
- */
-export async function POST(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const body = await request.json();
-    
-    const validatedData = createDonationSchema.parse(body);
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 100)
+    const status = searchParams.get('status')
 
-    const {
-      amount,
-      currency,
-      paymentMethod,
-      donorName,
-      donorEmail,
-      message,
-      isAnonymous,
-      goalId,
-      qrUrl,
-      transferNote
-    } = validatedData;
-
-    // For anonymous donations, we need at least a name
-    if (isAnonymous && !donorName) {
-      return NextResponse.json(
-        { error: 'Donor name is required for anonymous donations' },
-        { status: 400 }
-      );
-    }
-
-    // Get session for authenticated users
-    const session = await getServerSession(authOptions);
-    let userId = session?.user?.id || null;
-
-    // If not anonymous and no session, try to find/create user by email
-    if (!isAnonymous && !userId && donorEmail) {
-      let user = await prisma.user.findUnique({
-        where: { email: donorEmail }
-      });
-
-      if (!user && donorEmail.includes('@')) {
-        try {
-          user = await prisma.user.create({
-            data: {
-              email: donorEmail,
-              name: donorName || 'Anonymous',
-              role: 'USER'
-            }
-          });
-          userId = user.id;
-        } catch (error) {
-          console.warn('Could not create user:', error);
-        }
-      } else if (user) {
-        userId = user.id;
-      }
-    }
-
-    // Validate goal if provided
-    let donationGoal = null;
-    if (goalId) {
-      donationGoal = await prisma.donationGoal.findUnique({
-        where: { id: goalId }
-      });
-
-      if (!donationGoal) {
-        return NextResponse.json(
-          { error: 'Donation goal not found' },
-          { status: 404 }
-        );
-      }
-    }
-
-    // Generate unique transaction ID
-    const transactionId = `${paymentMethod}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Create donation record (for BANK_TRANSFER, QR info is passed from client)
-    const donation = await prisma.donation.create({
-      data: {
-        amount: Number(amount),
-        currency,
-        donorName: donorName || (session?.user?.name),
-        donorEmail: donorEmail || (session?.user?.email),
-        message,
-        isAnonymous,
-        paymentMethod,
-        transactionId,
-        status: paymentMethod === 'MANUAL' ? 'COMPLETED' : 'PENDING',
-        userId,
-        goalId: goalId || null,
-        qrCodeUrl: qrUrl || null,
-        transferNote: transferNote || null,
-        ipAddress: request.ip || null,
-        userAgent: request.headers.get('user-agent') || null
-      },
-      include: {
-        goal: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    });
-
-    // Update goal progress if applicable and donation is completed
-    if (donationGoal && donation.status === 'COMPLETED') {
-      const totalDonations = await prisma.donation.aggregate({
-        where: {
-          goalId: donationGoal.id,
-          status: 'COMPLETED'
-        },
-        _sum: {
-          amount: true
-        }
-      });
-
-      const newCurrentAmount = totalDonations._sum?.amount || 0;
-      
-      await prisma.donationGoal.update({
-        where: { id: donationGoal.id },
-        data: {
-          currentAmount: newCurrentAmount
-        }
-      });
-    }
-
-    // Return donation with QR data for bank transfers
-    const response: any = {
-      success: true,
-      donation: {
-        id: donation.id,
-        amount: donation.amount,
-        currency: donation.currency,
-        paymentMethod: donation.paymentMethod,
-        status: donation.status,
-        transactionId: donation.transactionId,
-        message: donation.message,
-        createdAt: donation.createdAt
-      }
-    };
-
-    return NextResponse.json(response);
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    console.error('Donation creation error:', error);
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        message: process.env.NODE_ENV === 'development' ? String(error) : 'Failed to create donation'
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Get donations list (admin only)
- * GET /api/donations
- */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { searchParams } = request.nextUrl;
-    const params = getDonationsSchema.parse(Object.fromEntries(searchParams));
-
-    const where: any = {};
-    if (params.status) where.status = params.status;
-    if (params.paymentMethod) where.paymentMethod = params.paymentMethod;
-    if (params.goalId) where.goalId = params.goalId;
+    const where: any = {}
+    if (status) where.status = status
 
     const [donations, total] = await Promise.all([
       prisma.donation.findMany({
         where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
           goal: {
-            select: {
-              id: true,
-              title: true
-            }
+            select: { title: true }
           }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip: (params.page - 1) * params.limit,
-        take: params.limit
+        }
       }),
       prisma.donation.count({ where })
-    ]);
+    ])
 
     return NextResponse.json({
       donations,
       pagination: {
-        page: params.page,
-        limit: params.limit,
+        page,
+        limit,
         total,
-        pages: Math.ceil(total / params.limit)
+        pages: Math.ceil(total / limit)
       }
-    });
-
+    })
   } catch (error) {
-    console.error('Get donations error:', error);
+    console.error('Error fetching donations:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch donations' },
       { status: 500 }
-    );
+    )
+  }
+}
+
+export async function POST(req: NextRequest) {
+  // Áp dụng rate limiting nghiêm ngặt - chỉ 5 requests/phút/IP
+  const rateLimitResult = await strictLimiter(req)
+  
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { 
+        error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
+        retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+      },
+      { 
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': Math.ceil(rateLimitResult.resetTime / 1000).toString()
+        }
+      }
+    )
+  }
+
+  try {
+    // Parse và validate body
+    const body = await req.json()
+
+    // Validate input
+    const validationResult = createDonationSchema.safeParse(body)
+    
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }))
+      
+      return NextResponse.json(
+        { error: 'Dữ liệu không hợp lệ', details: errors },
+        { status: 400 }
+      )
+    }
+
+    const data = validationResult.data
+
+    // Kiểm tra IP đã donate gần đây chưa (trong vòng 1 phút)
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     req.ip || 
+                     'unknown'
+
+    const recentDonation = await prisma.donation.findFirst({
+      where: {
+        OR: [
+          { donorEmail: data.donorEmail },
+          { 
+            // Lưu IP vào DB để kiểm tra (nếu cần mở rộng schema)
+            // Hiện tại chỉ kiểm tra email
+          }
+        ],
+        createdAt: {
+          gte: new Date(Date.now() - 60 * 1000) // 1 phút
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    if (recentDonation) {
+      return NextResponse.json(
+        { error: 'Bạn đã tạo donation gần đây. Vui lòng đợi 1 phút trước khi tạo mới.' },
+        { status: 429 }
+      )
+    }
+
+    // Tạo donation với status PENDING (chờ xác nhận)
+    const donation = await prisma.donation.create({
+      data: {
+        amount: data.amount,
+        currency: data.currency,
+        paymentMethod: data.paymentMethod,
+        donorName: data.donorName,
+        donorEmail: data.donorEmail || null,
+        message: data.message || null,
+        isAnonymous: data.isAnonymous,
+        goalId: data.goalId,
+        status: 'PENDING',
+        transferNote: data.transferNote || null,
+      }
+    })
+
+    return NextResponse.json(
+      { 
+        success: true, 
+        donation: {
+          id: donation.id,
+          amount: donation.amount,
+          message: 'Donation đã được tạo. Vui lòng hoàn tất thanh toán.'
+        }
+      },
+      { 
+        status: 201,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString()
+        }
+      }
+    )
+  } catch (error) {
+    console.error('Error creating donation:', error)
+    
+    // Check for Prisma unique constraint violation
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { error: 'Donation này đã tồn tại' },
+        { status: 409 }
+      )
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to create donation' },
+      { status: 500 }
+    )
   }
 }

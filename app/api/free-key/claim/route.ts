@@ -3,13 +3,28 @@
  * POST /api/free-key/claim
  * 
  * Claims the free key after user has completed ad bypass
+ * SECURITY: Rate limited and validates callback completion
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateKeyString, calculateExpirationDate } from '@/lib/license-key'
+import { strictLimiter } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+    // Apply rate limiting - max 10 claims per minute per IP
+    const rateLimitResult = await strictLimiter(request)
+    
+    if (!rateLimitResult.success) {
+        return NextResponse.json(
+            { 
+                error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
+                retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+            },
+            { status: 429 }
+        )
+    }
+
     try {
         const { sessionToken } = await request.json()
 
@@ -66,8 +81,18 @@ export async function POST(request: NextRequest) {
         // Check if not completed yet
         if (session.status === 'PENDING') {
             return NextResponse.json(
-                { error: 'Please complete the ad bypass first' },
+                { error: 'Vui lòng hoàn tất vượt quảng cáo trước khi nhận key. Truy cập link rút gọn và xem đủ quảng cáo.' },
                 { status: 400 }
+            )
+        }
+
+        // CRITICAL: Verify that session was completed via valid callback (has callbackSecret consumed)
+        // If callbackSecret is null, it means callback was called without proper verification
+        if (!session.callbackSecret) {
+            console.error(`SECURITY: Session ${sessionToken} claimed without valid callback`)
+            return NextResponse.json(
+                { error: 'Phiên không hợp lệ. Vui lòng bắt đầu lại từ đầu.' },
+                { status: 403 }
             )
         }
 
