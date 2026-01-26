@@ -40,6 +40,16 @@ import {
 } from '@/types/banner'
 import { format } from 'date-fns'
 
+const isValidUrl = (url: string) => {
+  if (!url) return false
+  try {
+    const parsed = new URL(url)
+    return ['http:', 'https:'].includes(parsed.protocol)
+  } catch {
+    return false
+  }
+}
+
 export default function EditBannerPage() {
   const params = useParams()
   const id = params.id as string
@@ -500,7 +510,7 @@ export default function EditBannerPage() {
                   }}
                 >
                   {/* Image Preview */}
-                  {formData.imageUrl && (
+                  {formData.imageUrl && isValidUrl(formData.imageUrl) && (
                     <div className="mb-3 -mx-4 -mt-4">
                       <img
                         src={formData.imageUrl}
