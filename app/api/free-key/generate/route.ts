@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Validate that we don't use localhost in production
-        if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+        // Validate that we don't use localhost in production (unless in development mode)
+        if ((baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && process.env.NODE_ENV === 'production') {
             console.error('CRITICAL: baseUrl is using localhost! NEXTAUTH_URL must be set correctly')
             return NextResponse.json(
                 { error: 'Server configuration error: NEXTAUTH_URL must be set to production domain' },
@@ -168,8 +168,12 @@ export async function POST(request: NextRequest) {
             // Delete the session if we couldn't create the link
             await prisma.freeKeySession.delete({ where: { id: freeKeySession.id } })
 
+            const errorMessage = result.error?.includes('not configured')
+                ? 'Dịch vụ rút gọn URL đang bảo trì. Vui lòng thử lại sau.'
+                : 'Failed to generate bypass link. Please try again.'
+
             return NextResponse.json(
-                { error: 'Failed to generate bypass link. Please try again.' },
+                { error: errorMessage, details: result.error },
                 { status: 500 }
             )
         }

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Key, ExternalLink, Copy, CheckCircle2, Clock, AlertCircle, Loader2 } from 'lucide-react'
 import { formatDateVN } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface GetFreeKeyButtonProps {
     productId: string
