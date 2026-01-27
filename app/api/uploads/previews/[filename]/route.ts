@@ -21,7 +21,7 @@ export async function GET(
     const filePath = resolve(previewsBase, filename)
 
     // Verify resolved path is strictly within the intended directory
-    if (!filePath.startsWith(resolve(previewsBase))) {
+    if (!filePath.startsWith(resolve(previewsBase) + require('path').sep) && filePath !== resolve(previewsBase)) {
       console.warn(`Path traversal attempt blocked (resolved path mismatch): ${filePath}`);
       return new NextResponse('Access denied', { status: 403 });
     }

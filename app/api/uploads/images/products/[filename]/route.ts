@@ -18,7 +18,8 @@ export async function GET(
     const imagesBase = join(base, 'images', 'products');
     const filePath = resolve(imagesBase, filename)
 
-    if (!filePath.startsWith(resolve(imagesBase))) {
+    // FIX: Add sep to prevent sibling directory traversal
+    if (!filePath.startsWith(resolve(imagesBase) + require('path').sep) && filePath !== resolve(imagesBase)) {
       return new NextResponse('Access denied', { status: 403 });
     }
 
