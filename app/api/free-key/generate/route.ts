@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { createFreeKeyLink } from '@/lib/yeumoney'
+import { createFreeKeyLink, shortenUrl } from '@/lib/yeumoney'
 import crypto from 'crypto'
 
 // Rate limiting constants
@@ -161,8 +161,8 @@ export async function POST(request: NextRequest) {
         // Create full callback URL with token AND secret
         const callbackUrl = `${baseUrl}/api/free-key/callback?token=${token}&secret=${callbackSecret}`
 
-        // Create shortened URL using the full callback URL
-        const result = await createFreeKeyLink(token, callbackUrl)
+        // Create shortened URL directly (don't use createFreeKeyLink as it generates a new callback URL)
+        const result = await shortenUrl(callbackUrl)
 
         if (!result.success || !result.shortenedUrl) {
             // Delete the session if we couldn't create the link
