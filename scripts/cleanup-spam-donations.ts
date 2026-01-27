@@ -3,7 +3,7 @@
  * Chạy: npx ts-node scripts/cleanup-spam-donations.ts
  */
 
-import prisma from '../lib/prisma'
+import { prisma } from '../lib/prisma'
 
 async function cleanupSpamDonations() {
   console.log('🧹 Bắt đầu xóa spam donations...\n')
@@ -18,12 +18,10 @@ async function cleanupSpamDonations() {
             gt: 10000
           }
         },
-        // Xóa những donation có tên rất dài (spam pattern)
+        // Xóa những donation có tên rất dài (spam pattern - > 100 ký tự)
         {
           donorName: {
-            length: {
-              gt: 100
-            }
+            gte: 'N'.repeat(101) // Tên có từ 101 chữ N trở lên
           }
         },
         // Xóa những donation có email đáng ngờ

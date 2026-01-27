@@ -1,7 +1,5 @@
-'use client'
-
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { strictLimiter } from '@/lib/rate-limit'
 import { z } from 'zod'
 
