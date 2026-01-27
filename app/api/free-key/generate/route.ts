@@ -137,19 +137,25 @@ export async function POST(request: NextRequest) {
 
         try {
             // First priority: settings.siteUrl from database (configured by admin)
+            console.log('   Before: baseUrl =', baseUrl)
             baseUrl = settings.siteUrl || ''
+            console.log('   After settings.siteUrl: baseUrl =', baseUrl)
         } catch (error) {
             console.warn('Failed to get SEO settings, falling back to env vars:', error)
         }
 
         // Second priority: Environment variables
         if (!baseUrl) {
+            console.log('   Step 2: baseUrl is empty, checking env vars...')
             baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || ''
-            console.log('Step 2 (env vars) - baseUrl:', baseUrl)
+            console.log('   Step 2 (env vars) - baseUrl:', baseUrl)
+        } else {
+            console.log('   Step 2: SKIPPED - baseUrl already set')
         }
 
         // Third priority: Auto-detect from deploy platform headers
         if (!baseUrl) {
+            console.log('   Step 3: baseUrl is empty, checking platform...')
             const vercelUrl = process.env.VERCEL_URL
             const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN
 
@@ -158,11 +164,14 @@ export async function POST(request: NextRequest) {
             } else if (railwayUrl) {
                 baseUrl = `https://${railwayUrl}`
             }
-            console.log('Step 3 (platform) - baseUrl:', baseUrl)
+            console.log('   Step 3 (platform) - baseUrl:', baseUrl)
+        } else {
+            console.log('   Step 3: SKIPPED - baseUrl already set')
         }
 
         // Fourth priority: Request headers (for proxy setups)
         if (!baseUrl) {
+            console.log('   Step 4: baseUrl is empty, checking headers...')
             const forwardedHost = request.headers.get('x-forwarded-host')
             const host = request.headers.get('host')
             const protocol = request.headers.get('x-forwarded-proto') || 'https'
@@ -172,11 +181,14 @@ export async function POST(request: NextRequest) {
             } else if (host) {
                 baseUrl = `${protocol}://${host}`
             }
-            console.log('Step 4 (headers) - baseUrl:', baseUrl)
+            console.log('   Step 4 (headers) - baseUrl:', baseUrl)
+        } else {
+            console.log('   Step 4: SKIPPED - baseUrl already set')
         }
 
         // Final fallback: Parse from request URL
         if (!baseUrl) {
+            console.log('   Step 5: baseUrl is empty, using request.url...')
             try {
                 const url = new URL(request.url)
                 baseUrl = `${url.protocol}//${url.host}`
@@ -187,7 +199,9 @@ export async function POST(request: NextRequest) {
                     { status: 500 }
                 )
             }
-            console.log('Step 5 (request.url) - baseUrl:', baseUrl)
+            console.log('   Step 5 (request.url) - baseUrl:', baseUrl)
+        } else {
+            console.log('   Step 5: SKIPPED - baseUrl already set')
         }
 
         console.log('=== FINAL baseUrl:', baseUrl, '===')
@@ -202,7 +216,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Create full callback URL with token AND secret
-        const callbackUrl = `${baseUrl}/api/free-key/callback?token=${token}&secret=${callbackSecret}`
+        const callbackUrl = `${baseUrl.replace(/\/+$/, '')}/api/free-key/callback?token=${token}&secret=${callbackSecret}`
+        console.log('   callbackUrl sent to YeuMoney:', callbackUrl)
 
         // Create shortened URL directly (don't use createFreeKeyLink as it generates a new callback URL)
         const result = await shortenUrl(callbackUrl)

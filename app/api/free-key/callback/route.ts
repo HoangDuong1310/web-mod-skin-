@@ -8,6 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSEOSettings } from '@/lib/dynamic-seo'
+
+// Helper function to get correct base URL
+async function getBaseUrl(): Promise<string> {
+    const settings = await getSEOSettings()
+    return settings.siteUrl || process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://modskinslol.com'
+}
 
 export async function GET(request: NextRequest) {
     try {
@@ -15,7 +22,8 @@ export async function GET(request: NextRequest) {
         const secret = request.nextUrl.searchParams.get('secret')
 
         if (!token || !secret) {
-            return NextResponse.redirect(new URL('/free-key/error?reason=missing_params', request.url))
+            const baseUrl = await getBaseUrl()
+            return NextResponse.redirect(new URL('/free-key/error?reason=missing_params', baseUrl))
         }
 
         // Find the session
@@ -27,14 +35,16 @@ export async function GET(request: NextRequest) {
         })
 
         if (!session) {
-            return NextResponse.redirect(new URL('/free-key/error?reason=invalid_token', request.url))
+            const baseUrl = await getBaseUrl()
+            return NextResponse.redirect(new URL('/free-key/error?reason=invalid_token', baseUrl))
         }
 
         // CRITICAL: Verify secret matches
         // This prevents attackers from calling callback directly without viewing ads
         if (session.callbackSecret !== secret) {
             console.error(`SECURITY: Invalid callback secret for session ${token}`)
-            return NextResponse.redirect(new URL('/free-key/error?reason=invalid_secret', request.url))
+            const baseUrl = await getBaseUrl()
+            return NextResponse.redirect(new URL('/free-key/error?reason=invalid_secret', baseUrl))
         }
 
         // Check if session is expired
@@ -43,17 +53,20 @@ export async function GET(request: NextRequest) {
                 where: { id: session.id },
                 data: { status: 'EXPIRED' }
             })
-            return NextResponse.redirect(new URL('/free-key/error?reason=session_expired', request.url))
+            const baseUrl = await getBaseUrl()
+            return NextResponse.redirect(new URL('/free-key/error?reason=session_expired', baseUrl))
         }
+
+        const baseUrl = await getBaseUrl()
 
         // Check if already claimed
         if (session.status === 'CLAIMED') {
-            return NextResponse.redirect(new URL(`/free-key/success?token=${token}`, request.url))
+            return NextResponse.redirect(new URL(`/free-key/success?token=${token}`, baseUrl))
         }
 
         // Check if already completed (waiting to be claimed)
         if (session.status === 'COMPLETED') {
-            return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, request.url))
+            return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
         }
 
         // Mark session as completed
@@ -65,10 +78,10 @@ export async function GET(request: NextRequest) {
             }
         })
 
-        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, request.url))
+        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
 
     } catch (error) {
         console.error('Free key callback error:', error)
-        return NextResponse.redirect(new URL('/free-key/error?reason=server_error', request.url))
+        return NextResponse.redirect(new URL('/free-key/error?reason=server_error', 'https://modskinslol.com'))
     }
 }
