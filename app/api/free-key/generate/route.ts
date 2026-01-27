@@ -127,9 +127,16 @@ export async function POST(request: NextRequest) {
         // Get base URL for callback - prioritize settings.siteUrl from database
         let baseUrl = ''
 
+        // DEBUG: Log all possible sources
+        console.log('=== DEBUG: Base URL Resolution ===')
+        const settings = await getSEOSettings()
+        console.log('settings.siteUrl:', settings.siteUrl)
+        console.log('process.env.APP_URL:', process.env.APP_URL)
+        console.log('process.env.NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
+        console.log('NODE_ENV:', process.env.NODE_ENV)
+
         try {
             // First priority: settings.siteUrl from database (configured by admin)
-            const settings = await getSEOSettings()
             baseUrl = settings.siteUrl || ''
         } catch (error) {
             console.warn('Failed to get SEO settings, falling back to env vars:', error)
@@ -138,6 +145,7 @@ export async function POST(request: NextRequest) {
         // Second priority: Environment variables
         if (!baseUrl) {
             baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || ''
+            console.log('Step 2 (env vars) - baseUrl:', baseUrl)
         }
 
         // Third priority: Auto-detect from deploy platform headers
@@ -150,6 +158,7 @@ export async function POST(request: NextRequest) {
             } else if (railwayUrl) {
                 baseUrl = `https://${railwayUrl}`
             }
+            console.log('Step 3 (platform) - baseUrl:', baseUrl)
         }
 
         // Fourth priority: Request headers (for proxy setups)
@@ -163,6 +172,7 @@ export async function POST(request: NextRequest) {
             } else if (host) {
                 baseUrl = `${protocol}://${host}`
             }
+            console.log('Step 4 (headers) - baseUrl:', baseUrl)
         }
 
         // Final fallback: Parse from request URL
@@ -177,7 +187,10 @@ export async function POST(request: NextRequest) {
                     { status: 500 }
                 )
             }
+            console.log('Step 5 (request.url) - baseUrl:', baseUrl)
         }
+
+        console.log('=== FINAL baseUrl:', baseUrl, '===')
 
         // Validate that we don't use localhost in production
         if ((baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && process.env.NODE_ENV === 'production') {
