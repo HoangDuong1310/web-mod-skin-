@@ -11,11 +11,25 @@ import { prisma } from '@/lib/prisma'
 import { getSEOSettings } from '@/lib/dynamic-seo'
 
 // Helper function to get correct base URL
-async function getBaseUrl(): Promise<string> {
+async function getBaseUrl(request?: NextRequest): Promise<string> {
     try {
+        // First priority: Use x-forwarded-host if available (proxy scenario)
+        if (request) {
+            const forwardedHost = request.headers.get('x-forwarded-host')
+            const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
+            if (forwardedHost) {
+                return `${forwardedProto}://${forwardedHost.split(',')[0].trim()}`.replace(/\/+$/, '')
+            }
+        }
+        
+        // Second priority: settings.siteUrl from database
         const settings = await getSEOSettings()
-        const url = settings.siteUrl || process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://modskinslol.com'
-        return url.replace(/\/+$/, '')
+        if (settings.siteUrl) {
+            return settings.siteUrl.replace(/\/+$/, '')
+        }
+        
+        // Third priority: Environment variables
+        return (process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://modskinslol.com').replace(/\/+$/, '')
     } catch (error) {
         console.error('Error getting baseUrl:', error)
         return 'https://modskinslol.com'
@@ -36,7 +50,7 @@ export async function GET(request: NextRequest) {
 
         if (!token || !secret) {
             console.log('Missing token or secret')
-            const baseUrl = await getBaseUrl()
+            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=missing_params', baseUrl))
         }
 
@@ -58,7 +72,7 @@ export async function GET(request: NextRequest) {
 
         if (!session) {
             console.log('Session not found - invalid token')
-            const baseUrl = await getBaseUrl()
+            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=invalid_token', baseUrl))
         }
 
@@ -70,7 +84,7 @@ export async function GET(request: NextRequest) {
 
         if (session.callbackSecret !== secret) {
             console.error('SECURITY: Invalid callback secret for session')
-            const baseUrl = await getBaseUrl()
+            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=invalid_secret', baseUrl))
         }
 
@@ -86,11 +100,11 @@ export async function GET(request: NextRequest) {
                 where: { id: session.id },
                 data: { status: 'EXPIRED' }
             })
-            const baseUrl = await getBaseUrl()
+            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=session_expired', baseUrl))
         }
 
-        const baseUrl = await getBaseUrl()
+        const baseUrl = await getBaseUrl(request)
         console.log('baseUrl:', baseUrl)
 
         // Check if already claimed
@@ -116,9 +130,11 @@ export async function GET(request: NextRequest) {
         })
 
         console.log('Redirecting to /free-key/claim')
+        const redirectUrl = new URL(`/free-key/claim?token=${token}`, baseUrl)
+        console.log('Actual redirect URL:', redirectUrl.toString())
         console.log('=== END CALLBACK DEBUG ===')
 
-        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
+        return NextResponse.redirect(redirectUrl)
 
     } catch (error) {
         console.error('Free key callback error:', error)
