@@ -10,37 +10,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSEOSettings } from '@/lib/dynamic-seo'
 
-// Helper function to get correct base URL
-async function getBaseUrl(request?: NextRequest): Promise<string> {
-    try {
-        // First priority: Use x-forwarded-host if available (proxy scenario)
-        if (request) {
-            const forwardedHost = request.headers.get('x-forwarded-host')
-            const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
-            if (forwardedHost) {
-                return `${forwardedProto}://${forwardedHost.split(',')[0].trim()}`.replace(/\/+$/, '')
-            }
-        }
-        
-        // Second priority: settings.siteUrl from database
-        const settings = await getSEOSettings()
-        if (settings.siteUrl) {
-            return settings.siteUrl.replace(/\/+$/, '')
-        }
-        
-        // Third priority: Environment variables
-        return (process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://modskinslol.com').replace(/\/+$/, '')
-    } catch (error) {
-        console.error('Error getting baseUrl:', error)
-        return 'https://modskinslol.com'
-    }
-}
-
 export async function GET(request: NextRequest) {
-    console.log('=== CALLBACK DEBUG ===')
-    console.log('Request URL:', request.url)
-    console.log('Request headers:', Object.fromEntries(request.headers.entries()))
-    
+    // Resolve base URL early - request.url may be localhost in containerized environments
+    const settings = await getSEOSettings()
+    const baseUrl = settings.siteUrl || `${new URL(request.url).protocol}//${new URL(request.url).host}`
+
     try {
         const token = request.nextUrl.searchParams.get('token')
         const secret = request.nextUrl.searchParams.get('secret')
@@ -49,8 +23,6 @@ export async function GET(request: NextRequest) {
         console.log('secret:', secret)
 
         if (!token || !secret) {
-            console.log('Missing token or secret')
-            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=missing_params', baseUrl))
         }
 
@@ -71,8 +43,6 @@ export async function GET(request: NextRequest) {
         }
 
         if (!session) {
-            console.log('Session not found - invalid token')
-            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=invalid_token', baseUrl))
         }
 
@@ -83,8 +53,7 @@ export async function GET(request: NextRequest) {
         console.log('  Match:', session.callbackSecret === secret)
 
         if (session.callbackSecret !== secret) {
-            console.error('SECURITY: Invalid callback secret for session')
-            const baseUrl = await getBaseUrl(request)
+            console.error(`SECURITY: Invalid callback secret for session ${token}`)
             return NextResponse.redirect(new URL('/free-key/error?reason=invalid_secret', baseUrl))
         }
 
@@ -100,7 +69,6 @@ export async function GET(request: NextRequest) {
                 where: { id: session.id },
                 data: { status: 'EXPIRED' }
             })
-            const baseUrl = await getBaseUrl(request)
             return NextResponse.redirect(new URL('/free-key/error?reason=session_expired', baseUrl))
         }
 
@@ -109,13 +77,11 @@ export async function GET(request: NextRequest) {
 
         // Check if already claimed
         if (session.status === 'CLAIMED') {
-            console.log('Already claimed - redirecting to success')
             return NextResponse.redirect(new URL(`/free-key/success?token=${token}`, baseUrl))
         }
 
         // Check if already completed (waiting to be claimed)
         if (session.status === 'COMPLETED') {
-            console.log('Already completed - redirecting to claim')
             return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
         }
 
@@ -129,17 +95,10 @@ export async function GET(request: NextRequest) {
             }
         })
 
-        console.log('Redirecting to /free-key/claim')
-        const redirectUrl = new URL(`/free-key/claim?token=${token}`, baseUrl)
-        console.log('Actual redirect URL:', redirectUrl.toString())
-        console.log('=== END CALLBACK DEBUG ===')
-
-        return NextResponse.redirect(redirectUrl)
+        return NextResponse.redirect(new URL(`/free-key/claim?token=${token}`, baseUrl))
 
     } catch (error) {
         console.error('Free key callback error:', error)
-        console.error('Error stack:', error instanceof Error ? error.stack : 'unknown')
-        console.log('=== END CALLBACK DEBUG (ERROR) ===')
-        return NextResponse.redirect(new URL('/free-key/error?reason=server_error', 'https://modskinslol.com'))
+        return NextResponse.redirect(new URL('/free-key/error?reason=server_error', baseUrl))
     }
 }

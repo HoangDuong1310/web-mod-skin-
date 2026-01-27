@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { calculateExpirationDate } from '@/lib/license-key'
 import crypto from 'crypto'
+import { Console } from 'console'
 
 // Secret key để verify webhook (set trong .env)
-const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || 'your-webhook-secret'
-
+const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET
+if (!WEBHOOK_SECRET) {
+  console.log("Miss credetinal");
+}
 interface PaymentWebhookPayload {
   orderCode: string
   amount: number
@@ -17,6 +20,7 @@ interface PaymentWebhookPayload {
 
 // Verify webhook signature
 function verifySignature(payload: string, signature: string): boolean {
+  if (!WEBHOOK_SECRET) return false
   const expectedSignature = crypto
     .createHmac('sha256', WEBHOOK_SECRET)
     .update(payload)

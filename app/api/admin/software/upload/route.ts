@@ -1,4 +1,4 @@
-import type { NextRequest} from 'next/server';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { canManageSoftware } from '@/lib/auth-utils'
+import { revalidatePath } from 'next/cache'
 
 // Extend timeout for large file uploads
 export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions)
-    
+
     if (!session || !canManageSoftware(session.user.role)) {
       return NextResponse.json(
         { message: 'Unauthorized' },
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
-    
+
     if (!file) {
       return NextResponse.json(
         { message: 'No file uploaded' },
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Validate file type
     const allowedExtensions = ['.exe', '.msi', '.zip', '.rar', '.7z']
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase()
-    
+
     if (!allowedExtensions.includes(fileExtension)) {
       return NextResponse.json(
         { message: 'Invalid file type. Only EXE, MSI, ZIP, RAR, 7Z files are allowed' },
@@ -160,16 +161,16 @@ export async function POST(request: NextRequest) {
     // Check if slug already exists and make it unique if needed
     let uniqueSlug = baseSlug
     let counter = 1
-    
+
     while (true) {
       const existingProduct = await prisma.product.findUnique({
         where: { slug: uniqueSlug }
       })
-      
+
       if (!existingProduct) {
         break // Slug is unique
       }
-      
+
       uniqueSlug = `${baseSlug}-${counter}`
       counter++
     }
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
       // Generate safe filename and save file
       const safeFilename = generateSafeFilename(file.name, product.id)
       const filePath = join(uploadsDir, safeFilename)
-      
+
       // Convert file to buffer and save
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
@@ -220,19 +221,8 @@ export async function POST(request: NextRequest) {
 
       // On-demand revalidation for user-facing pages
       try {
-        const baseUrl = new URL(request.url)
-        const secret = process.env.REVALIDATE_SECRET
-        if (secret) {
-          const revalidateListUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
-          revalidateListUrl.searchParams.set('secret', secret)
-          revalidateListUrl.searchParams.set('path', '/products')
-          await fetch(revalidateListUrl.toString(), { method: 'POST' })
-
-          const revalidateDetailUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
-          revalidateDetailUrl.searchParams.set('secret', secret)
-          revalidateDetailUrl.searchParams.set('path', `/products/${updatedProduct.slug}`)
-          await fetch(revalidateDetailUrl.toString(), { method: 'POST' })
-        }
+        revalidatePath('/products')
+        revalidatePath(`/products/${updatedProduct.slug}`)
       } catch (e) {
         console.warn('Revalidate after upload failed:', e)
       }
@@ -252,7 +242,7 @@ export async function POST(request: NextRequest) {
           createdAt: updatedProduct.createdAt,
           processingTimeMs: Date.now() - startTime
         }
-      }, { 
+      }, {
         status: 201,
         headers
       })
@@ -260,7 +250,7 @@ export async function POST(request: NextRequest) {
     } catch (fileError) {
       // If file save failed, delete the database record
       await prisma.product.delete({ where: { id: product.id } })
-      
+
       console.error('File save error:', fileError)
       return NextResponse.json(
         { message: 'Failed to save file' },
@@ -271,7 +261,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const processingTime = Date.now() - startTime
     console.error(`❌ Upload error after ${processingTime}ms:`, error)
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: 'Invalid form data', errors: error.errors },
@@ -280,7 +270,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
+      {
         message: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
         processingTimeMs: processingTime

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { canManageSoftware } from '@/lib/auth-utils'
+import { revalidatePath } from 'next/cache'
 
 const updateProductSchema = z.object({
   title: z.string().min(1).max(100),
@@ -178,20 +179,10 @@ export async function PUT(
 
     // On-demand revalidation to refresh user-facing pages
     try {
-      const baseUrl = new URL(request.url)
-      const revalidateUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
-      const secret = process.env.REVALIDATE_SECRET
-      if (secret) {
-        // Revalidate listing
-        revalidateUrl.searchParams.set('secret', secret)
-        revalidateUrl.searchParams.set('path', '/products')
-        await fetch(revalidateUrl.toString(), { method: 'POST' })
-
-        // Revalidate detail page
-        const revalidateDetailUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
-        revalidateDetailUrl.searchParams.set('secret', secret)
-        revalidateDetailUrl.searchParams.set('path', `/products/${updatedProduct.slug}`)
-        await fetch(revalidateDetailUrl.toString(), { method: 'POST' })
+      revalidatePath('/products')
+      revalidatePath(`/products/${updatedProduct.slug}`)
+      if (existingProduct.slug !== updatedProduct.slug) {
+        revalidatePath(`/products/${existingProduct.slug}`)
       }
     } catch (e) {
       console.warn('Revalidate after update failed:', e)
@@ -253,20 +244,9 @@ export async function DELETE(
 
     // On-demand revalidation to refresh user-facing pages
     try {
-      const baseUrl = new URL(request.url)
-      const secret = process.env.REVALIDATE_SECRET
-      if (secret) {
-        const revalidateListUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
-        revalidateListUrl.searchParams.set('secret', secret)
-        revalidateListUrl.searchParams.set('path', '/products')
-        await fetch(revalidateListUrl.toString(), { method: 'POST' })
-
-        if ((deletedProduct as any).slug) {
-          const revalidateDetailUrl = new URL('/api/revalidate', `${baseUrl.protocol}//${baseUrl.host}`)
-          revalidateDetailUrl.searchParams.set('secret', secret)
-          revalidateDetailUrl.searchParams.set('path', `/products/${(deletedProduct as any).slug}`)
-          await fetch(revalidateDetailUrl.toString(), { method: 'POST' })
-        }
+      revalidatePath('/products')
+      if ((deletedProduct as any).slug) {
+        revalidatePath(`/products/${(deletedProduct as any).slug}`)
       }
     } catch (e) {
       console.warn('Revalidate after delete failed:', e)
