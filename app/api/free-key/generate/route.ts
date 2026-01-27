@@ -9,7 +9,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { createFreeKeyLink, shortenUrl } from '@/lib/yeumoney'
+import { shortenUrl } from '@/lib/yeumoney'
+import { getSEOSettings } from '@/lib/dynamic-seo'
 import crypto from 'crypto'
 
 // Rate limiting constants
@@ -123,9 +124,35 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        // Get base URL for callback
-        let baseUrl = process.env.NEXTAUTH_URL
+        // Get base URL for callback - prioritize settings.siteUrl from database
+        let baseUrl = ''
 
+        try {
+            // First priority: settings.siteUrl from database (configured by admin)
+            const settings = await getSEOSettings()
+            baseUrl = settings.siteUrl || ''
+        } catch (error) {
+            console.warn('Failed to get SEO settings, falling back to env vars:', error)
+        }
+
+        // Second priority: Environment variables
+        if (!baseUrl) {
+            baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || ''
+        }
+
+        // Third priority: Auto-detect from deploy platform headers
+        if (!baseUrl) {
+            const vercelUrl = process.env.VERCEL_URL
+            const railwayUrl = process.env.RAILWAY_PUBLIC_DOMAIN
+
+            if (vercelUrl) {
+                baseUrl = `https://${vercelUrl}`
+            } else if (railwayUrl) {
+                baseUrl = `https://${railwayUrl}`
+            }
+        }
+
+        // Fourth priority: Request headers (for proxy setups)
         if (!baseUrl) {
             const forwardedHost = request.headers.get('x-forwarded-host')
             const host = request.headers.get('host')
@@ -135,25 +162,28 @@ export async function POST(request: NextRequest) {
                 baseUrl = `${protocol}://${forwardedHost.split(',')[0].trim()}`
             } else if (host) {
                 baseUrl = `${protocol}://${host}`
-            } else {
-                try {
-                    const url = new URL(request.url)
-                    baseUrl = `${url.protocol}//${url.host}`
-                } catch {
-                    console.error('CRITICAL: Cannot determine baseUrl. NEXTAUTH_URL must be set')
-                    return NextResponse.json(
-                        { error: 'Server configuration error: NEXTAUTH_URL not set' },
-                        { status: 500 }
-                    )
-                }
             }
         }
 
-        // Validate that we don't use localhost in production (unless in development mode)
+        // Final fallback: Parse from request URL
+        if (!baseUrl) {
+            try {
+                const url = new URL(request.url)
+                baseUrl = `${url.protocol}//${url.host}`
+            } catch {
+                console.error('CRITICAL: Cannot determine baseUrl')
+                return NextResponse.json(
+                    { error: 'Server configuration error: URL cannot be determined' },
+                    { status: 500 }
+                )
+            }
+        }
+
+        // Validate that we don't use localhost in production
         if ((baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && process.env.NODE_ENV === 'production') {
-            console.error('CRITICAL: baseUrl is using localhost! NEXTAUTH_URL must be set correctly')
+            console.error('CRITICAL: baseUrl is using localhost in production! BaseUrl:', baseUrl)
             return NextResponse.json(
-                { error: 'Server configuration error: NEXTAUTH_URL must be set to production domain' },
+                { error: 'Server configuration error: Cannot use localhost in production' },
                 { status: 500 }
             )
         }
