@@ -1,11 +1,12 @@
-'use client'
-
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { strictLimiter } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 // Validation schema cho donation
+// Sử dụng regex đơn giản tương thích với webpack
+const nameRegex = /^[a-zA-Z0-9\s\-_.'()ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀẾỂỄỆỉịọốồộổỗơớờởỡợụủứừửữựỳýỵỷỹ]+$/u
+
 const createDonationSchema = z.object({
   amount: z.number()
     .min(1, 'Số tiền tối thiểu là 1')
@@ -16,7 +17,7 @@ const createDonationSchema = z.object({
   donorName: z.string()
     .min(2, 'Tên phải có ít nhất 2 ký tự')
     .max(100, 'Tên không được vượt quá 100 ký tự')
-    .regex(/^[\p{L}\p{N}\s\-_.\'()]+$/u, 'Tên chỉ được chứa chữ cái, số, khoảng trắng và một số ký tự đặc biệt'),
+    .regex(nameRegex, 'Tên chỉ được chứa chữ cái, số, khoảng trắng và một số ký tự đặc biệt'),
   donorEmail: z.string()
     .email('Email không hợp lệ')
     .max(255, 'Email không được vượt quá 255 ký tự')

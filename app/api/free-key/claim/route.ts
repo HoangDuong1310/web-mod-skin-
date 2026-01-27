@@ -96,8 +96,9 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Check if product has free key plan
-        if (!session.product.freeKeyPlan) {
+        // Check if product has free key plan and get it
+        const freeKeyPlan = session.product.freeKeyPlan
+        if (!freeKeyPlan) {
             return NextResponse.json(
                 { error: 'Free key plan not configured for this product' },
                 { status: 400 }
@@ -132,8 +133,8 @@ export async function POST(request: NextRequest) {
         // Use Date.now() to create UTC timestamp, avoiding server timezone issues
         const now = new Date(Date.now())
         const expiresAt = calculateExpirationDate(
-            session.product.freeKeyPlan.durationType,
-            session.product.freeKeyPlan.durationValue,
+            freeKeyPlan.durationType,
+            freeKeyPlan.durationValue,
             now
         )
 
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
                     planId: session.product.freeKeyPlanId!,
                     userId: session.userId,
                     status: 'INACTIVE', // Will be activated on first use
-                    maxDevices: session.product.freeKeyPlan.maxDevices || 1,
+                    maxDevices: freeKeyPlan.maxDevices || 1,
                     expiresAt,
                     notes: `Free key from ad bypass. Product: ${session.product.title}`,
                     createdBy: 'SYSTEM_FREE_KEY'
@@ -171,7 +172,7 @@ export async function POST(request: NextRequest) {
             key: result.key,
             expiresAt: result.expiresAt,
             maxDevices: result.maxDevices,
-            duration: `${session.product.freeKeyPlan.durationValue} ${session.product.freeKeyPlan.durationType.toLowerCase()}`,
+            duration: `${freeKeyPlan.durationValue} ${freeKeyPlan.durationType.toLowerCase()}`,
             message: 'Your free key has been generated successfully!'
         })
 
