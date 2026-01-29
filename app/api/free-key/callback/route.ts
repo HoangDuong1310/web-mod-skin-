@@ -72,7 +72,6 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(new URL('/free-key/error?reason=session_expired', baseUrl))
         }
 
-        const baseUrl = await getBaseUrl(request)
         console.log('baseUrl:', baseUrl)
 
         // Check if already claimed
