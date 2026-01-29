@@ -19,7 +19,7 @@ export async function GET(
     const filePath = path.resolve(softwareBase, filename)
 
     // Verify resolved path is strictly within the intended directory
-    if (!filePath.startsWith(path.resolve(softwareBase))) {
+    if (!filePath.startsWith(path.resolve(softwareBase) + path.sep) && filePath !== path.resolve(softwareBase)) {
       return new NextResponse('Access denied', { status: 403 });
     }
 
