@@ -71,6 +71,7 @@ model User {
   licenseKeys         LicenseKey[]
   orders              Order[]
   freeKeySessions     FreeKeySession[]
+  reseller            Reseller?
 
   @@index([email])
   @@index([createdAt])
@@ -347,6 +348,7 @@ model notifications {
 enum Role {
   ADMIN
   STAFF
+  RESELLER
   USER
 }
 
@@ -750,9 +752,10 @@ model SubscriptionPlan {
   deletedAt DateTime?
 
   // Relations
-  licenseKeys     LicenseKey[]
-  freeKeyProducts Product[]    @relation("FreeKeyPlan")
-  orders          Order[]
+  licenseKeys          LicenseKey[]
+  freeKeyProducts      Product[]    @relation("FreeKeyPlan")
+  orders               Order[]
+  resellerFreeKeyPlans Reseller[]   @relation("ResellerFreeKeyPlan")
 
   @@index([slug])
   @@index([isActive, priority])
@@ -799,10 +802,11 @@ model LicenseKey {
   updatedAt DateTime @updatedAt
 
   // Relations
-  activations    KeyActivation[]
-  order          Order?
-  usageLogs      KeyUsageLog[]
-  freeKeySession FreeKeySession?
+  activations          KeyActivation[]
+  order                Order?
+  usageLogs            KeyUsageLog[]
+  freeKeySession       FreeKeySession?
+  resellerAllocations  ResellerKeyAllocation[]
 
   @@index([key])
   @@index([userId])
@@ -1039,4 +1043,157 @@ enum FreeKeyStatus {
   COMPLETED // Ad bypass completed, ready to claim
   CLAIMED // Key has been claimed
   EXPIRED // Session expired
+}
+
+// ============================================
+// RESELLER SYSTEM
+// ============================================
+
+// Reseller - Ho so dai ly ban key
+model Reseller {
+  id              String          @id @default(cuid())
+  
+  // Owner
+  userId          String          @unique
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Profile
+  businessName    String
+  contactPhone    String?
+  contactEmail    String
+  website         String?
+  description     String?         @db.Text
+  
+  // Status
+  status          ResellerStatus  @default(PENDING)
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedReason  String?         @db.Text
+  
+  // Balance & Credit
+  balance         Decimal         @default(0) @db.Decimal(12, 2)
+  totalSpent      Decimal         @default(0) @db.Decimal(12, 2)
+  currency        String          @default("VND")
+  
+  // Discount
+  discountPercent Int             @default(0)
+  
+  // Free Key Quota (admin configurable per reseller)
+  freeKeyQuotaDaily   Int         @default(0)
+  freeKeyQuotaMonthly Int         @default(0)
+  freeKeyPlanId       String?
+  freeKeyPlan         SubscriptionPlan? @relation("ResellerFreeKeyPlan", fields: [freeKeyPlanId], references: [id])
+  
+  // Limits
+  maxKeysPerOrder Int             @default(100)
+  
+  // Metadata
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+  
+  // Relations
+  apiKeys         ResellerApiKey[]
+  transactions    ResellerTransaction[]
+  keyAllocations  ResellerKeyAllocation[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("resellers")
+}
+
+// Reseller API Keys
+model ResellerApiKey {
+  id              String          @id @default(cuid())
+  resellerId      String
+  reseller        Reseller        @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  
+  apiKey          String          @unique
+  name            String
+  
+  lastUsedAt      DateTime?
+  lastUsedIp      String?
+  
+  isActive        Boolean         @default(true)
+  expiresAt       DateTime?
+  
+  rateLimit       Int             @default(60)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([apiKey])
+  @@index([resellerId])
+  @@index([isActive])
+  @@map("reseller_api_keys")
+}
+
+// Reseller Transactions
+model ResellerTransaction {
+  id              String          @id @default(cuid())
+  resellerId      String
+  reseller        Reseller        @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  
+  type            ResellerTransactionType
+  amount          Decimal         @db.Decimal(12, 2)
+  balanceBefore   Decimal         @db.Decimal(12, 2)
+  balanceAfter    Decimal         @db.Decimal(12, 2)
+  
+  description     String?         @db.Text
+  reference       String?
+  
+  planId          String?
+  quantity        Int?
+  unitPrice       Decimal?        @db.Decimal(10, 2)
+  discount        Decimal?        @db.Decimal(10, 2)
+  
+  createdAt       DateTime        @default(now())
+  createdBy       String?
+  
+  @@index([resellerId, createdAt])
+  @@index([type])
+  @@index([createdAt])
+  @@map("reseller_transactions")
+}
+
+// Reseller Key Allocations
+model ResellerKeyAllocation {
+  id              String          @id @default(cuid())
+  resellerId      String
+  reseller        Reseller        @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  
+  licenseKeyId    String
+  licenseKey      LicenseKey      @relation(fields: [licenseKeyId], references: [id], onDelete: Cascade)
+  
+  type            ResellerKeyType @default(PURCHASED)
+  
+  allocatedAt     DateTime        @default(now())
+  
+  @@index([resellerId, allocatedAt])
+  @@index([licenseKeyId])
+  @@index([type])
+  @@map("reseller_key_allocations")
+}
+
+// Enums for Reseller System
+enum ResellerStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+  BANNED
+}
+
+enum ResellerTransactionType {
+  DEPOSIT
+  PURCHASE_KEY
+  REFUND
+  ADJUSTMENT
+  BONUS
+}
+
+enum ResellerKeyType {
+  PURCHASED
+  FREE
 }

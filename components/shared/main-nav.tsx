@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { MobileMenu } from '@/components/shared/mobile-menu'
-import { User, LogOut, FileImage, Settings, Key, ShoppingCart } from 'lucide-react'
+import { User, LogOut, FileImage, Settings, Key, ShoppingCart, Store } from 'lucide-react'
 
 const navigation: { name: string; href: Route }[] = [
   { name: 'Home', href: '/' },
@@ -106,6 +106,12 @@ export function MainNav() {
                   <Link href={'/profile/submissions' as Route} className="cursor-pointer">
                     <FileImage className="h-4 w-4 mr-2" />
                     My Submissions
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={'/profile/reseller' as Route} className="cursor-pointer">
+                    <Store className="h-4 w-4 mr-2" />
+                    Reseller
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

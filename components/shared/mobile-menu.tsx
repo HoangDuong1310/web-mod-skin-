@@ -27,7 +27,8 @@ import {
   LogOut,
   LogIn,
   UserPlus,
-  LayoutDashboard
+  LayoutDashboard,
+  Store
 } from 'lucide-react'
 
 const navigation = [
@@ -43,6 +44,7 @@ const userNavigation = [
   { name: 'Profile Settings', href: '/profile', icon: Settings },
   { name: 'My Licenses', href: '/profile/licenses', icon: Key },
   { name: 'Order History', href: '/profile/orders', icon: ShoppingCart },
+  { name: 'Reseller', href: '/profile/reseller', icon: Store },
 ]
 
 export function MobileMenu() {

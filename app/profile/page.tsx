@@ -32,6 +32,8 @@ export default function ProfilePage() {
         return 'destructive'
       case 'STAFF':
         return 'default'
+      case 'RESELLER':
+        return 'default'
       case 'USER':
         return 'secondary'
       default:
@@ -45,6 +47,8 @@ export default function ProfilePage() {
         return 'Administrator'
       case 'STAFF':
         return 'Staff Member'
+      case 'RESELLER':
+        return 'Reseller'
       case 'USER':
         return 'User'
       default:

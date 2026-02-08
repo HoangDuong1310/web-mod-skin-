@@ -20,8 +20,6 @@ async function getPlans() {
     where: {
       isActive: true,
       deletedAt: null,
-      // Exclude HOUR plans (free keys) - they are for ad bypass only
-      durationType: { not: 'HOUR' },
     },
     select: {
       id: true,
@@ -49,7 +47,7 @@ async function getPlans() {
       { price: 'asc' },
     ],
   })
-
+  
   return plans.map(plan => ({
     ...plan,
     price: Number(plan.price),
@@ -63,13 +61,13 @@ async function getPlans() {
 
 export default async function PricingPage() {
   const plans = await getPlans()
-
+  
   // Detect country/currency from headers
   const headersList = headers()
   const countryCode = getCountryFromHeaders(headersList)
   const initialCurrency = getCurrencyForCountry(countryCode)
   const isVN = initialCurrency === 'VND'
-
+  
   return (
     <div className="container py-12">
       <div className="text-center mb-12">
@@ -77,14 +75,14 @@ export default async function PricingPage() {
           {isVN ? 'Chọn gói phù hợp với bạn' : 'Choose the right plan for you'}
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          {isVN
+          {isVN 
             ? 'Tất cả các gói đều bao gồm đầy đủ tính năng. Chọn thời hạn phù hợp với nhu cầu sử dụng của bạn.'
             : 'All plans include full features. Choose the duration that suits your needs.'}
         </p>
       </div>
-
+      
       <PricingClient plans={plans} initialCurrency={initialCurrency} />
-
+      
       <div className="mt-16 text-center">
         <h2 className="text-2xl font-bold mb-4">
           {isVN ? 'Câu hỏi thường gặp' : 'Frequently Asked Questions'}
@@ -95,7 +93,7 @@ export default async function PricingPage() {
               {isVN ? 'License key hoạt động như thế nào?' : 'How does the license key work?'}
             </h3>
             <p className="text-muted-foreground">
-              {isVN
+              {isVN 
                 ? 'Sau khi thanh toán, bạn sẽ nhận được một license key qua email. Nhập key này vào ứng dụng để kích hoạt và sử dụng đầy đủ tính năng.'
                 : 'After payment, you will receive a license key via email. Enter this key in the application to activate and use all features.'}
             </p>
@@ -105,7 +103,7 @@ export default async function PricingPage() {
               {isVN ? 'Tôi có thể sử dụng trên bao nhiêu thiết bị?' : 'How many devices can I use?'}
             </h3>
             <p className="text-muted-foreground">
-              {isVN
+              {isVN 
                 ? 'Số thiết bị tối đa được ghi rõ ở mỗi gói. Bạn có thể hủy kích hoạt thiết bị cũ để kích hoạt trên thiết bị mới nếu cần.'
                 : 'Maximum devices are specified for each plan. You can deactivate old devices to activate on new ones if needed.'}
             </p>
@@ -115,7 +113,7 @@ export default async function PricingPage() {
               {isVN ? 'Key có thể chuyển nhượng được không?' : 'Can the key be transferred?'}
             </h3>
             <p className="text-muted-foreground">
-              {isVN
+              {isVN 
                 ? 'Key được gắn với thiết bị (HWID) nên không thể chuyển nhượng. Vui lòng liên hệ hỗ trợ nếu cần reset thiết bị.'
                 : 'Keys are bound to devices (HWID) and cannot be transferred. Please contact support if you need to reset devices.'}
             </p>
@@ -125,7 +123,7 @@ export default async function PricingPage() {
               {isVN ? 'Chính sách hoàn tiền?' : 'Refund policy?'}
             </h3>
             <p className="text-muted-foreground">
-              {isVN
+              {isVN 
                 ? 'Chúng tôi hỗ trợ hoàn tiền trong vòng 7 ngày nếu key chưa được kích hoạt. Vui lòng liên hệ qua trang Contact để được hỗ trợ.'
                 : 'We support refunds within 7 days if the key has not been activated. Please contact us through the Contact page for assistance.'}
             </p>

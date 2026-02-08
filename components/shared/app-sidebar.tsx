@@ -28,7 +28,8 @@ import {
   Palette,
   Megaphone,
   Key,
-  CreditCard
+  CreditCard,
+  Store
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -108,6 +109,7 @@ const adminNavigation: NavigationItem[] = [
     ]
   },
   { name: 'Users', href: '/dashboard/users', icon: Users },
+  { name: 'Resellers', href: '/dashboard/resellers', icon: Store },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
@@ -140,7 +142,9 @@ export function AppSidebar({ session, onClose }: AppSidebarProps) {
         case '/dashboard/analytics':
           return canAccessAnalytics(userRole)
         case '/dashboard/settings':
-          return userRole === 'ADMIN' // Settings is admin only for now
+          return userRole === 'ADMIN'
+        case '/dashboard/resellers':
+          return userRole === 'ADMIN'
         default:
           return true // Dashboard and content are available to all staff
       }

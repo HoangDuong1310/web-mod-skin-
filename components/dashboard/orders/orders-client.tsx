@@ -36,7 +36,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { formatDateVN } from '@/lib/utils'
 import {
   Search,
   RefreshCw,
@@ -223,7 +222,7 @@ export function OrdersClient() {
   }
 
   const formatDate = (date: string) => {
-    return formatDateVN(date)
+    return new Date(date).toLocaleString('vi-VN')
   }
 
   const getStatusBadge = (status: string) => {
