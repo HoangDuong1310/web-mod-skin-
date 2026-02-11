@@ -139,6 +139,11 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
         const errorData = await response.json()
         console.log('🔴 Error response:', errorData)
         
+        // Handle filter block specifically
+        if (errorData.filterAction === 'block') {
+          throw new Error(errorData.error || 'Nội dung review vi phạm quy tắc cộng đồng.')
+        }
+        
         // If there are validation details, show them
         if (errorData.details && Array.isArray(errorData.details)) {
           const errorMessages = errorData.details.map((detail: any) => `${detail.field}: ${detail.message}`).join(', ')
@@ -148,7 +153,14 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
         throw new Error(errorData.error || 'Failed to submit review')
       }
 
-      toast.success('Review submitted successfully!')
+      const responseData = await response.json()
+
+      // Show appropriate message based on filter result
+      if (responseData.filterAction === 'hide' || responseData.filterAction === 'pending_approval') {
+        toast.success('Review đã được gửi và đang chờ quản trị viên duyệt.')
+      } else {
+        toast.success('Review submitted successfully!')
+      }
       
       // Reset form
       setRating(0)

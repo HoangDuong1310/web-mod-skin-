@@ -29,7 +29,8 @@ import {
   Megaphone,
   Key,
   CreditCard,
-  Store
+  Store,
+  Shield
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -57,7 +58,15 @@ const adminNavigation: NavigationItem[] = [
     ]
   },
   { name: 'Download Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Reviews', href: '/dashboard/reviews', icon: MessageSquare },
+  { 
+    name: 'Reviews', 
+    href: '/dashboard/reviews', 
+    icon: MessageSquare,
+    subItems: [
+      { name: 'All Reviews', href: '/dashboard/reviews' },
+      { name: 'Review Filters', href: '/dashboard/reviews/filters' }
+    ]
+  },
   { 
     name: 'Custom Skins', 
     href: '/dashboard/custom-skins', 

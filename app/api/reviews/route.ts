@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 // Rate limiting is disabled for now
 // import { rateLimit } from '@/lib/rate-limit'
 import { createReviewSchema, reviewQuerySchema } from '@/lib/validations'
+import { checkReviewContent } from '@/lib/review-filter'
+import { getSetting } from '@/lib/settings'
 
 // Function to recalculate product rating and review count
 async function recalculateProductStats(productId: string) {
@@ -278,6 +280,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check review content against filters
+    const filterResult = await checkReviewContent(title, content, guestName, guestEmail)
+    console.log('Filter result:', filterResult)
+
+    if (filterResult.blocked) {
+      return NextResponse.json(
+        { 
+          error: 'Nội dung review vi phạm quy tắc cộng đồng. Vui lòng chỉnh sửa và thử lại.',
+          filterAction: 'block',
+        },
+        { status: 403 }
+      )
+    }
+
+    // Determine visibility based on filter result
+    const isAutoHidden = filterResult.action === 'hide'
+    const isFlagged = filterResult.action === 'flag'
+
+    // Check if all reviews require approval (pre-moderation)
+    let requiresApproval = false
+    const requireApprovalAll = await getSetting('review.requireApproval')
+    const requireApprovalGuest = await getSetting('review.requireApprovalGuest')
+
+    if (requireApprovalAll === true) {
+      requiresApproval = true
+    } else if (requireApprovalGuest === true && !session?.user?.id) {
+      requiresApproval = true
+    }
+
     // Create review
     const review = await prisma.review.create({
       data: {
@@ -289,6 +320,7 @@ export async function POST(request: NextRequest) {
         guestName: !session?.user?.id ? guestName : null,
         guestEmail: !session?.user?.id ? guestEmail : null,
         isVerified: !!session?.user?.id, // Verified if user is logged in
+        isVisible: (isAutoHidden || requiresApproval) ? false : true,
       },
       include: {
         user: {
@@ -318,6 +350,18 @@ export async function POST(request: NextRequest) {
         } : null,
         guestName: review.guestName,
       },
+      ...(isAutoHidden && {
+        notice: 'Review của bạn đang chờ duyệt bởi quản trị viên.',
+        filterAction: 'hide',
+      }),
+      ...(!isAutoHidden && requiresApproval && {
+        notice: 'Review của bạn đang chờ duyệt bởi quản trị viên.',
+        filterAction: 'pending_approval',
+      }),
+      ...(isFlagged && {
+        notice: 'Review của bạn đã được ghi nhận.',
+        filterAction: 'flag',
+      }),
     }, { status: 201 })
   } catch (error) {
     console.error('Error creating review:', error)
