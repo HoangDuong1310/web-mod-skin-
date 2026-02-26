@@ -106,6 +106,20 @@ export async function GET(request: NextRequest) {
               image: true,
             },
           },
+          replies: {
+            where: { isVisible: true },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  image: true,
+                  role: true,
+                },
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
         },
         orderBy,
         skip: offset,
@@ -152,6 +166,17 @@ export async function GET(request: NextRequest) {
           image: review.user.image,
         } : null,
         guestName: review.guestName,
+        replies: (review as any).replies?.map((reply: any) => ({
+          id: reply.id,
+          content: reply.content,
+          createdAt: reply.createdAt,
+          user: {
+            id: reply.user.id,
+            name: reply.user.name,
+            image: reply.user.image,
+            role: reply.user.role,
+          },
+        })) || [],
       })),
       pagination: {
         page: pageNum,

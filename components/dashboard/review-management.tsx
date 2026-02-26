@@ -5,11 +5,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { Search, Star, Eye, EyeOff, CheckCircle, XCircle, Clock, Filter, Trash2 } from 'lucide-react'
+import { 
+  Search, Star, Eye, EyeOff, CheckCircle, XCircle, Clock, Filter, Trash2,
+  MessageCircle, Send, Loader2, CornerDownRight, Shield, User
+} from 'lucide-react'
+
+interface ReviewReply {
+  id: string
+  content: string
+  createdAt: string
+  user: {
+    id: string
+    name: string
+    image?: string
+    role: string
+  }
+}
 
 interface Review {
   id: string
@@ -33,6 +51,7 @@ interface Review {
     name: string
     email: string
   }
+  replies?: ReviewReply[]
 }
 
 interface ReviewStats {
@@ -59,6 +78,12 @@ export default function ReviewManagement() {
   // Detail dialog state
   const [detailDialog, setDetailDialog] = useState(false)
   const [selectedReview, setSelectedReview] = useState<Review | null>(null)
+
+  // Reply states
+  const [replyContent, setReplyContent] = useState('')
+  const [submittingReply, setSubmittingReply] = useState(false)
+  const [loadingReplies, setLoadingReplies] = useState(false)
+  const [dialogReplies, setDialogReplies] = useState<ReviewReply[]>([])
 
   const fetchReviews = async () => {
     try {
@@ -89,6 +114,75 @@ export default function ReviewManagement() {
   useEffect(() => {
     fetchReviews()
   }, [page, search, statusFilter])
+
+  const fetchReplies = async (reviewId: string) => {
+    try {
+      setLoadingReplies(true)
+      const response = await fetch(`/api/reviews/replies?reviewId=${reviewId}`)
+      if (!response.ok) throw new Error('Failed to fetch replies')
+      const data = await response.json()
+      setDialogReplies(data.replies)
+    } catch (error) {
+      console.error('Error fetching replies:', error)
+      toast.error('Failed to load replies')
+    } finally {
+      setLoadingReplies(false)
+    }
+  }
+
+  const openDetailDialog = (review: Review) => {
+    setSelectedReview(review)
+    setDetailDialog(true)
+    setReplyContent('')
+    setDialogReplies([])
+    fetchReplies(review.id)
+  }
+
+  const submitReply = async () => {
+    if (!selectedReview || !replyContent.trim()) return
+
+    try {
+      setSubmittingReply(true)
+      const response = await fetch('/api/reviews/replies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewId: selectedReview.id,
+          content: replyContent.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to submit reply')
+      }
+
+      const data = await response.json()
+      setDialogReplies(prev => [...prev, data.reply])
+      setReplyContent('')
+      toast.success('Reply submitted successfully')
+    } catch (error) {
+      console.error('Error submitting reply:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to submit reply')
+    } finally {
+      setSubmittingReply(false)
+    }
+  }
+
+  const deleteReply = async (replyId: string) => {
+    try {
+      const response = await fetch(`/api/reviews/replies?id=${replyId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete reply')
+
+      setDialogReplies(prev => prev.filter(r => r.id !== replyId))
+      toast.success('Reply deleted successfully')
+    } catch (error) {
+      console.error('Error deleting reply:', error)
+      toast.error('Failed to delete reply')
+    }
+  }
 
   const handleReviewAction = async (reviewId: string, action: 'approve' | 'hide' | 'show' | 'delete') => {
     try {
@@ -137,7 +231,7 @@ export default function ReviewManagement() {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${
+        className={`h-3 w-3 sm:h-4 sm:w-4 ${
           i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
         }`}
       />
@@ -147,26 +241,46 @@ export default function ReviewManagement() {
   const getStatusBadge = (review: Review) => {
     if (!review.isVerified) {
       return (
-        <Badge className="bg-yellow-100 text-yellow-800">
-          <Clock className="h-3 w-3 mr-1" />
+        <Badge className="bg-yellow-100 text-yellow-800 text-[10px] sm:text-xs">
+          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
           Pending
         </Badge>
       )
     }
     if (!review.isVisible) {
       return (
-        <Badge className="bg-red-100 text-red-800">
-          <EyeOff className="h-3 w-3 mr-1" />
+        <Badge className="bg-red-100 text-red-800 text-[10px] sm:text-xs">
+          <EyeOff className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
           Hidden
         </Badge>
       )
     }
     return (
-      <Badge className="bg-green-100 text-green-800">
-        <CheckCircle className="h-3 w-3 mr-1" />
+      <Badge className="bg-green-100 text-green-800 text-[10px] sm:text-xs">
+        <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
         Approved
       </Badge>
     )
+  }
+
+  const getRoleBadge = (role: string) => {
+    if (role === 'ADMIN') {
+      return (
+        <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-red-600 hover:bg-red-700">
+          <Shield className="w-2.5 h-2.5 mr-0.5" />
+          Admin
+        </Badge>
+      )
+    }
+    if (role === 'STAFF') {
+      return (
+        <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-blue-600 hover:bg-blue-700">
+          <Shield className="w-2.5 h-2.5 mr-0.5" />
+          Staff
+        </Badge>
+      )
+    }
+    return null
   }
 
   const formatDate = (dateString: string) => {
@@ -186,72 +300,72 @@ export default function ReviewManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Reviews</CardTitle>
+            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.pending}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Approved</CardTitle>
+            <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.approved}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hidden</CardTitle>
-            <EyeOff className="h-4 w-4 text-red-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Hidden</CardTitle>
+            <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.hidden}</div>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold text-red-600">{stats.hidden}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle>Review Management</CardTitle>
+        <CardHeader className="px-3 sm:px-6">
+          <CardTitle className="text-base sm:text-lg">Review Management</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <CardContent className="px-3 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 mb-4 sm:mb-6">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search reviews by content, author, or product..."
+                  placeholder="Search reviews..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9 text-sm"
                 />
               </div>
             </div>
-            <div className="w-full md:w-48">
+            <div className="w-full sm:w-48">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <Filter className="h-4 w-4 mr-2" />
+                <SelectTrigger className="h-9 text-sm">
+                  <Filter className="h-3.5 w-3.5 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -264,8 +378,9 @@ export default function ReviewManagement() {
             </div>
           </div>
 
-          {/* Reviews Table */}
-          <div className="rounded-md border">
+          {/* Mobile: Card layout, Desktop: Table layout */}
+          {/* Desktop Table */}
+          <div className="hidden md:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -295,28 +410,27 @@ export default function ReviewManagement() {
                   reviews.map((review) => (
                     <TableRow key={review.id}>
                       <TableCell>
-                        <div className="font-medium">{review.product.title}</div>
+                        <div className="font-medium text-sm">{review.product.title}</div>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{getAuthorName(review)}</div>
+                          <div className="font-medium text-sm">{getAuthorName(review)}</div>
                           {review.user ? (
-                            <div className="text-sm text-muted-foreground">{review.user.email}</div>
+                            <div className="text-xs text-muted-foreground">{review.user.email}</div>
                           ) : review.guestEmail ? (
-                            <div className="text-sm text-muted-foreground">{review.guestEmail}</div>
+                            <div className="text-xs text-muted-foreground">{review.guestEmail}</div>
                           ) : null}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-0.5">
                           {renderStars(review.rating)}
-                          <span className="ml-1 text-sm font-medium">({review.rating})</span>
                         </div>
                       </TableCell>
                       <TableCell className="max-w-xs">
                         <div>
                           <div className="font-medium text-sm">{review.title}</div>
-                          <div className="text-sm text-muted-foreground truncate">
+                          <div className="text-xs text-muted-foreground truncate">
                             {review.content}
                           </div>
                         </div>
@@ -324,20 +438,28 @@ export default function ReviewManagement() {
                       <TableCell>
                         {getStatusBadge(review)}
                       </TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="text-xs whitespace-nowrap">
                         {formatDate(review.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setSelectedReview(review)
-                              setDetailDialog(true)
-                            }}
+                            onClick={() => openDetailDialog(review)}
+                            className="h-8 w-8 p-0"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDetailDialog(review)}
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
+                            title="Reply"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
                           </Button>
                           
                           {!review.isVerified && (
@@ -345,9 +467,9 @@ export default function ReviewManagement() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleReviewAction(review.id, 'approve')}
-                              className="text-green-600 hover:text-green-700"
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              <CheckCircle className="h-3.5 w-3.5" />
                             </Button>
                           )}
                           
@@ -356,18 +478,18 @@ export default function ReviewManagement() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleReviewAction(review.id, 'hide')}
-                              className="text-orange-600 hover:text-orange-700"
+                              className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700"
                             >
-                              <EyeOff className="h-4 w-4" />
+                              <EyeOff className="h-3.5 w-3.5" />
                             </Button>
                           ) : (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleReviewAction(review.id, 'show')}
-                              className="text-blue-600 hover:text-blue-700"
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-3.5 w-3.5" />
                             </Button>
                           )}
                           
@@ -375,9 +497,9 @@ export default function ReviewManagement() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleReviewAction(review.id, 'delete')}
-                            className="text-red-600 hover:text-red-700"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -388,13 +510,112 @@ export default function ReviewManagement() {
             </Table>
           </div>
 
+          {/* Mobile Card Layout */}
+          <div className="md:hidden space-y-3">
+            {loading ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                Loading reviews...
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                No reviews found
+              </div>
+            ) : (
+              reviews.map((review) => (
+                <Card key={review.id} className="overflow-hidden">
+                  <CardContent className="p-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm truncate">{review.product.title}</div>
+                        <div className="text-xs text-muted-foreground truncate">{getAuthorName(review)}</div>
+                      </div>
+                      {getStatusBadge(review)}
+                    </div>
+
+                    <div className="flex items-center gap-0.5 mb-1.5">
+                      {renderStars(review.rating)}
+                      <span className="text-xs text-muted-foreground ml-1">
+                        {formatDate(review.createdAt)}
+                      </span>
+                    </div>
+
+                    <div className="mb-2">
+                      <div className="font-medium text-xs">{review.title}</div>
+                      <div className="text-xs text-muted-foreground line-clamp-2">{review.content}</div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pt-1 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openDetailDialog(review)}
+                        className="h-7 px-2 text-xs flex-1"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openDetailDialog(review)}
+                        className="h-7 px-2 text-xs text-blue-600 flex-1"
+                      >
+                        <MessageCircle className="h-3 w-3 mr-1" />
+                        Reply
+                      </Button>
+                      
+                      {!review.isVerified && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReviewAction(review.id, 'approve')}
+                          className="h-7 w-7 p-0 text-green-600"
+                        >
+                          <CheckCircle className="h-3 w-3" />
+                        </Button>
+                      )}
+                      
+                      {review.isVisible ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReviewAction(review.id, 'hide')}
+                          className="h-7 w-7 p-0 text-orange-600"
+                        >
+                          <EyeOff className="h-3 w-3" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReviewAction(review.id, 'show')}
+                          className="h-7 w-7 p-0 text-blue-600"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      )}
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReviewAction(review.id, 'delete')}
+                        className="h-7 w-7 p-0 text-red-600"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
           {/* Pagination */}
           {pagination.pages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                {pagination.total} reviews
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2">
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                {((pagination.page - 1) * pagination.limit) + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} / {pagination.total}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -402,17 +623,19 @@ export default function ReviewManagement() {
                   size="sm"
                   onClick={() => setPage(page - 1)}
                   disabled={page === 1}
+                  className="h-8 text-xs"
                 >
                   Previous
                 </Button>
-                <span className="text-sm">
-                  Page {pagination.page} of {pagination.pages}
+                <span className="text-xs sm:text-sm">
+                  {pagination.page} / {pagination.pages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setPage(page + 1)}
                   disabled={page === pagination.pages}
+                  className="h-8 text-xs"
                 >
                   Next
                 </Button>
@@ -422,22 +645,22 @@ export default function ReviewManagement() {
         </CardContent>
       </Card>
 
-      {/* Review Detail Dialog */}
+      {/* Review Detail Dialog with Reply */}
       <Dialog open={detailDialog} onOpenChange={setDetailDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Review Details</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">Review Details</DialogTitle>
           </DialogHeader>
           {selectedReview && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <h4 className="font-medium">Product</h4>
-                  <p className="text-sm text-muted-foreground">{selectedReview.product.title}</p>
+                  <h4 className="font-medium text-sm">Product</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{selectedReview.product.title}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium">Author</h4>
-                  <p className="text-sm text-muted-foreground">{getAuthorName(selectedReview)}</p>
+                  <h4 className="font-medium text-sm">Author</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{getAuthorName(selectedReview)}</p>
                   {selectedReview.user?.email && (
                     <p className="text-xs text-muted-foreground">{selectedReview.user.email}</p>
                   )}
@@ -448,69 +671,154 @@ export default function ReviewManagement() {
               </div>
 
               <div>
-                <h4 className="font-medium mb-2">Rating</h4>
+                <h4 className="font-medium text-sm mb-1">Rating</h4>
                 <div className="flex items-center space-x-1">
                   {renderStars(selectedReview.rating)}
-                  <span className="ml-2 font-medium">({selectedReview.rating}/5)</span>
+                  <span className="ml-2 font-medium text-sm">({selectedReview.rating}/5)</span>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-medium mb-2">Review Title</h4>
-                <p className="text-sm">{selectedReview.title}</p>
+                <h4 className="font-medium text-sm mb-1">Review Title</h4>
+                <p className="text-xs sm:text-sm">{selectedReview.title}</p>
               </div>
 
               <div>
-                <h4 className="font-medium mb-2">Review Content</h4>
-                <p className="text-sm whitespace-pre-wrap">{selectedReview.content}</p>
+                <h4 className="font-medium text-sm mb-1">Review Content</h4>
+                <p className="text-xs sm:text-sm whitespace-pre-wrap">{selectedReview.content}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <h4 className="font-medium">Status</h4>
-                  {getStatusBadge(selectedReview)}
+                  <h4 className="font-medium text-sm">Status</h4>
+                  <div className="mt-1">{getStatusBadge(selectedReview)}</div>
                 </div>
                 <div>
-                  <h4 className="font-medium">Date</h4>
-                  <p className="text-sm text-muted-foreground">{formatDate(selectedReview.createdAt)}</p>
+                  <h4 className="font-medium text-sm">Date</h4>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">{formatDate(selectedReview.createdAt)}</p>
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => setDetailDialog(false)}>
+              {/* Replies Section */}
+              <Separator />
+              <div>
+                <h4 className="font-medium text-sm mb-3 flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4" />
+                  Replies ({dialogReplies.length})
+                </h4>
+
+                {loadingReplies ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">Loading replies...</span>
+                  </div>
+                ) : dialogReplies.length > 0 ? (
+                  <div className="space-y-3 mb-4">
+                    {dialogReplies.map((reply) => (
+                      <div key={reply.id} className="flex items-start gap-2 sm:gap-3 bg-muted/50 rounded-lg p-2.5 sm:p-3">
+                        <Avatar className="w-6 h-6 sm:w-8 sm:h-8 shrink-0">
+                          <AvatarImage src={reply.user.image} alt={reply.user.name || 'User'} />
+                          <AvatarFallback className="text-[10px] sm:text-xs">
+                            {reply.user.name?.[0] || <User className="w-3 h-3" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-xs sm:text-sm">{reply.user.name || 'User'}</span>
+                            {getRoleBadge(reply.user.role)}
+                            <span className="text-[10px] sm:text-xs text-muted-foreground">
+                              {formatDate(reply.createdAt)}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteReply(reply.id)}
+                              className="h-5 w-5 p-0 ml-auto text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
+                            {reply.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-4">No replies yet.</p>
+                )}
+
+                {/* Reply Form */}
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Write a reply as admin/staff..."
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    className="min-h-[60px] sm:min-h-[80px] text-xs sm:text-sm resize-none"
+                    maxLength={2000}
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">
+                      {replyContent.length}/2000
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={submitReply}
+                      disabled={submittingReply || !replyContent.trim()}
+                      className="h-8 text-xs"
+                    >
+                      {submittingReply ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      Send Reply
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setDetailDialog(false)} className="text-xs h-8">
                   Close
                 </Button>
                 {!selectedReview.isVerified && (
                   <Button 
+                    size="sm"
                     onClick={() => {
                       handleReviewAction(selectedReview.id, 'approve')
                       setDetailDialog(false)
                     }}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 text-xs h-8"
                   >
-                    Approve Review
+                    Approve
                   </Button>
                 )}
                 {selectedReview.isVisible ? (
                   <Button 
                     variant="outline"
+                    size="sm"
                     onClick={() => {
                       handleReviewAction(selectedReview.id, 'hide')
                       setDetailDialog(false)
                     }}
-                    className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                    className="text-orange-600 border-orange-600 hover:bg-orange-50 text-xs h-8"
                   >
-                    Hide Review
+                    Hide
                   </Button>
                 ) : (
                   <Button 
+                    size="sm"
                     onClick={() => {
                       handleReviewAction(selectedReview.id, 'show')
                       setDetailDialog(false)
                     }}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 text-xs h-8"
                   >
-                    Show Review
+                    Show
                   </Button>
                 )}
               </div>

@@ -48,5 +48,8 @@ Turbo/
 .serena/
 /uploads/
 
+# Prompts
+prompts/
+
 # AI Instructions (internal use only)
 .github/instructions/rule.instructions.md

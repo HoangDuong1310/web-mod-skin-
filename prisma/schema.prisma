@@ -67,6 +67,7 @@ model User {
   customSkins         CustomSkin[]
   skinSubmissions     SkinSubmission[]
   reviewedSubmissions SkinSubmission[]  @relation("SkinReviewer")
+  reviewReplies       ReviewReply[]
   skinDownloads       SkinDownload[]
   licenseKeys         LicenseKey[]
   orders              Order[]
@@ -243,12 +244,30 @@ model Review {
   deletedAt  DateTime?
   product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   user       User?     @relation(fields: [userId], references: [id])
+  replies    ReviewReply[]
 
   @@index([productId, createdAt])
   @@index([userId])
   @@index([rating])
   @@index([isVisible, isVerified])
   @@map("reviews")
+}
+
+model ReviewReply {
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  content   String   @db.Text
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([reviewId])
+  @@index([userId])
+  @@map("review_replies")
 }
 
 model ReviewFilter {

@@ -134,9 +134,22 @@ export const reviewQuerySchema = z.object({
   sort: z.string().optional(),
 })
 
+// Review Reply schemas
+export const createReviewReplySchema = z.object({
+  reviewId: z.string().min(1, 'Review ID is required'),
+  content: z.string().min(1, 'Reply content is required').max(2000, 'Reply must not exceed 2000 characters'),
+})
+
+export const updateReviewReplySchema = z.object({
+  id: z.string().min(1, 'Reply ID is required'),
+  content: z.string().min(1, 'Reply content is required').max(2000, 'Reply must not exceed 2000 characters'),
+})
+
 export type CreateDownloadInput = z.infer<typeof createDownloadSchema>
 export type DownloadQueryInput = z.infer<typeof downloadQuerySchema>
 export type CreateReviewInput = z.infer<typeof createReviewSchema>
 export type CategoryQueryInput = z.infer<typeof categoryQuerySchema>
 export type ReviewQueryInput = z.infer<typeof reviewQuerySchema>
+export type CreateReviewReplyInput = z.infer<typeof createReviewReplySchema>
+export type UpdateReviewReplyInput = z.infer<typeof updateReviewReplySchema>
 

@@ -224,15 +224,15 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Write a Review</CardTitle>
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-base sm:text-lg">Write a Review</CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className="px-4 sm:px-6">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           {/* Rating */}
           <div>
-            <Label>Rating *</Label>
-            <div className="mt-2">
+            <Label className="text-sm">Rating *</Label>
+            <div className="mt-1.5 sm:mt-2">
               <StarRating
                 rating={rating}
                 size="lg"
@@ -240,7 +240,7 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
                 onChange={setRating}
               />
               {rating > 0 && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   {rating === 1 && 'Poor'}
                   {rating === 2 && 'Fair'}
                   {rating === 3 && 'Good'}
@@ -253,23 +253,24 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
 
           {/* Title */}
           <div>
-            <Label htmlFor="title">Review Title *</Label>
+            <Label htmlFor="title" className="text-sm">Review Title *</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Summarize your experience"
               maxLength={200}
+              className="mt-1 h-9 text-sm"
               required
             />
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
               {title.length}/200 characters
             </p>
           </div>
 
           {/* Content */}
           <div>
-            <Label htmlFor="content">Review Content *</Label>
+            <Label htmlFor="content" className="text-sm">Review Content *</Label>
             <Textarea
               id="content"
               value={content}
@@ -277,38 +278,41 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
               placeholder="Tell others about your experience with this app..."
               rows={4}
               maxLength={2000}
+              className="mt-1 text-sm min-h-[80px] sm:min-h-[100px] resize-none"
               required
             />
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
               {content.length}/2000 characters
             </p>
           </div>
 
           {/* Guest Information */}
           {!session && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
               <div>
-                <Label htmlFor="guestName">Your Name *</Label>
+                <Label htmlFor="guestName" className="text-sm">Your Name *</Label>
                 <Input
                   id="guestName"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
                   placeholder="Enter your name"
                   maxLength={100}
+                  className="mt-1 h-9 text-sm"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="guestEmail">Your Email *</Label>
+                <Label htmlFor="guestEmail" className="text-sm">Your Email *</Label>
                 <Input
                   id="guestEmail"
                   type="email"
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   placeholder="Enter your email"
+                  className="mt-1 h-9 text-sm"
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                   Email won't be displayed publicly
                 </p>
               </div>
@@ -319,13 +323,13 @@ export function ReviewForm({ productId, onReviewCreated }: ReviewFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting || rating === 0}
-            className="w-full"
+            className="w-full h-9 sm:h-10 text-sm"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Review'}
           </Button>
 
           {session && (
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center">
               Posting as {session.user?.name || session.user?.email}
             </p>
           )}
