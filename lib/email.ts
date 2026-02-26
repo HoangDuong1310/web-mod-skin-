@@ -642,6 +642,32 @@ export class EmailService {
       `),
     })
   }
+
+  // ─── Email Verification ───
+  async sendVerificationEmail(userEmail: string, userName: string, verifyToken: string, baseUrl: string): Promise<boolean> {
+    const verifyUrl = `${baseUrl}/auth/verify-email?token=${verifyToken}`
+
+    return this.sendEmail({
+      to: userEmail,
+      subject: '✉️ Xác minh email của bạn - WebModSkin',
+      html: emailLayout(`
+        <h2 style="color:#333;margin-top:0;">✉️ Xác minh email</h2>
+        <p>Xin chào <strong>${userName}</strong>,</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản tại <strong>WebModSkin</strong>. Vui lòng nhấn nút bên dưới để xác minh email:</p>
+        ${btn(verifyUrl, 'Xác Minh Email', '#10b981')}
+        <p>Nếu nút không hoạt động, sao chép link sau vào trình duyệt:</p>
+        <p style="background:#f5f5f5;padding:10px;border-radius:4px;word-break:break-all;font-size:13px;">${verifyUrl}</p>
+        ${infoBox(`
+          <p style="margin-top:0;"><strong>⚠️ Lưu ý:</strong></p>
+          <ul style="margin-bottom:0;">
+            <li>Link xác minh sẽ hết hạn sau <strong>24 giờ</strong></li>
+            <li>Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này</li>
+          </ul>
+        `, '#f59e0b', '#fef3cd')}
+        <p>Trân trọng,<br><strong>Đội ngũ WebModSkin</strong></p>
+      `),
+    })
+  }
 }
 
 // Singleton instance

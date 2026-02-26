@@ -38,11 +38,15 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState('')
+  const [showVerifyPrompt, setShowVerifyPrompt] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setFormError('')
+    setShowVerifyPrompt(false)
 
     try {
       const result = await signIn('credentials', {
@@ -52,7 +56,30 @@ export default function SignInPage() {
       })
 
       if (result?.error) {
-        setFormError('Invalid email or password')
+        // Check if it's an unverified email error
+        if (result.error.includes('EMAIL_NOT_VERIFIED') || result.error === 'CredentialsSignin') {
+          // Try to detect if it's email-not-verified by attempting a check
+          try {
+            const checkRes = await fetch('/api/auth/resend-verification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: formData.email }),
+            })
+            const checkData = await checkRes.json()
+            if (checkData.alreadyVerified) {
+              setFormError('Email hoặc mật khẩu không đúng')
+            } else if (checkRes.ok) {
+              setShowVerifyPrompt(true)
+              setFormError('Email chưa được xác minh. Chúng tôi đã gửi lại email xác minh cho bạn.')
+            } else {
+              setFormError('Email hoặc mật khẩu không đúng')
+            }
+          } catch {
+            setFormError('Email hoặc mật khẩu không đúng')
+          }
+        } else {
+          setFormError('Email hoặc mật khẩu không đúng')
+        }
       } else {
         // Check if sign in was successful
         const session = await getSession()
@@ -82,7 +109,7 @@ export default function SignInPage() {
     setIsLoading(true)
     try {
       await signIn(provider, {
-        callbackUrl: callbackParam || undefined,
+        callbackUrl: callbackParam || '/',
         redirect: true
       })
     } catch (error) {
@@ -90,6 +117,28 @@ export default function SignInPage() {
       setFormError('OAuth sign in failed. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResending(true)
+    setResendMessage('')
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setResendMessage('Email xác minh đã được gửi lại!')
+      } else {
+        setResendMessage(data.error || 'Không thể gửi lại email')
+      }
+    } catch {
+      setResendMessage('Lỗi mạng. Vui lòng thử lại.')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -143,8 +192,40 @@ export default function SignInPage() {
           </CardHeader>
 
           <CardContent className="space-y-4">
+            {/* Verification Prompt */}
+            {showVerifyPrompt && (
+              <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+                <Mail className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="space-y-3">
+                  <p className="text-amber-800 dark:text-amber-200">
+                    Your email has not been verified. A verification email has been sent to <strong>{formData.email}</strong>.
+                  </p>
+                  {resendMessage && (
+                    <p className="text-sm text-amber-700 dark:text-amber-300">{resendMessage}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={resending}
+                    onClick={handleResendVerification}
+                    className="border-amber-500 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-950"
+                  >
+                    {resending ? (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      'Resend Verification Email'
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Error Messages */}
-            {(error || formError) && (
+            {!showVerifyPrompt && (error || formError) && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>

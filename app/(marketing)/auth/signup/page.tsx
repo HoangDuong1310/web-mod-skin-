@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { User, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
+import { User, Mail, Lock, AlertCircle, CheckCircle, Chrome, Github, Loader2 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
 
 export default function SignUpPage() {
@@ -16,6 +16,9 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
   
   const [formData, setFormData] = useState({
     name: '',
@@ -62,21 +65,51 @@ export default function SignUpPage() {
       })
 
       if (response.ok) {
+        setRegisteredEmail(formData.email)
         setSuccess(true)
-        // Auto sign in after successful registration
-        setTimeout(async () => {
-          await signIn('credentials', {
-            email: formData.email,
-            password: formData.password,
-            callbackUrl: '/',
-          })
-        }, 2000)
       } else {
         const data = await response.json()
         setError(data.error || 'Registration failed')
       }
     } catch (error) {
       setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResending(true)
+    setResendMessage('')
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: registeredEmail }),
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setResendMessage('Email xác minh đã được gửi lại!')
+      } else {
+        setResendMessage(data.error || 'Không thể gửi lại email')
+      }
+    } catch {
+      setResendMessage('Lỗi mạng. Vui lòng thử lại.')
+    } finally {
+      setResending(false)
+    }
+  }
+
+  const handleOAuthSignIn = async (provider: string) => {
+    setLoading(true)
+    try {
+      await signIn(provider, {
+        callbackUrl: '/',
+        redirect: true,
+      })
+    } catch (error) {
+      console.error('OAuth sign in error:', error)
+      setError('OAuth sign in failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -94,12 +127,40 @@ export default function SignUpPage() {
       <div className="container flex items-center justify-center min-h-screen py-8">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-green-600 mb-4" />
-            <CardTitle className="text-2xl">Account Created!</CardTitle>
-            <CardDescription>
-              Your account has been created successfully. You will be signed in automatically.
+            <Mail className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+            <CardTitle className="text-2xl">Kiểm tra email của bạn!</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Chúng tôi đã gửi email xác minh đến <strong>{registeredEmail}</strong>.
+              Vui lòng kiểm tra hộp thư (và cả thư rác) rồi nhấn link xác minh để hoàn tất đăng ký.
             </CardDescription>
           </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                onClick={handleResendVerification}
+                disabled={resending}
+              >
+                {resending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : (
+                  'Gửi lại email xác minh'
+                )}
+              </Button>
+              {resendMessage && (
+                <p className="text-sm text-muted-foreground">{resendMessage}</p>
+              )}
+            </div>
+            <Separator />
+            <Link href={'/auth/signin' as Route}>
+              <Button variant="ghost" className="w-full">
+                Đi đến trang đăng nhập
+              </Button>
+            </Link>
+          </CardContent>
         </Card>
       </div>
     )
@@ -201,11 +262,49 @@ export default function SignUpPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </Button>
           </form>
 
           <Separator className="my-6" />
+
+          {/* OAuth Options */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or sign up with</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <Button
+              variant="outline"
+              type="button"
+              disabled={loading}
+              onClick={() => handleOAuthSignIn('google')}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              Google
+            </Button>
+            <Button
+              variant="outline"
+              type="button"
+              disabled={loading}
+              onClick={() => handleOAuthSignIn('github')}
+            >
+              <Github className="mr-2 h-4 w-4" />
+              GitHub
+            </Button>
+          </div>
 
           <div className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">

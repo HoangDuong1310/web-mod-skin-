@@ -40,6 +40,11 @@ export const authOptions: NextAuthOptions = {
             throw new Error('No user found with this email')
           }
 
+          // Block unverified email users
+          if (!user.emailVerified) {
+            throw new Error('EMAIL_NOT_VERIFIED')
+          }
+
           // Verify password with hashed version
           const isPasswordValid = await compare(credentials.password, user.password)
 
@@ -79,6 +84,113 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // OAuth sign-in (Google, GitHub) — auto create / link user
+      if (account && account.provider !== 'credentials') {
+        try {
+          const email = user.email
+          if (!email) return false
+
+          // Check if user already exists
+          let dbUser = await prisma.user.findUnique({
+            where: { email },
+            include: { accounts: true },
+          })
+
+          if (dbUser) {
+            // Check if this OAuth provider is already linked
+            const existingAccount = dbUser.accounts.find(
+              (a) => a.provider === account.provider && a.providerAccountId === account.providerAccountId
+            )
+
+            if (!existingAccount) {
+              // Check if another OAuth provider is already linked (prevent account hijacking)
+              const hasOtherOAuth = dbUser.accounts.some(
+                (a) => a.provider !== account.provider
+              )
+
+              // Link new OAuth provider to existing account
+              await prisma.account.create({
+                data: {
+                  userId: dbUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  refresh_token: account.refresh_token as string | undefined,
+                  access_token: account.access_token as string | undefined,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token as string | undefined,
+                  session_state: account.session_state as string | undefined,
+                },
+              })
+            }
+
+            // Auto-verify email for OAuth users (Google already verified the email)
+            if (!dbUser.emailVerified) {
+              await prisma.user.update({
+                where: { id: dbUser.id },
+                data: { emailVerified: new Date() },
+              })
+            }
+
+            // Update profile image if missing
+            if (!dbUser.image && user.image) {
+              await prisma.user.update({
+                where: { id: dbUser.id },
+                data: { image: user.image },
+              })
+            }
+          } else {
+            // Create new user from OAuth
+            dbUser = await prisma.user.create({
+              data: {
+                email,
+                name: user.name || profile?.name || email.split('@')[0],
+                image: user.image,
+                emailVerified: new Date(), // OAuth = already verified
+                role: 'USER',
+                accounts: {
+                  create: {
+                    type: account.type,
+                    provider: account.provider,
+                    providerAccountId: account.providerAccountId,
+                    refresh_token: account.refresh_token as string | undefined,
+                    access_token: account.access_token as string | undefined,
+                    expires_at: account.expires_at,
+                    token_type: account.token_type,
+                    scope: account.scope,
+                    id_token: account.id_token as string | undefined,
+                    session_state: account.session_state as string | undefined,
+                  },
+                },
+              },
+              include: { accounts: true },
+            })
+
+            // Send welcome email (fire-and-forget)
+            const { emailService } = await import('@/lib/email')
+            emailService.sendWelcomeEmail(email, dbUser.name || 'Bạn').catch(err =>
+              console.error('❌ Failed to send welcome email:', err)
+            )
+          }
+
+          // Inject dbUser id into the user object so JWT callback can use it
+          user.id = dbUser.id
+          user.role = dbUser.role
+          user.createdAt = dbUser.createdAt.toISOString()
+          
+          return true
+        } catch (error) {
+          console.error('OAuth signIn error:', error)
+          return false
+        }
+      }
+
+      return true
+    },
+
     async redirect({ url, baseUrl }) {
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`
@@ -89,6 +201,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // When user signs in, store additional info in JWT
       if (user) {
+        token.sub = user.id
         token.role = user.role
         token.createdAt = user.createdAt
       }
