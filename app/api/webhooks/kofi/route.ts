@@ -275,6 +275,21 @@ export async function POST(request: NextRequest) {
           console.log('User ID:', pendingOrder.userId);
           console.log('Plan:', pendingOrder.plan.name);
           console.log('===================================');
+
+          // Send payment success email
+          if (pendingOrder.userId && pendingOrder.user?.email) {
+            const { emailService } = await import('@/lib/email');
+            emailService.sendPaymentSuccessEmail(
+              pendingOrder.user.email,
+              pendingOrder.user.name || 'Bạn',
+              orderNumber!,
+              pendingOrder.plan.name,
+              Number(pendingOrder.finalAmount),
+              pendingOrder.currency || 'USD',
+              keyString,
+              expiresAt ?? undefined
+            ).catch(err => console.error('❌ Failed to send Ko-fi payment email:', err));
+          }
         }
       } else {
         console.log(`Không tìm thấy đơn hàng PENDING: ${orderNumber}`);

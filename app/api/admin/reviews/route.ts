@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canManageReviews } from '@/lib/auth-utils'
+import { emailService } from '@/lib/email'
 
 // Function to recalculate product rating and review count
 async function recalculateProductStats(productId: string) {
@@ -162,6 +163,22 @@ export async function PATCH(request: NextRequest) {
 
     // Recalculate product stats after updating review visibility
     await recalculateProductStats(updatedReview.productId)
+
+    // Notify review author about approval/rejection
+    if (updatedReview.userId) {
+      const status = isVerified && isVisible ? 'approved' : 'rejected'
+      prisma.user.findUnique({ where: { id: updatedReview.userId }, select: { email: true } })
+        .then(user => {
+          if (user?.email) {
+            emailService.sendReviewNotification(
+              user.email,
+              updatedReview.product?.title || 'Sản phẩm',
+              status,
+              moderatorNote
+            ).catch(err => console.error('❌ Failed to send review notification:', err))
+          }
+        }).catch(err => console.error('❌ Failed to lookup reviewer:', err))
+    }
 
     return NextResponse.json({ review: updatedReview })
   } catch (error) {

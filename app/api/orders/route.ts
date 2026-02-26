@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { generateKeyString } from '@/lib/license-key'
 import { generateVietQRUrl } from '@/lib/vietqr'
 import { BANK_CONFIG } from '@/lib/payment-config'
+import { emailService } from '@/lib/email'
 
 function generateOrderCode(): string {
   const timestamp = Date.now().toString(36).toUpperCase()
@@ -192,6 +193,30 @@ export async function POST(request: NextRequest) {
       amount: Number(order.finalAmount),
       addInfo: orderNumber,
     })
+
+    // Send order confirmation email (fire-and-forget)
+    if (session.user.email) {
+      emailService.sendOrderConfirmationEmail(
+        session.user.email,
+        session.user.name || 'Bạn',
+        orderNumber,
+        plan.name,
+        Number(order.finalAmount),
+        order.currency,
+        qrUrl
+      ).catch(err => console.error('❌ Failed to send order confirmation email:', err))
+    }
+
+    // Notify admin about new order
+    emailService.sendAdminNotification(
+      `Đơn hàng mới #${orderNumber}`,
+      `<h2 style="margin-top:0;">📦 Đơn hàng mới</h2>
+       <p><strong>Mã đơn:</strong> #${orderNumber}</p>
+       <p><strong>Gói:</strong> ${plan.name}</p>
+       <p><strong>Số tiền:</strong> ${new Intl.NumberFormat('vi-VN').format(Number(order.finalAmount))} ${order.currency}</p>
+       <p><strong>Khách hàng:</strong> ${session.user.name || 'N/A'} (${session.user.email || 'N/A'})</p>
+       <p><strong>Thời gian:</strong> ${new Date().toLocaleString('vi-VN')}</p>`
+    ).catch(err => console.error('❌ Failed to send admin notification:', err))
 
     return NextResponse.json({
       order: {

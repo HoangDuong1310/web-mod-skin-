@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createReviewReplySchema, updateReviewReplySchema } from '@/lib/validations'
 import { canManageReviews } from '@/lib/auth-utils'
+import { emailService } from '@/lib/email'
 
 // GET /api/reviews/replies?reviewId=xxx - Get replies for a review
 export async function GET(request: NextRequest) {
@@ -121,6 +122,35 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Send email notification to review author (fire-and-forget)
+    if (review.userId && review.userId !== session.user.id) {
+      prisma.user.findUnique({
+        where: { id: review.userId },
+        select: { email: true, name: true },
+      }).then(async (reviewer) => {
+        if (reviewer?.email) {
+          // Try to get product name for context
+          let productName: string | undefined
+          try {
+            const product = await prisma.product.findUnique({
+              where: { id: review.productId },
+              select: { title: true },
+            })
+            productName = product?.title || undefined
+          } catch {}
+
+          emailService.sendReviewReplyNotification(
+            reviewer.email,
+            reviewer.name || 'Bạn',
+            reply.user.name || 'Người dùng',
+            reply.user.role,
+            content.trim(),
+            productName
+          ).catch(err => console.error('❌ Failed to send review reply notification:', err))
+        }
+      }).catch(err => console.error('❌ Failed to lookup reviewer:', err))
+    }
 
     return NextResponse.json(
       {

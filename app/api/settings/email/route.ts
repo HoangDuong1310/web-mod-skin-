@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { getSettings, saveSettings } from '@/lib/settings'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
+import { emailService } from '@/lib/email'
 
 const emailSettingsSchema = z.object({
   smtpEnabled: z.boolean().default(false),
@@ -20,11 +21,20 @@ const emailSettingsSchema = z.object({
   replyToEmail: z.union([z.string(), z.null()]).optional().refine((val) => !val || val === null || z.string().email().safeParse(val).success, {
     message: "Invalid reply-to email"
   }),
+  adminEmail: z.union([z.string(), z.null()]).optional().refine((val) => !val || val === null || z.string().email().safeParse(val).success, {
+    message: "Invalid admin email"
+  }),
   
   // Email notifications
   welcomeEmailEnabled: z.boolean().default(true),
   passwordResetEnabled: z.boolean().default(true),
+  passwordChangedEnabled: z.boolean().default(true),
   reviewNotificationEnabled: z.boolean().default(true),
+  orderConfirmationEnabled: z.boolean().default(true),
+  paymentSuccessEnabled: z.boolean().default(true),
+  orderCancellationEnabled: z.boolean().default(true),
+  licenseNotificationEnabled: z.boolean().default(true),
+  contactFormEnabled: z.boolean().default(true),
   downloadNotificationEnabled: z.boolean().default(false),
   adminNotificationEnabled: z.boolean().default(true),
 })
@@ -66,6 +76,9 @@ export async function POST(request: NextRequest) {
 
     // Save to database
     await saveSettings('email', validation.data)
+
+    // Reset cached transporter so next email uses new settings
+    emailService.resetTransporter()
 
     return NextResponse.json({
       message: 'Email settings saved successfully',

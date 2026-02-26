@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { calculateExpirationDate } from '@/lib/license-key'
 import crypto from 'crypto'
-import { Console } from 'console'
+import { emailService } from '@/lib/email'
 
 // Secret key để verify webhook (set trong .env)
 const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET
@@ -157,6 +157,23 @@ export async function POST(request: NextRequest) {
 
       console.log(`License ${order.licenseKey.key} activated for order ${orderCode}`)
       console.log(`Plan: ${order.plan.name}, MaxDevices: ${order.plan.maxDevices}, ExpiresAt: ${expiresAt}`)
+    }
+
+    // Send payment success email with license key
+    if (order.licenseKey?.key && order.userId) {
+      const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true } })
+      if (user?.email) {
+        emailService.sendPaymentSuccessEmail(
+          user.email,
+          user.name ?? 'Bạn',
+          order.orderNumber,
+          order.plan?.name || 'Gói dịch vụ',
+          Number(order.finalAmount),
+          order.currency || 'VND',
+          order.licenseKey.key,
+          order.licenseKey.expiresAt ?? undefined
+        ).catch(err => console.error('❌ Failed to send payment success email:', err))
+      }
     }
 
     return NextResponse.json({

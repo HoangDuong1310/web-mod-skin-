@@ -32,11 +32,18 @@ export function EmailSettingsTab() {
     fromName: DEFAULT_CONFIG.fromName,
     fromEmail: '',
     replyToEmail: '',
+    adminEmail: '',
     
     // Email notifications
     welcomeEmailEnabled: true,
     passwordResetEnabled: true,
+    passwordChangedEnabled: true,
     reviewNotificationEnabled: true,
+    orderConfirmationEnabled: true,
+    paymentSuccessEnabled: true,
+    orderCancellationEnabled: true,
+    licenseNotificationEnabled: true,
+    contactFormEnabled: true,
     downloadNotificationEnabled: false,
     adminNotificationEnabled: true,
   })
@@ -305,6 +312,19 @@ export function EmailSettingsTab() {
 
           {/* Test Email */}
           <div className="pt-4 border-t">
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="admin-email">Admin Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={settings.adminEmail}
+                onChange={(e) => setSettings(prev => ({ ...prev, adminEmail: e.target.value }))}
+                placeholder="admin@example.com"
+              />
+              <p className="text-sm text-muted-foreground">
+                Email nhận thông báo admin (đơn hàng mới, liên hệ...). Nếu trống sẽ dùng From Email.
+              </p>
+            </div>
             <Button 
               variant="outline" 
               onClick={handleTestEmail}
@@ -333,7 +353,7 @@ export function EmailSettingsTab() {
             <div className="space-y-0.5">
               <Label>Welcome Emails</Label>
               <p className="text-sm text-muted-foreground">
-                Send welcome email to new users
+                Gửi email chào mừng khi đăng ký
               </p>
             </div>
             <Switch
@@ -346,7 +366,7 @@ export function EmailSettingsTab() {
             <div className="space-y-0.5">
               <Label>Password Reset</Label>
               <p className="text-sm text-muted-foreground">
-                Send password reset emails
+                Gửi email đặt lại mật khẩu
               </p>
             </div>
             <Switch
@@ -357,9 +377,74 @@ export function EmailSettingsTab() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
+              <Label>Password Changed</Label>
+              <p className="text-sm text-muted-foreground">
+                Thông báo khi mật khẩu được thay đổi
+              </p>
+            </div>
+            <Switch
+              checked={settings.passwordChangedEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, passwordChangedEnabled: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Order Confirmation</Label>
+              <p className="text-sm text-muted-foreground">
+                Gửi email xác nhận đơn hàng + QR thanh toán
+              </p>
+            </div>
+            <Switch
+              checked={settings.orderConfirmationEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, orderConfirmationEnabled: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Payment Success</Label>
+              <p className="text-sm text-muted-foreground">
+                Gửi email thanh toán thành công + license key
+              </p>
+            </div>
+            <Switch
+              checked={settings.paymentSuccessEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, paymentSuccessEnabled: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Order Cancellation</Label>
+              <p className="text-sm text-muted-foreground">
+                Thông báo khi đơn hàng bị hủy hoặc hoàn tiền
+              </p>
+            </div>
+            <Switch
+              checked={settings.orderCancellationEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, orderCancellationEnabled: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>License Notifications</Label>
+              <p className="text-sm text-muted-foreground">
+                Thông báo thay đổi license (tạo, khóa, gia hạn...)
+              </p>
+            </div>
+            <Switch
+              checked={settings.licenseNotificationEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, licenseNotificationEnabled: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
               <Label>Review Notifications</Label>
               <p className="text-sm text-muted-foreground">
-                Notify users when their reviews are approved/rejected
+                Thông báo duyệt/từ chối đánh giá và phản hồi
               </p>
             </div>
             <Switch
@@ -370,9 +455,22 @@ export function EmailSettingsTab() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
+              <Label>Contact Form</Label>
+              <p className="text-sm text-muted-foreground">
+                Gửi email liên hệ đến admin + tự động trả lời
+              </p>
+            </div>
+            <Switch
+              checked={settings.contactFormEnabled}
+              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, contactFormEnabled: checked }))}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
               <Label>Admin Notifications</Label>
               <p className="text-sm text-muted-foreground">
-                Send notifications to admins for important events
+                Thông báo cho admin (đơn hàng mới, sự kiện quan trọng)
               </p>
             </div>
             <Switch

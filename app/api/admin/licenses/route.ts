@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { createLicenseKey, createMultipleLicenseKeys } from '@/lib/license-key'
+import { emailService } from '@/lib/email'
 
 // GET - Lấy danh sách licenses
 export async function GET(request: Request) {
@@ -185,7 +186,23 @@ export async function POST(request: Request) {
       notes,
       createdBy: session.user?.id,
     })
-    
+
+    // If assigned to a user, send email notification
+    if (userId) {
+      prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
+        .then(user => {
+          if (user?.email) {
+            emailService.sendLicenseKeyCreatedEmail(
+              user.email,
+              user.name || 'Bạn',
+              licenseKey.key,
+              plan.name,
+              licenseKey.expiresAt
+            ).catch(err => console.error('❌ Failed to send license key email:', err))
+          }
+        }).catch(err => console.error('❌ Failed to lookup user:', err))
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Đã tạo license key',

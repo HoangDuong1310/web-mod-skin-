@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
 import { z } from 'zod'
+import { emailService } from '@/lib/email'
 
 const createUserSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -109,9 +110,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // TODO: Send welcome email if enabled
+    // Send welcome email if enabled
     if (sendWelcomeEmail) {
-      console.log('📧 Would send welcome email to:', user.email)
+      emailService.sendWelcomeEmail(user.email, user.name || 'Bạn').catch(err =>
+        console.error('❌ Failed to send welcome email:', err)
+      )
     }
 
     console.log('✅ User created successfully:', { id: user.id, email: user.email, role: user.role })

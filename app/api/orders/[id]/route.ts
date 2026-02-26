@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { calculateExpirationDate, generateKeyString } from '@/lib/license-key'
+import { emailService } from '@/lib/email'
 
 // GET - Get order details
 export async function GET(
@@ -195,6 +196,22 @@ export async function PATCH(
           }),
         },
       });
+
+      // Notify user about order cancellation/refund
+      if (order.userId) {
+        prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true } })
+          .then(user => {
+            if (user?.email) {
+              emailService.sendOrderCancellationEmail(
+                user.email,
+                user.name || 'Bạn',
+                order.orderNumber,
+                order.plan?.name || 'Gói dịch vụ',
+                paymentStatus === 'REFUNDED' ? 'REFUNDED' : 'CANCELLED'
+              ).catch(err => console.error('❌ Failed to send cancellation email:', err))
+            }
+          }).catch(err => console.error('❌ Failed to lookup user for cancel email:', err))
+      }
     }
 
     const updatedOrder = await prisma.order.update({
@@ -212,6 +229,23 @@ export async function PATCH(
         licenseKey: true,
       },
     })
+
+    // Send payment success email when payment is confirmed
+    if (paymentStatus === 'COMPLETED' && order.paymentStatus !== 'COMPLETED' && updatedOrder.licenseKey?.key) {
+      const userEmail = updatedOrder.user?.email
+      if (userEmail) {
+        emailService.sendPaymentSuccessEmail(
+          userEmail,
+          updatedOrder.user?.name || 'Bạn',
+          updatedOrder.orderNumber,
+          updatedOrder.plan?.name || 'Gói dịch vụ',
+          Number(updatedOrder.finalAmount),
+          updatedOrder.currency || 'VND',
+          updatedOrder.licenseKey.key,
+          updatedOrder.licenseKey.expiresAt
+        ).catch(err => console.error('❌ Failed to send payment success email:', err))
+      }
+    }
 
     return NextResponse.json({
       order: {

@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { emailService } from '@/lib/email'
 import { calculateExpirationDate } from '@/lib/license-key'
 
 interface RouteParams {
@@ -105,6 +106,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           data: { status: 'SUSPENDED' },
         })
         await logAction(params.id, 'SUSPEND', session.user?.id)
+        // Notify user
+        if (license.userId) {
+          prisma.user.findUnique({ where: { id: license.userId }, select: { email: true, name: true } })
+            .then(u => { if (u?.email) emailService.sendLicenseStatusEmail(u.email, u.name || 'Bạn', license.key, 'suspend').catch(() => {}) })
+            .catch(() => {})
+        }
         return NextResponse.json({ success: true, message: 'Đã tạm khóa license' })
         
       case 'activate':
@@ -112,6 +119,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           where: { id: params.id },
           data: { status: 'ACTIVE' },
         })
+        // Notify user
+        if (license.userId) {
+          prisma.user.findUnique({ where: { id: license.userId }, select: { email: true, name: true } })
+            .then(u => { if (u?.email) emailService.sendLicenseStatusEmail(u.email, u.name || 'Bạn', license.key, 'activate').catch(() => {}) })
+            .catch(() => {})
+        }
         return NextResponse.json({ success: true, message: 'Đã kích hoạt license' })
         
       case 'revoke':
@@ -126,6 +139,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           }),
         ])
         await logAction(params.id, 'REVOKE', session.user?.id)
+        // Notify user
+        if (license.userId) {
+          prisma.user.findUnique({ where: { id: license.userId }, select: { email: true, name: true } })
+            .then(u => { if (u?.email) emailService.sendLicenseStatusEmail(u.email, u.name || 'Bạn', license.key, 'revoke').catch(() => {}) })
+            .catch(() => {})
+        }
         return NextResponse.json({ success: true, message: 'Đã thu hồi license' })
         
       case 'ban':
@@ -139,6 +158,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             data: { status: 'DEACTIVATED', deactivatedAt: new Date() },
           }),
         ])
+        // Notify user
+        if (license.userId) {
+          prisma.user.findUnique({ where: { id: license.userId }, select: { email: true, name: true } })
+            .then(u => { if (u?.email) emailService.sendLicenseStatusEmail(u.email, u.name || 'Bạn', license.key, 'ban').catch(() => {}) })
+            .catch(() => {})
+        }
         return NextResponse.json({ success: true, message: 'Đã cấm license' })
         
       case 'reset_hwid':
@@ -176,6 +201,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           },
         })
         await logAction(params.id, 'EXTEND', session.user?.id, `Extended by ${days} days`)
+        // Notify user
+        if (license.userId) {
+          prisma.user.findUnique({ where: { id: license.userId }, select: { email: true, name: true } })
+            .then(u => { if (u?.email) emailService.sendLicenseStatusEmail(u.email, u.name || 'Bạn', license.key, 'extend', `Gia hạn thêm ${days} ngày. Hết hạn mới: ${newExpiry.toLocaleDateString('vi-VN')}`).catch(() => {}) })
+            .catch(() => {})
+        }
         return NextResponse.json({
           success: true,
           message: `Đã gia hạn thêm ${days} ngày`,

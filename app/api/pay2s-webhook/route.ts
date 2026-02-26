@@ -212,7 +212,24 @@ export async function POST(req: NextRequest) {
       console.log('Timestamp:', new Date().toISOString());
       console.log('=============================');
 
-      // TODO: Gửi email hoặc thông báo cho user nếu cần
+      // Gửi email thông báo thanh toán thành công + license key
+      const { emailService } = await import('@/lib/email');
+      if (foundOrder.userId) {
+        const user = await prisma.user.findUnique({ where: { id: foundOrder.userId }, select: { email: true, name: true } });
+        if (user?.email) {
+          emailService.sendPaymentSuccessEmail(
+            user.email,
+            user.name ?? 'Bạn',
+            orderNumber,
+            plan.name,
+            Number(foundOrder.finalAmount),
+            foundOrder.currency || 'VND',
+            keyString,
+            expiresAt ?? undefined
+          ).catch(err => console.error('❌ Failed to send payment email:', err));
+        }
+      }
+
     } else {
       console.log('Đơn hàng đã thanh toán hoặc trạng thái không hợp lệ:', orderNumber);
     }

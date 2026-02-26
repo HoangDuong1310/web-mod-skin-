@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
 import { z } from 'zod'
+import { emailService } from '@/lib/email'
 
 const updateUserSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100).optional(),
@@ -318,7 +319,14 @@ export async function PUT(
 
     console.log('✅ Password reset successfully for user:', params.id)
 
-    // TODO: Send password reset email notification
+    // Notify user their password was changed by admin
+    if (existingUser.email) {
+      emailService.sendPasswordChangedEmail(
+        existingUser.email,
+        existingUser.name || 'Bạn',
+        true // changedByAdmin
+      ).catch(err => console.error('❌ Failed to send password changed email:', err))
+    }
 
     return NextResponse.json({
       message: 'Password reset successfully',
