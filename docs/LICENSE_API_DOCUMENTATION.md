@@ -18,13 +18,13 @@ Tài liệu này mô tả các API endpoints và yêu cầu cần thiết để 
 |---------|-------|
 | **Kết nối mạng** | Bắt buộc có Internet |
 | **Chế độ Offline** | ❌ KHÔNG hỗ trợ |
-| **Heartbeat** | Mỗi 5 phút phải ping server |
-| **Timeout cho phép** | Tối đa 10 phút không có heartbeat |
+| **Heartbeat** | Mỗi 2.5 phút phải ping server (để giữ phiên) |
+| **Timeout cho phép** | Tối đa 6 phút không có heartbeat (5 phút timeout + 1 phút grace) |
 
 ### Lý do yêu cầu Online:
 
 1. **Bảo mật License** - Ngăn chặn crack/bypass offline
-2. **Kiểm soát thiết bị** - Đảm bảo đúng số device đang dùng
+2. **Kiểm soát phiên đồng thời** - Chỉ cho phép số người dùng online đồng thời theo gói cước
 3. **Thu hồi key tức thì** - Admin có thể ban/suspend ngay lập tức
 4. **Tracking sử dụng** - Ghi log hoạt động realtime
 
@@ -42,7 +42,8 @@ Tài liệu này mô tả các API endpoints và yêu cầu cần thiết để 
    → KHÓA các tính năng premium
    → Cho phép thử lại thủ công
     ↓
-4. Nếu mất kết nối > 10 phút:
+4. Nếu mất kết nối > 6 phút:
+   → Phiên tự động hết hạn trên server (slot giải phóng cho người khác)
    → Tự động đăng xuất
    → Yêu cầu activate lại khi có mạng
 ```
@@ -141,9 +142,9 @@ Tài liệu này mô tả các API endpoints và yêu cầu cần thiết để 
 │  Gói: Pro Monthly                   │
 │  Key: ABCD-****-****-WXYZ           │
 │  Hết hạn: 15/02/2026 (còn 25 ngày)  │
-│  Thiết bị: 1/2                      │
+│  Phiên online: 1/1                   │
 │                                     │
-│  [  GỠ THIẾT BỊ NÀY  ]              │
+│  [  NGẮT KẾT NỐI  ]                │
 │                                     │
 └─────────────────────────────────────┘
 ```
@@ -212,16 +213,19 @@ main() {
 
 #### 6. ⏱️ Implement Heartbeat Timer
 
+> **CRITICAL:** Heartbeat là cơ chế giữ phiên sống. Nếu không heartbeat trong 6 phút, 
+> phiên sẽ tự động hết hạn và slot được giải phóng cho người khác sử dụng key.
+
 ```
 class HeartbeatManager {
     timer = null;
-    INTERVAL = 5 * 60 * 1000;  // 5 phút
+    INTERVAL = 2.5 * 60 * 1000;  // 2.5 phút (nửa session timeout)
     
     start() {
         // Chạy ngay lần đầu
         this.sendHeartbeat();
         
-        // Lặp mỗi 5 phút
+        // Lặp mỗi 2.5 phút (phải < session timeout 5 phút)
         this.timer = setInterval(() => {
             this.sendHeartbeat();
         }, this.INTERVAL);
@@ -238,9 +242,16 @@ class HeartbeatManager {
             result = await api.heartbeat(key, hwid);
             
             if (!result.valid) {
-                // Key không còn hợp lệ
-                this.stop();
-                forceLogout(result.error);
+                if (result.error === 'SESSION_EXPIRED') {
+                    // Phiên hết hạn do timeout → cần kích hoạt lại
+                    this.stop();
+                    showMessage("Phiên đã hết hạn. Đang kích hoạt lại...");
+                    tryReactivate(); // Gọi activate lại
+                } else {
+                    // Key không còn hợp lệ
+                    this.stop();
+                    forceLogout(result.error);
+                }
             }
         } catch (networkError) {
             // Xử lý mất mạng (retry logic)
@@ -599,9 +610,10 @@ Content-Type: application/json
     "activatedAt": "2024-01-15T10:30:00.000Z",
     "expiresAt": "2024-02-15T10:30:00.000Z",
     "daysRemaining": 25,
-    "currentDevices": 1,
-    "maxDevices": 2,
-    "isHwidActivated": true
+    "currentSessions": 1,
+    "maxConcurrent": 2,
+    "isSessionActive": true,
+    "sessionTimeout": 300000
   }
 }
 ```
@@ -623,13 +635,15 @@ Content-Type: application/json
 | KEY_REVOKED | Key đã bị thu hồi |
 | KEY_BANNED | Key đã bị cấm |
 | KEY_SUSPENDED | Key đang bị tạm khóa |
-| HWID_NOT_ACTIVATED | HWID chưa được kích hoạt (khi key đã full device) |
+| KEY_IN_USE | Key đang được sử dụng bởi người khác (đã đạt giới hạn phiên đồng thời) |
 
 ---
 
-### 2. Activate Key (Kích hoạt key với HWID)
+### 2. Activate Key (Kích hoạt key - Tạo phiên sử dụng)
 
-Kích hoạt license key trên một thiết bị mới.
+Kích hoạt license key và tạo phiên sử dụng. Nếu key đang được sử dụng bởi người khác (đạt giới hạn phiên đồng thời), sẽ bị từ chối.
+
+**⚠️ QUAN TRỌNG:** Sau khi kích hoạt thành công, app **BẮT BUỘC** phải gọi heartbeat định kỳ để giữ phiên hoạt động. Nếu không heartbeat trong 5 phút (+1 phút grace), phiên sẽ tự động hết hạn và slot được giải phóng cho người khác.
 
 **Endpoint:** `POST /api/license/activate`
 
@@ -651,7 +665,7 @@ Kích hoạt license key trên một thiết bị mới.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | key | string | ✅ | License key |
-| hwid | string | ✅ | Hardware ID duy nhất của thiết bị |
+| hwid | string | ✅ | Hardware ID duy nhất của thiết bị (dùng làm định danh phiên) |
 | deviceName | string | ❌ | Tên thiết bị (hiển thị cho user) |
 | deviceInfo | object | ❌ | Thông tin thiết bị (JSON) |
 
@@ -665,20 +679,21 @@ Kích hoạt license key trên một thiết bị mới.
     "plan": "Pro Monthly",
     "expiresAt": "2024-02-15T10:30:00.000Z",
     "daysRemaining": 30,
-    "currentDevices": 1,
-    "maxDevices": 2
+    "currentSessions": 1,
+    "maxConcurrent": 2,
+    "sessionTimeout": 300000
   }
 }
 ```
 
-**Response Error - Đạt giới hạn thiết bị:**
+**Response Error (409) - Key đang được sử dụng:**
 ```json
 {
   "success": false,
-  "error": "MAX_DEVICES_REACHED",
-  "message": "Key này chỉ cho phép 2 thiết bị. Vui lòng hủy kích hoạt thiết bị khác trước.",
-  "currentDevices": 2,
-  "maxDevices": 2
+  "error": "KEY_IN_USE",
+  "message": "Key đang được sử dụng bởi người khác. Vui lòng thử lại sau.",
+  "currentSessions": 1,
+  "maxConcurrent": 1
 }
 ```
 
@@ -693,13 +708,13 @@ Kích hoạt license key trên một thiết bị mới.
 | KEY_REVOKED | Key đã bị thu hồi |
 | KEY_BANNED | Key đã bị cấm |
 | KEY_SUSPENDED | Key đang bị tạm khóa |
-| MAX_DEVICES_REACHED | Đã đạt giới hạn số thiết bị |
+| KEY_IN_USE | Key đang được sử dụng, đã đạt giới hạn phiên đồng thời |
 
 ---
 
-### 3. Deactivate Device (Hủy kích hoạt thiết bị)
+### 3. Deactivate (Ngắt phiên sử dụng)
 
-Hủy kích hoạt thiết bị hiện tại để chuyển sang thiết bị khác.
+Ngắt phiên sử dụng hiện tại, giải phóng slot cho người khác.
 
 **Endpoint:** `POST /api/license/deactivate`
 
@@ -721,9 +736,9 @@ Hủy kích hoạt thiết bị hiện tại để chuyển sang thiết bị kh
 
 ---
 
-### 4. Heartbeat (Ping định kỳ)
+### 4. Heartbeat (Giữ phiên sử dụng)
 
-App gọi định kỳ để xác nhận vẫn đang sử dụng và cập nhật trạng thái.
+App **BẮT BUỘC** gọi định kỳ để giữ phiên hoạt động. Nếu không heartbeat trong 6 phút (5 phút timeout + 1 phút grace), phiên sẽ tự động hết hạn và slot được giải phóng cho người khác.
 
 **Endpoint:** `POST /api/license/heartbeat`
 
@@ -742,12 +757,23 @@ App gọi định kỳ để xác nhận vẫn đang sử dụng và cập nhậ
   "data": {
     "expiresAt": "2024-02-15T10:30:00.000Z",
     "daysRemaining": 25,
-    "plan": "Pro Monthly"
+    "plan": "Pro Monthly",
+    "sessionTimeout": 300000,
+    "nextHeartbeatIn": 150000
   }
 }
 ```
 
-**Response Error:**
+**Response Error (410 - Session Expired):**
+```json
+{
+  "valid": false,
+  "error": "SESSION_EXPIRED",
+  "message": "Phiên đã hết hạn do không có heartbeat. Vui lòng kích hoạt lại."
+}
+```
+
+**Response Error (401 - Key Invalid):**
 ```json
 {
   "valid": false,
@@ -755,18 +781,18 @@ App gọi định kỳ để xác nhận vẫn đang sử dụng và cập nhậ
 }
 ```
 
-**Khuyến nghị:** Gọi heartbeat **mỗi 5 phút** khi app đang chạy. Đây là **BẮT BUỘC**.
+**Khuyến nghị:** Gọi heartbeat **mỗi 2.5 phút** (nửa session timeout) khi app đang chạy. Đây là **BẮT BUỘC** để giữ phiên.
 
 ### Heartbeat Flow Chi Tiết:
 
 ```
-[App khởi động thành công]
+[App kích hoạt thành công]
     ↓
-[Bắt đầu timer 5 phút]
+[Bắt đầu timer 2.5 phút]
     ↓
 [Gọi /api/license/heartbeat]
     ├─ Success (valid: true)
-    │   └─ Reset timer, tiếp tục 5 phút sau
+    │   └─ Reset timer, tiếp tục 2.5 phút sau
     │
     ├─ Network Error (timeout, no connection)
     │   ├─ Retry lần 1 (sau 30s)
@@ -775,21 +801,21 @@ App gọi định kỳ để xác nhận vẫn đang sử dụng và cập nhậ
     │   └─ Nếu vẫn fail → Hiện cảnh báo mất mạng
     │
     └─ Error (valid: false)
+        ├─ SESSION_EXPIRED → Thử kích hoạt lại (auto re-activate)
         ├─ KEY_EXPIRED → Khóa app, hiện "Key hết hạn"
         ├─ KEY_REVOKED → Khóa app, hiện "Key đã bị thu hồi"
         ├─ KEY_BANNED → Khóa app, hiện "Key đã bị cấm"
-        ├─ KEY_SUSPENDED → Khóa app, hiện "Key tạm khóa"
-        └─ DEVICE_DEACTIVATED → Khóa app, hiện "Thiết bị đã bị gỡ"
+        └─ KEY_SUSPENDED → Khóa app, hiện "Key tạm khóa"
 ```
 
 ### Pseudocode Heartbeat:
 
 ```javascript
 // Constants
-const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 phút
+const HEARTBEAT_INTERVAL = 2.5 * 60 * 1000; // 2.5 phút (nửa session timeout)
 const RETRY_DELAY = 30 * 1000; // 30 giây
 const MAX_RETRIES = 3;
-const MAX_OFFLINE_TIME = 10 * 60 * 1000; // 10 phút
+const MAX_OFFLINE_TIME = 6 * 60 * 1000; // 6 phút (session timeout + grace)
 
 let lastSuccessfulHeartbeat = Date.now();
 let retryCount = 0;
@@ -832,8 +858,9 @@ function handleNetworkError() {
     const offlineTime = Date.now() - lastSuccessfulHeartbeat;
     
     if (offlineTime > MAX_OFFLINE_TIME) {
-      // Quá 10 phút offline → force logout
-      forceLogout("Mất kết nối quá lâu. Vui lòng đăng nhập lại.");
+      // Quá 6 phút offline → phiên đã hết hạn trên server
+      // Thử kích hoạt lại trước khi force logout
+      tryReactivate();
     } else {
       // Hiện cảnh báo, cho retry thủ công
       showError("Không thể kết nối server. Kiểm tra mạng và thử lại.");
@@ -843,15 +870,41 @@ function handleNetworkError() {
 }
 
 function handleInvalidKey(errorCode) {
+  if (errorCode === 'SESSION_EXPIRED') {
+    // Phiên hết hạn → thử kích hoạt lại tự động
+    tryReactivate();
+    return;
+  }
+
   const messages = {
     'KEY_EXPIRED': 'License key đã hết hạn. Vui lòng gia hạn.',
     'KEY_REVOKED': 'License key đã bị thu hồi.',
     'KEY_BANNED': 'License key đã bị cấm do vi phạm.',
     'KEY_SUSPENDED': 'License key đang bị tạm khóa.',
-    'DEVICE_DEACTIVATED': 'Thiết bị này đã bị gỡ khỏi license.'
+    'KEY_IN_USE': 'Key đang được sử dụng bởi người khác.'
   };
   
   forceLogout(messages[errorCode] || 'License không hợp lệ.');
+}
+
+// Thử kích hoạt lại sau khi phiên hết hạn
+async function tryReactivate() {
+  try {
+    const result = await activate(savedKey, deviceHwid);
+    if (result.success) {
+      // Kích hoạt lại thành công → tiếp tục heartbeat
+      lastSuccessfulHeartbeat = Date.now();
+      retryCount = 0;
+      scheduleNextHeartbeat(HEARTBEAT_INTERVAL);
+    } else if (result.error === 'KEY_IN_USE') {
+      // Key đang được người khác sử dụng
+      forceLogout("Key đang được sử dụng bởi người khác. Vui lòng thử lại sau.");
+    } else {
+      forceLogout(result.message);
+    }
+  } catch (e) {
+    forceLogout("Không thể kích hoạt lại. Vui lòng thử lại.");
+  }
 }
 ```
 
@@ -1004,9 +1057,9 @@ fun getHardwareId(context: Context): String {
    └─ Nếu không → Hiện form nhập key
    
 2. Nếu có key → Gọi /api/license/activate với key + HWID
-   ├─ Success → Cho phép sử dụng app
+   ├─ Success → Cho phép sử dụng app, bắt đầu heartbeat timer
    ├─ KEY_EXPIRED → Hiện thông báo hết hạn + link gia hạn
-   ├─ MAX_DEVICES_REACHED → Hướng dẫn deactivate thiết bị khác
+   ├─ KEY_IN_USE → Thông báo key đang được sử dụng bởi người khác, thử lại sau
    └─ Lỗi khác → Hiện message lỗi
 ```
 
@@ -1108,8 +1161,8 @@ const ERROR_MESSAGES = {
   'KEY_REVOKED': 'License key đã bị thu hồi. Liên hệ hỗ trợ nếu cần.',
   'KEY_BANNED': 'License key đã bị khóa vĩnh viễn do vi phạm điều khoản.',
   'KEY_SUSPENDED': 'License key đang bị tạm khóa. Liên hệ hỗ trợ.',
-  'MAX_DEVICES_REACHED': 'Đã đạt giới hạn thiết bị. Gỡ thiết bị khác để tiếp tục.',
-  'DEVICE_DEACTIVATED': 'Thiết bị này đã bị gỡ khỏi license.',
+  'KEY_IN_USE': 'Key đang được sử dụng bởi người khác. Vui lòng thử lại sau.',
+  'SESSION_EXPIRED': 'Phiên đã hết hạn. Vui lòng kích hoạt lại.',
   
   // Other
   'INVALID_HWID': 'Không thể xác định thiết bị. Vui lòng khởi động lại app.',

@@ -167,6 +167,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         return NextResponse.json({ success: true, message: 'Đã cấm license' })
         
       case 'reset_hwid':
+        // Reset tất cả phiên hoạt động → giải phóng tất cả slot
         await prisma.$transaction([
           prisma.keyActivation.updateMany({
             where: { keyId: params.id, status: 'ACTIVE' },
@@ -178,7 +179,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           }),
         ])
         await logAction(params.id, 'RESET_HWID', session.user?.id)
-        return NextResponse.json({ success: true, message: 'Đã reset HWID' })
+        return NextResponse.json({ success: true, message: 'Đã reset tất cả phiên đang hoạt động' })
         
       case 'extend':
         const { days } = data

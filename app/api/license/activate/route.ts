@@ -55,9 +55,19 @@ export async function POST(request: Request) {
     })
     
     if (!result.success) {
-      const statusCode = result.error === 'INVALID_KEY' ? 404 : 400
+      const statusCode = result.error === 'INVALID_KEY' ? 404 : 
+                          result.error === 'KEY_IN_USE' ? 409 : 400
       return NextResponse.json(
-        { success: false, error: result.error, message: result.message },
+        { 
+          success: false, 
+          error: result.error, 
+          message: result.message,
+          // Thêm thông tin phiên đồng thời nếu key đang bị sử dụng
+          ...(result.error === 'KEY_IN_USE' && {
+            currentSessions: (result as any).currentSessions,
+            maxConcurrent: (result as any).maxConcurrent,
+          }),
+        },
         { status: statusCode }
       )
     }

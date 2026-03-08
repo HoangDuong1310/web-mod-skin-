@@ -316,8 +316,8 @@ export function CheckoutClient({ plan }: CheckoutClientProps) {
                       <Smartphone className="h-4 w-4 text-blue-500 flex-shrink-0" />
                       <span>
                         {isVN 
-                          ? `Tối đa ${plan.maxDevices} thiết bị` 
-                          : `Up to ${plan.maxDevices} device${plan.maxDevices > 1 ? 's' : ''}`}
+                          ? `Tối đa ${plan.maxDevices} phiên đồng thời` 
+                          : `Up to ${plan.maxDevices} concurrent session${plan.maxDevices > 1 ? 's' : ''}`}
                       </span>
                     </li>
                   </ul>

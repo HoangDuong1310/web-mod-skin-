@@ -217,10 +217,10 @@ export function PricingClient({ plans, initialCurrency = 'VND', initialLocale = 
                 </p>
               )}
 
-              {/* Device limit */}
+              {/* Concurrent session limit */}
               <div className="mb-4 text-sm">
                 <Badge variant="outline">
-                  {locale === 'vi' ? `Tối đa ${plan.maxDevices} thiết bị` : `Max ${plan.maxDevices} devices`}
+                  {locale === 'vi' ? `Tối đa ${plan.maxDevices} phiên đồng thời` : `Max ${plan.maxDevices} concurrent session${plan.maxDevices > 1 ? 's' : ''}`}
                 </Badge>
               </div>
 

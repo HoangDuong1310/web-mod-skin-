@@ -820,7 +820,7 @@ function ResellerDashboard() {
                         <div>
                           <p className="font-semibold">{plan.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {plan.durationType} × {plan.durationValue} | Max {plan.maxDevices} devices
+                            {plan.durationType} × {plan.durationValue} | Max {plan.maxDevices} concurrent
                           </p>
                         </div>
                         <div className="text-right">

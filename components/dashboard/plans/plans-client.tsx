@@ -365,7 +365,7 @@ export function PlansClient() {
               
               <div className="text-sm">
                 <span className="text-muted-foreground">Tối đa: </span>
-                <span>{plan.maxDevices} thiết bị</span>
+                <span>{plan.maxDevices} phiên đồng thời</span>
               </div>
               
               {plan.features && (
@@ -549,7 +549,7 @@ export function PlansClient() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Max thiết bị</Label>
+                <Label>Số phiên đồng thời tối đa</Label>
                 <Input
                   type="number"
                   min={1}

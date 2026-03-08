@@ -773,7 +773,7 @@ model SubscriptionPlan {
   // Features & Limits
   features   String? @db.Text // JSON array of features (Vietnamese)
   featuresEn String? @db.Text // JSON array of features (English)
-  maxDevices Int     @default(1) // Số thiết bị tối đa
+  maxDevices Int     @default(1) // Số phiên đồng thời tối đa (concurrent sessions)
 
   // Display
   isActive   Boolean @default(true)
@@ -819,9 +819,9 @@ model LicenseKey {
   activatedAt DateTime?
   expiresAt   DateTime?
 
-  // Device Management
-  maxDevices     Int @default(1)
-  currentDevices Int @default(0)
+  // Session Management (concurrent sessions)
+  maxDevices     Int @default(1) // Số phiên đồng thời tối đa
+  currentDevices Int @default(0) // Số phiên đang hoạt động
 
   // Usage tracking
   lastUsedAt       DateTime?
@@ -853,14 +853,14 @@ model LicenseKey {
   @@map("license_keys")
 }
 
-// Key Activations - Thiết bị đã kích hoạt
+// Key Activations - Phiên sử dụng (đồng thời)
 model KeyActivation {
   id    String     @id @default(cuid())
   keyId String
   key   LicenseKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
 
-  // Device Info
-  hwid       String // Hardware ID từ app
+  // Device Info (for tracking, not for limiting)
+  hwid       String // Hardware ID từ app (định danh phiên)
   deviceName String? // Tên thiết bị (optional)
   deviceInfo String? @db.Text // JSON: OS, CPU, RAM, etc.
 

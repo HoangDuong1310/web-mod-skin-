@@ -289,7 +289,7 @@ export function UserLicensesClient() {
                 <div className="flex items-center gap-2">
                   <Laptop className={`h-4 w-4 ${status.color}`} />
                   <span>
-                    {license.activeDevicesCount}/{license.maxDevices} thiết bị
+                    {license.activeDevicesCount}/{license.maxDevices} phiên
                   </span>
                 </div>
                 
@@ -421,8 +421,8 @@ export function UserLicensesClient() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Thiết bị</label>
-                  <p>{selectedLicense.activeDevicesCount}/{selectedLicense.maxDevices}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Phiên đồng thời</label>
+                  <p>{selectedLicense.activeDevicesCount}/{selectedLicense.maxDevices} phiên</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Ngày còn lại</label>

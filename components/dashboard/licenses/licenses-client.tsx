@@ -630,7 +630,7 @@ export function LicensesClient() {
               <TableHead>Key</TableHead>
               <TableHead>Gói cước</TableHead>
               <TableHead>Trạng thái</TableHead>
-              <TableHead>Thiết bị</TableHead>
+              <TableHead>Phiên online</TableHead>
               <TableHead>Hết hạn</TableHead>
               <TableHead>Người dùng</TableHead>
               <TableHead className="text-right">Thao tác</TableHead>
@@ -680,7 +680,7 @@ export function LicensesClient() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {license._count.activations}/{license.maxDevices}
+                      {license._count.activations}/{license.maxDevices} phiên
                     </TableCell>
                     <TableCell>
                       {(() => {
@@ -742,7 +742,7 @@ export function LicensesClient() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleAction(license.id, 'reset_hwid')}>
                             <RefreshCw className="h-4 w-4 mr-2" />
-                            Reset HWID
+                            Reset phiên hoạt động
                           </DropdownMenuItem>
                           {license.status === 'ACTIVE' && (
                             <DropdownMenuItem onClick={() => handleAction(license.id, 'suspend')}>
@@ -857,8 +857,8 @@ export function LicensesClient() {
                   <p className="mt-1">{selectedLicenseDetail.plan?.name}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Thiết bị</Label>
-                  <p className="mt-1">{selectedLicenseDetail.activations?.filter((a: any) => a.status === 'ACTIVE').length || 0}/{selectedLicenseDetail.maxDevices}</p>
+                  <Label className="text-muted-foreground">Phiên đồng thời</Label>
+                  <p className="mt-1">{selectedLicenseDetail.activations?.filter((a: any) => a.status === 'ACTIVE').length || 0}/{selectedLicenseDetail.maxDevices} phiên</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Ngày kích hoạt</Label>
@@ -912,7 +912,7 @@ export function LicensesClient() {
               
               {/* Activations - Device Info */}
               <div>
-                <Label className="text-muted-foreground mb-2 block">Thiết bị đã kích hoạt ({selectedLicenseDetail.activations?.length || 0})</Label>
+                <Label className="text-muted-foreground mb-2 block">Lịch sử phiên kết nối ({selectedLicenseDetail.activations?.length || 0})</Label>
                 {selectedLicenseDetail.activations && selectedLicenseDetail.activations.length > 0 ? (
                   <div className="space-y-3">
                     {selectedLicenseDetail.activations.map((activation: any) => {
@@ -1010,7 +1010,7 @@ export function LicensesClient() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">Chưa có thiết bị nào kích hoạt</p>
+                  <p className="text-muted-foreground text-sm">Chưa có phiên kết nối nào</p>
                 )}
               </div>
               

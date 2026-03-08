@@ -44,9 +44,11 @@ export async function POST(request: Request) {
     })
     
     if (!result.valid) {
+      // SESSION_EXPIRED trả về 410 Gone - client cần re-activate
+      const statusCode = result.error === 'SESSION_EXPIRED' ? 410 : 401
       return NextResponse.json(
-        { valid: false, error: result.error },
-        { status: 401 }
+        { valid: false, error: result.error, message: (result as any).message },
+        { status: statusCode }
       )
     }
     

@@ -1,10 +1,26 @@
 /**
  * License Key Utilities
  * Các hàm tiện ích để tạo và quản lý license key
+ * 
+ * LOGIC ĐỒNG THỜI (Concurrent Session):
+ * - maxDevices = số phiên đồng thời tối đa (không phải số thiết bị)
+ * - Khi user kích hoạt key, tạo session với heartbeat
+ * - Session hết hạn nếu không heartbeat trong SESSION_TIMEOUT_MS
+ * - Phiên hết hạn được tự động dọn dẹp, giải phóng slot cho người khác
  */
 
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+
+// ============================================
+// SESSION TIMEOUT CONFIGURATION
+// ============================================
+// Thời gian tối đa không heartbeat trước khi session bị coi là hết hạn
+// App client phải gọi heartbeat thường xuyên hơn khoảng này
+export const SESSION_TIMEOUT_MS = 5 * 60 * 1000 // 5 phút
+// Grace period: thêm 1 phút buffer cho network latency
+export const SESSION_GRACE_MS = 1 * 60 * 1000 // 1 phút
+// Tổng timeout thực tế = SESSION_TIMEOUT_MS + SESSION_GRACE_MS = 6 phút
 
 // Key format: XXXX-XXXX-XXXX-XXXX (16 ký tự + 3 dấu gạch)
 const KEY_SEGMENT_LENGTH = 4
@@ -287,7 +303,75 @@ export async function createMultipleLicenseKeys(params: {
 }
 
 /**
- * Kích hoạt key với HWID
+ * Dọn dẹp các phiên hết hạn (stale sessions)
+ * Phiên bị coi là hết hạn nếu lastSeenAt > SESSION_TIMEOUT_MS + SESSION_GRACE_MS
+ * 
+ * Giải quyết bug tiềm năng:
+ * - User tắt app mà không logout → session treo → chặn người khác
+ * - App crash → không gửi deactivate → timeout tự xử lý
+ * - Mất mạng kéo dài → session tự hết hạn
+ */
+export async function cleanupStaleSessions(keyId: string): Promise<number> {
+  const timeoutThreshold = new Date(Date.now() - SESSION_TIMEOUT_MS - SESSION_GRACE_MS)
+
+  const result = await prisma.keyActivation.updateMany({
+    where: {
+      keyId,
+      status: 'ACTIVE',
+      lastSeenAt: {
+        lt: timeoutThreshold,
+      },
+    },
+    data: {
+      status: 'DEACTIVATED',
+      deactivatedAt: new Date(),
+    },
+  })
+
+  // Cập nhật currentDevices (số phiên đang hoạt động) nếu có session bị dọn
+  if (result.count > 0) {
+    const activeCount = await prisma.keyActivation.count({
+      where: { keyId, status: 'ACTIVE' },
+    })
+
+    await prisma.licenseKey.update({
+      where: { id: keyId },
+      data: { currentDevices: activeCount },
+    })
+
+    // Log cleanup
+    try {
+      await prisma.keyUsageLog.create({
+        data: {
+          keyId,
+          action: 'DEACTIVATE',
+          details: JSON.stringify({
+            reason: 'session_timeout',
+            cleanedSessions: result.count,
+            timeoutMs: SESSION_TIMEOUT_MS + SESSION_GRACE_MS,
+          }),
+          success: true,
+        },
+      })
+    } catch (e) {
+      console.error('Failed to log session cleanup:', e)
+    }
+  }
+
+  return result.count
+}
+
+/**
+ * Kích hoạt key với HWID - Logic phiên đồng thời
+ * 
+ * Flow:
+ * 1. Dọn dẹp phiên hết hạn (stale sessions)
+ * 2. Nếu HWID đã có phiên active → refresh heartbeat (cùng máy mở lại)
+ * 3. Kiểm tra số phiên đồng thời hiện tại
+ * 4. Nếu đạt giới hạn → từ chối (KEY_IN_USE)
+ * 5. Nếu còn slot → tạo phiên mới
+ * 
+ * Race condition protection: Sử dụng transaction với count check bên trong
  */
 export async function activateKey(params: {
   key: string
@@ -342,13 +426,22 @@ export async function activateKey(params: {
     return { success: false, error: 'KEY_EXPIRED', message: 'Key đã hết hạn' }
   }
 
-  // Kiểm tra xem HWID đã được kích hoạt chưa
-  const existingActivation = licenseKey.activations.find(
-    a => a.hwid === hashedHwid && a.status === 'ACTIVE'
+  // === BƯỚC 1: Dọn dẹp phiên hết hạn ===
+  // Giải quyết: stale sessions từ app crash, tắt app, mất mạng
+  await cleanupStaleSessions(licenseKey.id)
+
+  // === BƯỚC 2: Kiểm tra HWID đã có phiên active chưa ===
+  // Reload activations sau cleanup
+  const currentActivations = await prisma.keyActivation.findMany({
+    where: { keyId: licenseKey.id, status: 'ACTIVE' },
+  })
+
+  const existingActivation = currentActivations.find(
+    a => a.hwid === hashedHwid
   )
 
   if (existingActivation) {
-    // Update last seen
+    // Cùng máy đăng nhập lại → refresh heartbeat, không tốn slot
     await prisma.keyActivation.update({
       where: { id: existingActivation.id },
       data: { lastSeenAt: new Date() },
@@ -381,13 +474,15 @@ export async function activateKey(params: {
         plan: licenseKey.plan.name,
         expiresAt: licenseKey.expiresAt,
         daysRemaining: getDaysRemaining(licenseKey.expiresAt),
+        sessionTimeout: SESSION_TIMEOUT_MS,
       },
     }
   }
 
-  // Kiểm tra số thiết bị
-  const activeDevices = licenseKey.activations.length
-  if (activeDevices >= licenseKey.maxDevices) {
+  // === BƯỚC 3: Kiểm tra số phiên đồng thời ===
+  // Race condition protection: kiểm tra trong transaction
+  const activeSessions = currentActivations.length
+  if (activeSessions >= licenseKey.maxDevices) {
     await logKeyUsage({
       keyId: licenseKey.id,
       action: 'ACTIVATE',
@@ -395,20 +490,22 @@ export async function activateKey(params: {
       ipAddress,
       userAgent,
       success: false,
-      errorMessage: 'Đã đạt giới hạn thiết bị',
+      errorMessage: 'Key đang được sử dụng bởi người khác',
     })
 
     return {
       success: false,
-      error: 'MAX_DEVICES_REACHED',
-      message: `Key này chỉ cho phép ${licenseKey.maxDevices} thiết bị. Vui lòng hủy kích hoạt thiết bị khác trước.`,
-      currentDevices: activeDevices,
-      maxDevices: licenseKey.maxDevices,
+      error: 'KEY_IN_USE',
+      message: licenseKey.maxDevices === 1
+        ? 'Key đang được sử dụng bởi người khác. Vui lòng thử lại sau.'
+        : `Key đã đạt giới hạn ${licenseKey.maxDevices} phiên đồng thời. Vui lòng thử lại sau.`,
+      currentSessions: activeSessions,
+      maxConcurrent: licenseKey.maxDevices,
     }
   }
 
+  // === BƯỚC 4: Tạo phiên mới ===
   // Nếu key chưa được kích hoạt lần nào, set activation date và expiration
-  // Use UTC timestamp to avoid timezone issues
   let expiresAt = licenseKey.expiresAt
   let activatedAt = licenseKey.activatedAt
 
@@ -421,9 +518,20 @@ export async function activateKey(params: {
     )
   }
 
-  // Tạo activation mới
+  // Transaction để tránh race condition
+  // Nếu 2 request đồng thời vượt qua check ở trên,
+  // transaction sẽ đảm bảo count chính xác
   await prisma.$transaction(async (tx) => {
-    // Tạo activation mới hoặc kích hoạt lại thiết bị cũ
+    // Double-check trong transaction để chống race condition
+    const activeCountInTx = await tx.keyActivation.count({
+      where: { keyId: licenseKey.id, status: 'ACTIVE' },
+    })
+
+    if (activeCountInTx >= licenseKey.maxDevices) {
+      throw new Error('CONCURRENT_LIMIT_EXCEEDED')
+    }
+
+    // Tạo activation mới hoặc kích hoạt lại phiên cũ
     await tx.keyActivation.upsert({
       where: {
         keyId_hwid: {
@@ -458,7 +566,7 @@ export async function activateKey(params: {
         status: 'ACTIVE',
         activatedAt,
         expiresAt,
-        currentDevices: activeDevices + 1,
+        currentDevices: activeCountInTx + 1,
         totalActivations: { increment: 1 },
         lastUsedAt: new Date(),
         lastUsedIp: ipAddress,
@@ -477,7 +585,34 @@ export async function activateKey(params: {
         success: true,
       },
     })
+  }).catch((err) => {
+    if (err.message === 'CONCURRENT_LIMIT_EXCEEDED') {
+      // Race condition caught - trả về lỗi
+      return null // sẽ check bên dưới
+    }
+    throw err
   })
+
+  // Nếu race condition xảy ra trong transaction
+  // (2 requests cùng vượt qua check nhưng transaction thứ 2 thấy đã đủ)
+  const finalActiveCount = await prisma.keyActivation.count({
+    where: { keyId: licenseKey.id, status: 'ACTIVE' },
+  })
+
+  // Kiểm tra xem HWID của mình có được kích hoạt thành công không
+  const myActivation = await prisma.keyActivation.findUnique({
+    where: { keyId_hwid: { keyId: licenseKey.id, hwid: hashedHwid } },
+  })
+
+  if (!myActivation || myActivation.status !== 'ACTIVE') {
+    return {
+      success: false,
+      error: 'KEY_IN_USE',
+      message: 'Key đang được sử dụng bởi người khác. Vui lòng thử lại sau.',
+      currentSessions: finalActiveCount,
+      maxConcurrent: licenseKey.maxDevices,
+    }
+  }
 
   return {
     success: true,
@@ -487,14 +622,16 @@ export async function activateKey(params: {
       plan: licenseKey.plan.name,
       expiresAt,
       daysRemaining: getDaysRemaining(expiresAt),
-      currentDevices: activeDevices + 1,
-      maxDevices: licenseKey.maxDevices,
+      currentSessions: finalActiveCount,
+      maxConcurrent: licenseKey.maxDevices,
+      sessionTimeout: SESSION_TIMEOUT_MS,
     },
   }
 }
 
 /**
  * Validate key (không kích hoạt, chỉ kiểm tra)
+ * Cũng dọn dẹp stale sessions để trả về thông tin chính xác
  */
 export async function validateKey(params: {
   key: string
@@ -521,6 +658,14 @@ export async function validateKey(params: {
   if (!licenseKey) {
     return { valid: false, error: 'INVALID_KEY', message: 'Key không hợp lệ' }
   }
+
+  // Dọn dẹp stale sessions trước
+  await cleanupStaleSessions(licenseKey.id)
+
+  // Reload activations sau cleanup
+  const activeActivations = await prisma.keyActivation.findMany({
+    where: { keyId: licenseKey.id, status: 'ACTIVE' },
+  })
 
   // Log validate attempt
   await logKeyUsage({
@@ -558,17 +703,16 @@ export async function validateKey(params: {
     return { valid: false, error: 'KEY_EXPIRED', message: 'Key đã hết hạn' }
   }
 
-  // Nếu có HWID, kiểm tra xem có được phép không
+  // Nếu có HWID, kiểm tra phiên đồng thời
   if (hashedHwid) {
-    const isActivated = licenseKey.activations.some(a => a.hwid === hashedHwid)
-    if (!isActivated && licenseKey.status === 'ACTIVE') {
-      // Key đang active nhưng HWID này chưa được kích hoạt
-      // Kiểm tra có còn slot không
-      if (licenseKey.activations.length >= licenseKey.maxDevices) {
+    const isSessionActive = activeActivations.some(a => a.hwid === hashedHwid)
+    if (!isSessionActive && licenseKey.status === 'ACTIVE') {
+      // HWID này chưa có phiên active, kiểm tra có slot không
+      if (activeActivations.length >= licenseKey.maxDevices) {
         return {
           valid: false,
-          error: 'HWID_NOT_ACTIVATED',
-          message: 'Thiết bị này chưa được kích hoạt và key đã đạt giới hạn thiết bị',
+          error: 'KEY_IN_USE',
+          message: 'Key đang được sử dụng bởi người khác',
         }
       }
     }
@@ -588,17 +732,19 @@ export async function validateKey(params: {
       activatedAt: licenseKey.activatedAt,
       expiresAt: licenseKey.expiresAt,
       daysRemaining: getDaysRemaining(licenseKey.expiresAt),
-      currentDevices: licenseKey.activations.length,
-      maxDevices: licenseKey.maxDevices,
-      isHwidActivated: hashedHwid
-        ? licenseKey.activations.some(a => a.hwid === hashedHwid)
+      currentSessions: activeActivations.length,
+      maxConcurrent: licenseKey.maxDevices,
+      isSessionActive: hashedHwid
+        ? activeActivations.some(a => a.hwid === hashedHwid)
         : undefined,
+      sessionTimeout: SESSION_TIMEOUT_MS,
     },
   }
 }
 
 /**
- * Hủy kích hoạt thiết bị
+ * Hủy kích hoạt phiên (logout / disconnect)
+ * Giải phóng slot cho người khác sử dụng
  */
 export async function deactivateDevice(params: {
   key: string
@@ -695,7 +841,15 @@ async function logKeyUsage(params: {
 }
 
 /**
- * Heartbeat - App gọi định kỳ để xác nhận vẫn đang sử dụng
+ * Heartbeat - App gọi định kỳ để giữ phiên hoạt động
+ * 
+ * CRITICAL: Client PHẢI gọi heartbeat mỗi (SESSION_TIMEOUT_MS / 2) ms
+ * Nếu không heartbeat trong SESSION_TIMEOUT_MS + SESSION_GRACE_MS,
+ * phiên sẽ bị coi là hết hạn và bị dọn dẹp → giải phóng slot
+ * 
+ * Returns:
+ * - valid: true → phiên vẫn hoạt động
+ * - valid: false, error: 'SESSION_EXPIRED' → phiên đã hết hạn, cần kích hoạt lại
  */
 export async function heartbeat(params: {
   key: string
@@ -721,7 +875,7 @@ export async function heartbeat(params: {
     return { valid: false, error: 'INVALID_KEY' }
   }
 
-  // Kiểm tra hết hạn
+  // Kiểm tra hết hạn key
   if (licenseKey.expiresAt && isKeyExpired(licenseKey.expiresAt)) {
     return { valid: false, error: 'KEY_EXPIRED' }
   }
@@ -732,10 +886,35 @@ export async function heartbeat(params: {
 
   const activation = licenseKey.activations[0]
   if (!activation) {
-    return { valid: false, error: 'HWID_NOT_ACTIVATED' }
+    // Phiên không tồn tại hoặc đã bị deactivate (có thể do timeout)
+    return { valid: false, error: 'SESSION_EXPIRED', message: 'Phiên đã hết hạn. Vui lòng kích hoạt lại.' }
   }
 
-  // Update last seen
+  // Kiểm tra xem phiên có bị timeout chưa
+  const timeSinceLastSeen = Date.now() - new Date(activation.lastSeenAt).getTime()
+  if (timeSinceLastSeen > SESSION_TIMEOUT_MS + SESSION_GRACE_MS) {
+    // Phiên đã quá timeout → deactivate
+    await prisma.keyActivation.update({
+      where: { id: activation.id },
+      data: { status: 'DEACTIVATED', deactivatedAt: new Date() },
+    })
+    
+    // Update counter
+    const activeCount = await prisma.keyActivation.count({
+      where: { keyId: licenseKey.id, status: 'ACTIVE' },
+    })
+    await prisma.licenseKey.update({
+      where: { id: licenseKey.id },
+      data: { currentDevices: activeCount },
+    })
+
+    return { valid: false, error: 'SESSION_EXPIRED', message: 'Phiên đã hết hạn do không có heartbeat. Vui lòng kích hoạt lại.' }
+  }
+
+  // Dọn dẹp stale sessions của key này (phiên khác hết hạn)
+  await cleanupStaleSessions(licenseKey.id)
+
+  // Update last seen - giữ phiên sống
   await prisma.$transaction([
     prisma.keyActivation.update({
       where: { id: activation.id },
@@ -765,6 +944,8 @@ export async function heartbeat(params: {
       expiresAt: licenseKey.expiresAt,
       daysRemaining: getDaysRemaining(licenseKey.expiresAt),
       plan: licenseKey.plan.name,
+      sessionTimeout: SESSION_TIMEOUT_MS,
+      nextHeartbeatIn: Math.floor(SESSION_TIMEOUT_MS / 2), // Client nên heartbeat trước nửa timeout
     },
   }
 }

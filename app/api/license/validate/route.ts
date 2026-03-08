@@ -46,9 +46,10 @@ export async function POST(request: Request) {
     })
     
     if (!result.valid) {
+      const statusCode = result.error === 'KEY_IN_USE' ? 409 : 400
       return NextResponse.json(
         { success: false, error: result.error, message: result.message },
-        { status: 400 }
+        { status: statusCode }
       )
     }
     
