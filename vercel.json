@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/check-expired-licenses",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-sessions",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

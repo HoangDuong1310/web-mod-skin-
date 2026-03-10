@@ -12,6 +12,7 @@
 
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { cleanupAllStaleSessions } from '@/lib/license-key'
 
 // API Key for manual/cron authentication (optional)
 const CRON_API_KEY = process.env.CRON_API_KEY
@@ -62,7 +63,10 @@ export async function GET(request: Request) {
 
     const totalUpdated = updateResult.count + updateInactiveResult.count
 
-    console.log(`[License Cron] ${new Date().toISOString()} - Updated ${totalUpdated} expired keys`)
+    // Cũng dọn dẹp stale sessions (phiên hết hạn do không heartbeat)
+    const sessionCleanup = await cleanupAllStaleSessions()
+
+    console.log(`[License Cron] ${new Date().toISOString()} - Updated ${totalUpdated} expired keys, cleaned ${sessionCleanup.cleanedSessions} stale sessions`)
 
     return NextResponse.json({
       success: true,
@@ -71,6 +75,10 @@ export async function GET(request: Request) {
         updatedActiveKeys: updateResult.count,
         updatedInactiveKeys: updateInactiveResult.count,
         totalUpdated,
+        staleSessions: {
+          cleanedSessions: sessionCleanup.cleanedSessions,
+          affectedKeys: sessionCleanup.affectedKeys,
+        },
         timestamp: now.toISOString()
       }
     })

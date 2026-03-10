@@ -362,6 +362,88 @@ export async function cleanupStaleSessions(keyId: string): Promise<number> {
 }
 
 /**
+ * Dọn dẹp TẤT CẢ phiên hết hạn trên toàn hệ thống
+ * Dùng cho cron job chạy định kỳ (mỗi 5 phút)
+ * Khác với cleanupStaleSessions (chỉ dọn 1 key), hàm này dọn tất cả keys
+ */
+export async function cleanupAllStaleSessions(): Promise<{
+  cleanedSessions: number
+  affectedKeys: number
+}> {
+  const timeoutThreshold = new Date(Date.now() - SESSION_TIMEOUT_MS - SESSION_GRACE_MS)
+
+  // Tìm tất cả session hết hạn
+  const staleSessions = await prisma.keyActivation.findMany({
+    where: {
+      status: 'ACTIVE',
+      lastSeenAt: {
+        lt: timeoutThreshold,
+      },
+    },
+    select: {
+      keyId: true,
+    },
+  })
+
+  if (staleSessions.length === 0) {
+    return { cleanedSessions: 0, affectedKeys: 0 }
+  }
+
+  // Lấy danh sách unique keyIds bị ảnh hưởng
+  const affectedKeyIds = [...new Set(staleSessions.map(s => s.keyId))]
+
+  // Cập nhật tất cả session hết hạn thành DEACTIVATED
+  const result = await prisma.keyActivation.updateMany({
+    where: {
+      status: 'ACTIVE',
+      lastSeenAt: {
+        lt: timeoutThreshold,
+      },
+    },
+    data: {
+      status: 'DEACTIVATED',
+      deactivatedAt: new Date(),
+    },
+  })
+
+  // Cập nhật currentDevices cho từng key bị ảnh hưởng
+  for (const keyId of affectedKeyIds) {
+    const activeCount = await prisma.keyActivation.count({
+      where: { keyId, status: 'ACTIVE' },
+    })
+
+    await prisma.licenseKey.update({
+      where: { id: keyId },
+      data: { currentDevices: activeCount },
+    })
+  }
+
+  // Log cleanup
+  try {
+    await prisma.keyUsageLog.create({
+      data: {
+        keyId: affectedKeyIds[0], // Log vào key đầu tiên
+        action: 'DEACTIVATE',
+        details: JSON.stringify({
+          reason: 'global_session_cleanup',
+          cleanedSessions: result.count,
+          affectedKeys: affectedKeyIds.length,
+          timeoutMs: SESSION_TIMEOUT_MS + SESSION_GRACE_MS,
+        }),
+        success: true,
+      },
+    })
+  } catch (e) {
+    console.error('Failed to log global session cleanup:', e)
+  }
+
+  return {
+    cleanedSessions: result.count,
+    affectedKeys: affectedKeyIds.length,
+  }
+}
+
+/**
  * Kích hoạt key với HWID - Logic phiên đồng thời
  * 
  * Flow:
