@@ -24,13 +24,9 @@ async function recalculateProductStats(productId: string) {
     ? visibleReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
     : 0
 
-  await prisma.product.update({
-    where: { id: productId },
-    data: {
-      averageRating: averageRating,
-      totalReviews: totalReviews
-    }
-  })
+  // Use raw SQL to avoid triggering @updatedAt on the product record
+  // ("Last Updated" should only change when an admin edits the product content)
+  await prisma.$executeRaw`UPDATE \`products\` SET \`averageRating\` = ${averageRating}, \`totalReviews\` = ${totalReviews} WHERE \`id\` = ${productId}`
 
   return { averageRating, totalReviews }
 }

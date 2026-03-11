@@ -6,10 +6,10 @@ import { prisma } from '@/lib/prisma'
 import { formatDate } from '@/lib/utils'
 import { generateDynamicMetadata } from '@/lib/dynamic-seo'
 import { generateArticleSchema } from '@/lib/seo'
-import { 
-  Calendar, 
-  User, 
-  ArrowLeft, 
+import {
+  Calendar,
+  User,
+  ArrowLeft,
   Clock,
   Share2,
   BookmarkPlus,
@@ -18,6 +18,8 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
+
+export const dynamic = 'force-dynamic'
 
 interface BlogPostPageProps {
   params: { slug: string }

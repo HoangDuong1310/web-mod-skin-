@@ -33,6 +33,11 @@ export async function GET() {
 
     return NextResponse.json({
       champions: parsedChampions
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     })
   } catch (error) {
     console.error('Error fetching champions:', error)

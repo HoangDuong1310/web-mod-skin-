@@ -47,7 +47,7 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
   // Fetch banners
   const fetchBanners = useCallback(async () => {
     try {
-      const res = await fetch(`/api/banners?position=${position}`)
+      const res = await fetch(`/api/banners?position=${position}&_t=${Date.now()}`, { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setBanners(data.banners || [])

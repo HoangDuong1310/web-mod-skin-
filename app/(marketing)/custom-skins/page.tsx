@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 }
 
 // Revalidate every 60 seconds to show new skins
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 async function getInitialData() {
   try {

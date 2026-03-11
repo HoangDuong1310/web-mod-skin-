@@ -67,6 +67,11 @@ export async function GET(request: Request) {
         countryCode,
         locale: currency === 'USD' ? 'en' : 'vi',
       },
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     })
   } catch (error) {
     console.error('Get plans error:', error)

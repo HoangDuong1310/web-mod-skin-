@@ -25,7 +25,7 @@ export function BannerModal({ className }: BannerModalProps) {
   useEffect(() => {
     const fetchModalBanners = async () => {
       try {
-        const res = await fetch('/api/banners?position=MODAL')
+        const res = await fetch(`/api/banners?position=MODAL&_t=${Date.now()}`, { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
           const banners = data.banners || []

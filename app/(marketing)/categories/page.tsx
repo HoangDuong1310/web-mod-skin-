@@ -7,6 +7,8 @@ import { Smartphone, Monitor, Package, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   return generateDynamicMetadata({
     title: 'App Categories',

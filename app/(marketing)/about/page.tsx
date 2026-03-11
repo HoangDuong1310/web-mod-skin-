@@ -17,6 +17,8 @@ import {
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   return generateDynamicMetadata({
     title: 'About Us',

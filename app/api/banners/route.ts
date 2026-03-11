@@ -127,7 +127,15 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ banners })
+    return NextResponse.json(
+      { banners },
+      {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      }
+    )
   } catch (error) {
     console.error('Error fetching banners:', error)
     return NextResponse.json(

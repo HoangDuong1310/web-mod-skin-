@@ -227,6 +227,11 @@ export async function GET(request: NextRequest) {
         hasNext: page < Math.ceil(total / limit),
         hasPrev: page > 1,
       },
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     })
 
   } catch (error) {
