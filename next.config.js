@@ -42,6 +42,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'img.vietqr.io',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.modskinslol.com',
+      },
     ],
   },
   async headers() {
