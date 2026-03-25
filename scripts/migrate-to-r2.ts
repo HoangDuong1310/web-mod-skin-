@@ -174,6 +174,57 @@ async function updateProductRecords(): Promise<void> {
   console.log(`  📊 Updated ${updated} products`)
 }
 
+async function updateProductImageRecords(): Promise<void> {
+  console.log('\n📝 Updating product image URLs...')
+  
+  const products = await prisma.product.findMany({
+    where: {
+      images: { not: null },
+    }
+  })
+
+  let updated = 0
+  for (const product of products) {
+    const images = product.images as string | null
+    if (!images) continue
+
+    try {
+      const parsed = JSON.parse(images) as string[]
+      let changed = false
+      const updatedImages = parsed.map((url: string) => {
+        // Match old patterns: /api/uploads/images/products/filename.ext
+        if (url.includes('/api/uploads/images/products/') || url.includes('/uploads/images/products/')) {
+          const filename = url.split('/').pop()
+          if (filename) {
+            changed = true
+            return `${R2_PUBLIC_URL}/images/products/${filename}`
+          }
+        }
+        return url
+      })
+
+      if (!changed) continue
+
+      if (isDryRun) {
+        console.log(`  🔍 [DRY RUN] Would update images for product ${product.id}: ${product.title}`)
+        updated++
+        continue
+      }
+
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { images: JSON.stringify(updatedImages) }
+      })
+      console.log(`  ✅ Updated images for product ${product.id}: ${product.title}`)
+      updated++
+    } catch {
+      console.log(`  ⚠️  Could not parse images for product ${product.id}, skipping`)
+    }
+  }
+
+  console.log(`  📊 Updated ${updated} product image records`)
+}
+
 async function updateCustomSkinRecords(): Promise<void> {
   console.log('\n📝 Updating custom skin database records...')
   
@@ -345,6 +396,7 @@ async function main() {
 
   // 6. Update database records
   await updateProductRecords()
+  await updateProductImageRecords()
   await updateCustomSkinRecords()
   await updateSkinSubmissionRecords()
 
