@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { uploadToR2, generateR2Key, getR2PublicUrl, R2_PREFIXES } from '@/lib/r2'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB for skin files
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB for images
 
 const ACCEPTED_SKIN_TYPES = ['zip', 'rar', 'fantome']
 const ACCEPTED_IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp']
-
-// Generate unique filename
-function generateUniqueFilename(originalName: string): string {
-  const timestamp = Date.now()
-  const random = Math.random().toString(36).substring(2, 15)
-  const extension = originalName.split('.').pop()
-  const nameWithoutExt = originalName.split('.').slice(0, -1).join('.')
-  const sanitizedName = nameWithoutExt.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-  return `${sanitizedName}_${timestamp}_${random}.${extension}`
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -96,32 +84,24 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Determine upload directory based on type
-    const uploadDir = type === 'skin' ? 'uploads/skins' : 'uploads/previews'
-    const uploadPath = join(process.cwd(), 'public', uploadDir)
+    // Determine R2 prefix based on type
+    const prefix = type === 'skin' ? R2_PREFIXES.SKINS : R2_PREFIXES.PREVIEWS
 
-    // Create directory if it doesn't exist
-    if (!existsSync(uploadPath)) {
-      await mkdir(uploadPath, { recursive: true })
-    }
+    // Generate R2 key and upload
+    const r2Key = generateR2Key(prefix, file.name)
+    const contentType = type === 'skin' ? 'application/octet-stream' : `image/${extension}`
+    await uploadToR2(r2Key, buffer, contentType)
 
-    // Generate unique filename
-    const uniqueFilename = generateUniqueFilename(file.name)
-    const filePath = join(uploadPath, uniqueFilename)
-
-    // Write file to disk
-    await writeFile(filePath, buffer)
-
-    // Return file path for database storage  
-    // Trả về đường dẫn public để truy cập trực tiếp
-    const publicPath = `/${uploadDir}/${uniqueFilename}`
+    // Return R2 public URL for database storage
+    const publicUrl = getR2PublicUrl(r2Key)
 
     return NextResponse.json({
       message: 'File uploaded successfully',
-      fileName: uniqueFilename,
-      filePath: publicPath,
+      fileName: r2Key.split('/').pop()!,
+      filePath: publicUrl,
+      r2Key: r2Key,
       fileSize: file.size,
-      fileType: extension.toUpperCase()
+      fileType: extension!.toUpperCase()
     })
 
   } catch (error) {

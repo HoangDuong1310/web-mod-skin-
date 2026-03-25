@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 import { z } from 'zod'
+import { uploadToR2, generateR2Key, getR2PublicUrl, R2_PREFIXES } from '@/lib/r2'
 
 const submitSchema = z.object({
   name: z.string().min(3).max(100),
@@ -95,37 +94,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid category selected' }, { status: 400 })
     }
 
-    // Create upload directories
-    const uploadsDir = path.join(process.cwd(), 'uploads')
-    const skinsDir = path.join(uploadsDir, 'skins')
-    const previewsDir = path.join(uploadsDir, 'previews')
-    
-    await mkdir(skinsDir, { recursive: true })
-    await mkdir(previewsDir, { recursive: true })
-
-    // Generate unique filename
+    // Generate R2 key for skin file
     const timestamp = Date.now()
     const sanitizedName = validatedData.name.replace(/[^a-zA-Z0-9-_]/g, '_')
-    const skinFileName = `${sanitizedName}_${timestamp}${fileExtension}`
-    const skinFilePath = path.join(skinsDir, skinFileName)
+    const skinR2Key = `${R2_PREFIXES.SKINS}/${sanitizedName}_${timestamp}${fileExtension}`
 
-    // Save skin file
+    // Upload skin file to R2
     const skinBuffer = Buffer.from(await skinFile.arrayBuffer())
-    await writeFile(skinFilePath, skinBuffer)
+    await uploadToR2(skinR2Key, skinBuffer, 'application/octet-stream')
 
-    // Save preview images
+    // Upload preview images to R2
     const previewPaths: string[] = []
     for (let i = 0; i < previewImages.length; i++) {
       const image = previewImages[i]
       const imageExtension = '.' + image.name.split('.').pop()?.toLowerCase()
-      const previewFileName = `${sanitizedName}_${timestamp}_preview_${i}${imageExtension}`
-      const previewFilePath = path.join(previewsDir, previewFileName)
+      const previewR2Key = `${R2_PREFIXES.PREVIEWS}/${sanitizedName}_${timestamp}_preview_${i}${imageExtension}`
       
       const imageBuffer = Buffer.from(await image.arrayBuffer())
-      await writeFile(previewFilePath, imageBuffer)
+      await uploadToR2(previewR2Key, imageBuffer, image.type || 'image/jpeg')
       
-      previewPaths.push(`/uploads/previews/${previewFileName}`)
+      previewPaths.push(getR2PublicUrl(previewR2Key))
     }
+
+    // Skin file name for display
+    const skinFileName = `${sanitizedName}_${timestamp}${fileExtension}`
 
     // Parse tags
     const tagsArray = validatedData.tags 
@@ -139,7 +131,7 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         version: validatedData.version,
         fileName: skinFileName,
-        filePath: `/uploads/skins/${skinFileName}`,
+        filePath: skinR2Key, // Store R2 key
         fileSize: skinFile.size.toString(),
         fileType: fileExtension.slice(1).toUpperCase() as any,
         previewImages: JSON.stringify(previewPaths.filter(path => path && typeof path === 'string')),

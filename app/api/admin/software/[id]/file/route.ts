@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile } from 'fs/promises'
-import path from 'path'
 import { prisma } from '@/lib/prisma'
+import { uploadToR2, deleteFromR2, generateR2Key, R2_PREFIXES } from '@/lib/r2'
 
 export const runtime = 'nodejs'
 // Extend timeout for large file uploads
@@ -36,7 +35,7 @@ export async function POST(
     ...corsHeaders, // Add CORS headers
   }
 
-  console.log(`🔵 Starting file upload for product ${params.id}`)
+  console.log(`🔵 Starting file upload to R2 for product ${params.id}`)
   const startTime = Date.now()
   
   try {
@@ -78,43 +77,39 @@ export async function POST(
       return NextResponse.json({ error: 'File too large (max 300MB)', received: file.size }, { status: 413 })
     }
 
-    // Generate safe filename with proper format: product_{productId}_{timestamp}.ext
-    const timestamp = Date.now()
-    const extension = file.name.split('.').pop()?.toLowerCase() || 'bin'
-    const filename = `product_${params.id}_${timestamp}.${extension}`
-    
-    // Ensure upload directory exists
-    const base = process.env.UPLOADS_BASE_PATH || path.join(process.cwd(), 'uploads')
-    const uploadDir = path.join(base, 'software')
-    
-    try {
-      await import('fs').then(fs => fs.promises.mkdir(uploadDir, { recursive: true }))
-      console.log(`📁 Upload directory ensured: ${uploadDir}`)
-    } catch (error) {
-      console.error('Failed to create upload directory:', error)
-    }
+    // Generate R2 key
+    const r2Key = generateR2Key(R2_PREFIXES.SOFTWARE, file.name, params.id)
+    console.log(`💾 Uploading to R2: ${r2Key}`)
 
-    const filePath = path.join(uploadDir, filename)
-    console.log(`💾 Starting file save to: ${filePath}`)
-
-    // Save file with progress logging
+    // Upload to R2
     const bytes = await file.arrayBuffer()
     console.log(`🔄 File converted to buffer: ${(bytes.byteLength / 1024 / 1024).toFixed(2)}MB`)
     
     const buffer = Buffer.from(bytes)
-    await writeFile(filePath, buffer)
+    await uploadToR2(r2Key, buffer, 'application/octet-stream')
     
     const processingTime = Date.now() - startTime
-    console.log(`✅ File saved successfully in ${processingTime}ms`)
+    console.log(`✅ File uploaded to R2 successfully in ${processingTime}ms`)
 
     // Generate proper download URL that matches the download API
-    const downloadUrl = `/api/download/software/${filename}`
+    const downloadUrl = `/api/download/software/${encodeURIComponent(r2Key.split('/').pop()!)}`
+
+    // Delete old file from R2 if exists
+    const oldProduct = await prisma.product.findUnique({ where: { id: params.id } })
+    if (oldProduct?.filename && (oldProduct.filename as string).includes('/')) {
+      try {
+        await deleteFromR2(oldProduct.filename as string)
+        console.log(`🗑️ Old file deleted from R2: ${oldProduct.filename}`)
+      } catch (e) {
+        console.warn('Failed to delete old file from R2:', e)
+      }
+    }
 
     // Update product with file info
     await prisma.product.update({
       where: { id: params.id },
       data: {
-        filename: filename,
+        filename: r2Key, // Store R2 key
         fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
         downloadUrl: downloadUrl
       }
@@ -124,7 +119,7 @@ export async function POST(
 
     return NextResponse.json({
       message: 'File uploaded successfully',
-      filename: filename,
+      filename: r2Key,
       size: file.size,
       downloadUrl: downloadUrl,
       processingTimeMs: processingTime

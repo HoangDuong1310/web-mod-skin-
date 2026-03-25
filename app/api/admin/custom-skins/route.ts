@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         categoryId,
         authorId: session.user.id,
         fileName,
-        filePath: filePath || `/uploads/skins/${fileName}`,
+        filePath: filePath || `skins/${fileName}`,
         fileSize: fileSize || '0',
         fileType: fileType || 'ZIP',
         previewImages: JSON.stringify(previewImages || []),

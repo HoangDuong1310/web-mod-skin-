@@ -1,10 +1,9 @@
 import type { NextRequest} from 'next/server';
 import { NextResponse } from 'next/server'
-import { readFile, stat } from 'fs/promises'
-import { join } from 'path'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getPresignedDownloadUrl, existsInR2 } from '@/lib/r2'
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +12,7 @@ export async function GET(
   try {
     const filename = params.filename
 
-    // Security: Validate filename to prevent directory traversal
+    // Security: Validate filename to prevent path traversal
     if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return NextResponse.json(
         { message: 'Invalid filename' },
@@ -21,33 +20,14 @@ export async function GET(
       )
     }
 
-    // Check if file exists
-    const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
-    const filePath = join(base, 'software', filename)
-    
-    try {
-      await stat(filePath)
-    } catch {
-      return NextResponse.json(
-        { message: 'File not found' },
-        { status: 404 }
-      )
-    }
-
-    // Extract product ID from filename (format: product_ID_timestamp.ext)
-    const productIdMatch = filename.match(/^product_([^_]+)_/)
-    if (!productIdMatch) {
-      return NextResponse.json(
-        { message: 'Invalid file format' },
-        { status: 400 }
-      )
-    }
-
-    const productId = productIdMatch[1]
-
-    // Verify product exists and is published
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    // Find product by filename (R2 key stored as software/filename or just filename)
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { filename: `software/${filename}` },
+          { filename: { endsWith: filename } }
+        ]
+      },
       include: { category: true }
     })
 
@@ -65,15 +45,32 @@ export async function GET(
       )
     }
 
+    // Get the R2 key from the product
+    const r2Key = (product as any).filename as string
+    if (!r2Key) {
+      return NextResponse.json(
+        { message: 'No file associated with this product' },
+        { status: 404 }
+      )
+    }
+
+    // Check file exists in R2
+    const fileExists = await existsInR2(r2Key)
+    if (!fileExists) {
+      return NextResponse.json(
+        { message: 'File not found in storage' },
+        { status: 404 }
+      )
+    }
+
     // Log download for analytics
     try {
-      // Get user session to track authenticated downloads
       const session = await getServerSession(authOptions)
       
       await prisma.download.create({
         data: {
-          userId: session?.user?.id || null, // Track user if logged in, otherwise anonymous
-          productId: productId,
+          userId: session?.user?.id || null,
+          productId: product.id,
           downloadIp: request.headers.get('x-forwarded-for') || 
                      request.headers.get('x-real-ip') || 
                      'unknown',
@@ -81,26 +78,15 @@ export async function GET(
         }
       })
       
-      console.log('Download logged for product:', productId, session?.user?.id ? 'by user' : 'anonymously')
+      console.log('Download logged for product:', product.id)
     } catch (logError) {
       console.warn('Failed to log download:', logError)
-      // Don't fail the download if logging fails
     }
 
-    // Read and serve file
-    const fileBuffer = await readFile(filePath)
-    const originalFilename = filename.split('_').slice(2).join('_').split('.')[0] + '.' + filename.split('.').pop()
-    
-    // Set appropriate headers for file download
-    const headers = new Headers()
-    headers.set('Content-Type', 'application/octet-stream')
-    headers.set('Content-Disposition', `attachment; filename="${product.title.replace(/[^a-zA-Z0-9.-]/g, '_')}_${originalFilename}"`)
-    headers.set('Content-Length', fileBuffer.length.toString())
+    // Generate presigned URL and redirect (1 hour expiry)
+    const presignedUrl = await getPresignedDownloadUrl(r2Key, 3600)
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
-      status: 200,
-      headers
-    })
+    return NextResponse.redirect(presignedUrl)
 
   } catch (error) {
     console.error('Download error:', error)

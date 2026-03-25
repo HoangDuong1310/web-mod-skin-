@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canManageSoftware } from '@/lib/auth-utils'
-
-// Helper function to generate safe image filename
-function generateSafeImageFilename(originalName: string, productId: string): string {
-  const extension = originalName.split('.').pop()?.toLowerCase()
-  const timestamp = Date.now()
-  const random = Math.random().toString(36).substring(2, 8)
-  return `product_${productId}_${timestamp}_${random}.${extension}`
-}
+import { uploadToR2, generateR2Key, getR2PublicUrl, R2_PREFIXES } from '@/lib/r2'
 
 export async function POST(
   request: NextRequest,
@@ -69,11 +60,6 @@ export async function POST(
     const uploadedImages: string[] = []
 
     try {
-      // Create uploads directory if it doesn't exist
-      const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
-      const uploadsDir = join(base, 'images', 'products')
-      await mkdir(uploadsDir, { recursive: true })
-
       // Process each image
       for (const file of files) {
         if (file.size === 0) continue // Skip empty files
@@ -88,17 +74,14 @@ export async function POST(
           throw new Error(`File ${file.name} exceeds 5MB limit`)
         }
 
-        // Generate safe filename and save
-        const safeFilename = generateSafeImageFilename(file.name, productId)
-        const filePath = join(uploadsDir, safeFilename)
-        
-        // Convert file to buffer and save
+        // Generate R2 key and upload
+        const r2Key = generateR2Key(R2_PREFIXES.PRODUCT_IMAGES, file.name, productId)
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
-        await writeFile(filePath, buffer)
+        await uploadToR2(r2Key, buffer, file.type)
 
-        // Store API path for database (so images can be served correctly)
-        const imageUrl = `/api/uploads/images/products/${safeFilename}`
+        // Store CDN URL for database
+        const imageUrl = getR2PublicUrl(r2Key)
         uploadedImages.push(imageUrl)
       }
 

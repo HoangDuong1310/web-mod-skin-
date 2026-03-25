@@ -67,11 +67,12 @@ export async function POST(
       })
     }
 
-    // If it's a local file, return API endpoint
+    // If it's a local file or R2 key, return API endpoint
     if ((product as any).filename) {
+      const filename = ((product as any).filename as string).split('/').pop()
       return NextResponse.json({
         ...downloadInfo,
-        redirect: `/api/download/software/${(product as any).filename}`
+        redirect: `/api/download/software/${encodeURIComponent(filename!)}`
       })
     }
 

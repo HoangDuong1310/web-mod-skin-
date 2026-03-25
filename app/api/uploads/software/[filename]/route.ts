@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readFile } from 'fs/promises'
 import path from 'path'
+import { getBufferFromR2, R2_PREFIXES } from '@/lib/r2'
 
 export async function GET(
   request: NextRequest,
@@ -8,24 +8,15 @@ export async function GET(
 ) {
   try {
     const filename = params.filename
-    //Nên validate chống path traversal
-    //Tui ko rõ có ảnh hưởng gì đến logic gửi file lên không nhưng ông nên check lại flow
+    // Validate filename to prevent path traversal
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return new NextResponse('Access denied', { status: 400 });
     }
 
-    const base = process.env.UPLOADS_BASE_PATH || path.join(process.cwd(), 'uploads')
-    const softwareBase = path.join(base, 'software');
-    const filePath = path.resolve(softwareBase, filename)
+    const r2Key = `${R2_PREFIXES.SOFTWARE}/${filename}`
 
-    // Verify resolved path is strictly within the intended directory
-    if (!filePath.startsWith(path.resolve(softwareBase) + path.sep) && filePath !== path.resolve(softwareBase)) {
-      return new NextResponse('Access denied', { status: 403 });
-    }
-
-    // Check if file exists
     try {
-      const file = await readFile(filePath)
+      const { buffer, contentType } = await getBufferFromR2(r2Key)
 
       // Determine content type based on file extension
       const ext = path.extname(filename).toLowerCase()
@@ -43,15 +34,15 @@ export async function GET(
         '.pkg': 'application/x-newton-compatible-pkg'
       }
 
-      const contentType = contentTypes[ext] || 'application/octet-stream'
+      const resolvedContentType = contentTypes[ext] || contentType || 'application/octet-stream'
 
-      return new Response(file as any, {
+      return new Response(new Uint8Array(buffer), {
         status: 200,
         headers: {
-          'Content-Type': contentType,
+          'Content-Type': resolvedContentType,
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Cache-Control': 'public, max-age=3600',
-          'Content-Length': file.length.toString(),
+          'Content-Length': buffer.length.toString(),
         },
       })
     } catch (error) {

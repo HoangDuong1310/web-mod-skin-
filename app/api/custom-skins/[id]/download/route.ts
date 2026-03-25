@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { readFile } from 'fs/promises'
-import { existsSync } from 'fs'
-import { join } from 'path'
+import { getPresignedDownloadUrl, existsInR2, extractR2Key } from '@/lib/r2'
 
 // Common download handler for both GET and POST
 async function handleDownload(
@@ -28,64 +26,37 @@ async function handleDownload(
       return NextResponse.json({ error: 'Skin not found' }, { status: 404 })
     }
 
-    // Get absolute file path
-    const filePath = join(process.cwd(), skin.filePath.replace(/^\//, ''))
-    console.log('Attempting to serve file:', filePath)
+    // Extract R2 key from stored path
+    const r2Key = extractR2Key(skin.filePath)
+    console.log('R2 key for skin:', r2Key)
 
-    // Check if file exists
-    if (!existsSync(filePath)) {
-      console.log('File not found at path:', filePath)
+    // Check if file exists in R2
+    const fileExists = await existsInR2(r2Key)
+    if (!fileExists) {
+      console.log('File not found in R2:', r2Key)
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    console.log('File exists, attempting to read...')
-    
+    // Track download in database
     try {
-      const fileBuffer = await readFile(filePath)
-      console.log('File read successfully, size:', fileBuffer.length, 'bytes')
-
-      // Track download in database (optional - continue even if fails)
-      try {
-        // Track download without user session (public access)
-        // await prisma.skinDownload.create({
-        //   data: {
-        //     skinId: id,
-        //     ipAddress: request.headers.get('x-forwarded-for') || 
-        //               request.headers.get('x-real-ip') || 
-        //               'unknown',
-        //     userAgent: request.headers.get('user-agent') || 'unknown'
-        //   }
-        // })
-
-        // Update download count on CustomSkin
-        await prisma.customSkin.update({
-          where: { id },
-          data: {
-            downloadCount: {
-              increment: 1
-            }
+      await prisma.customSkin.update({
+        where: { id },
+        data: {
+          downloadCount: {
+            increment: 1
           }
-        })
-
-        console.log('Download tracked successfully')
-      } catch (dbError) {
-        console.log('Warning: Could not track download:', dbError)
-        // Continue with download even if tracking fails
-      }
-
-      // Return file with proper headers
-      return new Response(new Uint8Array(fileBuffer), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${skin.fileName}"`,
-          'Content-Length': fileBuffer.length.toString(),
-        },
+        }
       })
-    } catch (fileError) {
-      console.error('Error reading file:', fileError)
-      return NextResponse.json({ error: 'Error reading file' }, { status: 500 })
+      console.log('Download tracked successfully')
+    } catch (dbError) {
+      console.log('Warning: Could not track download:', dbError)
     }
+
+    // Generate presigned URL and redirect (1 hour expiry)
+    const presignedUrl = await getPresignedDownloadUrl(r2Key, 3600)
+
+    return NextResponse.redirect(presignedUrl)
+
   } catch (error) {
     console.error('Download error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

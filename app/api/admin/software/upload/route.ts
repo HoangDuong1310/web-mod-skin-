@@ -1,13 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { canManageSoftware } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
+import { uploadToR2, generateR2Key, R2_PREFIXES } from '@/lib/r2'
 
 // Extend timeout for large file uploads
 export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
@@ -41,13 +40,6 @@ const uploadSchema = z.object({
   status: z.enum(['PUBLISHED', 'DRAFT']).default('DRAFT')
 })
 
-// Helper function to generate safe filename
-function generateSafeFilename(originalName: string, productId: string): string {
-  const extension = originalName.split('.').pop()
-  const timestamp = Date.now()
-  return `product_${productId}_${timestamp}.${extension}`
-}
-
 // Helper function to get file size in MB
 function getFileSizeInMB(bytes: number): string {
   return (bytes / 1024 / 1024).toFixed(2)
@@ -62,7 +54,7 @@ export async function POST(request: NextRequest) {
     ...corsHeaders, // Add CORS headers
   }
 
-  console.log(`🔵 Starting software upload with file bypass headers`)
+  console.log(`🔵 Starting software upload to R2`)
   const startTime = Date.now()
 
   try {
@@ -192,29 +184,24 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      // Create uploads directory if it doesn't exist
-      const base = process.env.UPLOADS_BASE_PATH || join(process.cwd(), 'uploads')
-      const uploadsDir = join(base, 'software')
-      await mkdir(uploadsDir, { recursive: true })
+      // Generate R2 key and upload to R2
+      const r2Key = generateR2Key(R2_PREFIXES.SOFTWARE, file.name, product.id)
 
-      // Generate safe filename and save file
-      const safeFilename = generateSafeFilename(file.name, product.id)
-      const filePath = join(uploadsDir, safeFilename)
-
-      // Convert file to buffer and save
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
-      await writeFile(filePath, buffer)
+      await uploadToR2(r2Key, buffer, 'application/octet-stream')
 
-      // Generate download URL
-      const downloadUrl = `/api/download/software/${safeFilename}`
+      console.log(`✅ File uploaded to R2: ${r2Key} (${getFileSizeInMB(file.size)} MB)`)
+
+      // Generate download URL (through API for tracking)
+      const downloadUrl = `/api/download/software/${encodeURIComponent(r2Key.split('/').pop()!)}`
 
       // Update product with download information
       const updatedProduct = await prisma.product.update({
         where: { id: product.id },
         data: {
           downloadUrl: downloadUrl,
-          filename: safeFilename,
+          filename: r2Key, // Store R2 key
           fileSize: getFileSizeInMB(file.size) + ' MB'
         }
       })
@@ -239,6 +226,7 @@ export async function POST(request: NextRequest) {
           size: getFileSizeInMB(file.size) + ' MB',
           status: updatedProduct.status,
           downloadUrl: downloadUrl,
+          r2Key: r2Key,
           createdAt: updatedProduct.createdAt,
           processingTimeMs: Date.now() - startTime
         }
@@ -248,12 +236,12 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (fileError) {
-      // If file save failed, delete the database record
+      // If R2 upload failed, delete the database record
       await prisma.product.delete({ where: { id: product.id } })
 
-      console.error('File save error:', fileError)
+      console.error('R2 upload error:', fileError)
       return NextResponse.json(
-        { message: 'Failed to save file' },
+        { message: 'Failed to upload file to storage' },
         { status: 500, headers }
       )
     }
