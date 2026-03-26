@@ -30,7 +30,8 @@ import {
   Key,
   CreditCard,
   Store,
-  Shield
+  Shield,
+  Gamepad2,
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -79,6 +80,7 @@ const adminNavigation: NavigationItem[] = [
     ]
   },
   { name: 'File Management', href: '/dashboard/files', icon: FileText },
+  { name: 'League Skins', href: '/dashboard/league-skins', icon: Gamepad2 },
   { 
     name: 'Donations', 
     href: '/dashboard/donations', 

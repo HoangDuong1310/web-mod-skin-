@@ -1233,3 +1233,42 @@ enum ResellerKeyType {
   PURCHASED
   FREE
 }
+
+// ==========================================
+// League Skins Management
+// ==========================================
+
+model LeagueChampion {
+  id          String       @id @default(cuid())
+  championId  Int          @unique
+  nameEn      String
+  nameVi      String?
+  skins       LeagueSkin[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([championId])
+  @@map("league_champions")
+}
+
+model LeagueSkin {
+  id          String          @id @default(cuid())
+  skinId      Int             @unique
+  championId  Int
+  champion    LeagueChampion  @relation(fields: [championId], references: [championId], onDelete: Cascade)
+  nameEn      String
+  nameVi      String?
+  fileUrl     String?         @db.Text  // R2 key: league-skins/{championId}/{skinId}.zip
+  fileSize    Int?            // bytes
+  fileHash    String?         // md5 hash for change detection
+  version     Int             @default(1)
+  isActive    Boolean         @default(true)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([championId])
+  @@index([isActive])
+  @@map("league_skins")
+}

@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
@@ -30,6 +31,7 @@ export const R2_PREFIXES = {
   SKINS: 'skins',
   PREVIEWS: 'previews',
   PRODUCT_IMAGES: 'images/products',
+  LEAGUE_SKINS: 'league-skins',
 } as const
 
 /**
@@ -215,6 +217,41 @@ export function generateR2Key(
   const random = Math.random().toString(36).substring(2, 8)
   const id = identifier ? `_${identifier}` : ''
   return `${prefix}/${timestamp}${id}_${random}.${extension}`
+}
+
+/**
+ * List objects in R2 under a given prefix
+ */
+export async function listR2Objects(
+  prefix: string
+): Promise<{ key: string; size: number }[]> {
+  const results: { key: string; size: number }[] = []
+  let continuationToken: string | undefined
+
+  do {
+    const response = await r2Client.send(
+      new ListObjectsV2Command({
+        Bucket: R2_BUCKET_NAME,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+        MaxKeys: 1000,
+      })
+    )
+
+    if (response.Contents) {
+      for (const obj of response.Contents) {
+        if (obj.Key && obj.Size !== undefined) {
+          results.push({ key: obj.Key, size: obj.Size })
+        }
+      }
+    }
+
+    continuationToken = response.IsTruncated
+      ? response.NextContinuationToken
+      : undefined
+  } while (continuationToken)
+
+  return results
 }
 
 export { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL }
