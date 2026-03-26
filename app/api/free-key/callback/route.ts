@@ -10,6 +10,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSEOSettings } from '@/lib/dynamic-seo'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function resolveBaseUrl(request: NextRequest) {
     try {
         const settings = await getSEOSettings()
