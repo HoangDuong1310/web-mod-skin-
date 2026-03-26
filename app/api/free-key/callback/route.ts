@@ -10,10 +10,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSEOSettings } from '@/lib/dynamic-seo'
 
+async function resolveBaseUrl(request: NextRequest) {
+    try {
+        const settings = await getSEOSettings()
+        const configuredSiteUrl = settings.siteUrl?.trim()
+
+        if (configuredSiteUrl && /^https?:\/\//i.test(configuredSiteUrl)) {
+            return configuredSiteUrl.replace(/\/+$/, '')
+        }
+    } catch (error) {
+        console.warn('Failed to resolve site URL from SEO settings:', error)
+    }
+
+    const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim()
+    const host = request.headers.get('host')?.trim()
+    const protocol = request.headers.get('x-forwarded-proto') || request.nextUrl.protocol.replace(':', '') || 'https'
+    const resolvedHost = forwardedHost || host || request.nextUrl.host
+
+    return `${protocol}://${resolvedHost}`.replace(/\/+$/, '')
+}
+
 export async function GET(request: NextRequest) {
-    // Resolve base URL early - request.url may be localhost in containerized environments
-    const settings = await getSEOSettings()
-    const baseUrl = settings.siteUrl || `${new URL(request.url).protocol}//${new URL(request.url).host}`
+    const baseUrl = await resolveBaseUrl(request)
 
     try {
         const token = request.nextUrl.searchParams.get('token')
