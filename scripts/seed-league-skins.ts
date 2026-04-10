@@ -26,8 +26,17 @@ const DATA_DIR = dataDirIndex !== -1 ? args[dataDirIndex + 1] : 'D:\\data\\Leagu
 
 // Lazy import R2 only if uploading or syncing
 async function getR2() {
-  const { uploadToR2, R2_PREFIXES, listR2Objects } = await import('../lib/r2')
-  return { uploadToR2, R2_PREFIXES, listR2Objects }
+  const { uploadToR2, R2_PREFIXES, listR2Objects, getBufferFromR2 } = await import('../lib/r2')
+  return { uploadToR2, R2_PREFIXES, listR2Objects, getBufferFromR2 }
+}
+
+async function loadSkinNamesFromR2(r2Key: string, getBufferFromR2: (key: string) => Promise<{ buffer: Buffer }>): Promise<Record<string, string>> {
+  try {
+    const { buffer } = await getBufferFromR2(r2Key)
+    return JSON.parse(buffer.toString('utf-8'))
+  } catch {
+    return {}
+  }
 }
 
 async function loadSkinNames(lang: string): Promise<Record<string, string>> {
@@ -49,10 +58,50 @@ function getChampionName(skinNames: Record<string, string>, championId: number):
 }
 
 async function syncFromR2() {
-  const { listR2Objects, R2_PREFIXES, uploadToR2 } = await getR2()
+  const { listR2Objects, R2_PREFIXES, uploadToR2, getBufferFromR2 } = await getR2()
   const prefix = R2_PREFIXES.LEAGUE_SKINS + '/skins/'
 
-  console.log(`🔍 Scanning R2 prefix: ${prefix}`)
+  // --- Load skin names from R2 resource files ---
+  console.log('📖 Loading skin names from R2 resources...')
+  const resourcePrefix = `${R2_PREFIXES.LEAGUE_SKINS}/resources/`
+  const resourceObjects = await listR2Objects(resourcePrefix)
+  const resourceFiles = resourceObjects.filter(o => o.key.endsWith('/skin_ids.json'))
+  const resourceLanguages: string[] = []
+  for (const obj of resourceFiles) {
+    const match = obj.key.match(/resources\/([^/]+)\/skin_ids\.json$/)
+    if (match) resourceLanguages.push(match[1])
+  }
+  console.log(`   Found ${resourceLanguages.length} language resource files: ${resourceLanguages.join(', ')}`)
+
+  // Load EN skin names (try 'en' first, then 'default')
+  let skinNamesEn: Record<string, string> = {}
+  if (resourceLanguages.includes('default')) {
+    const defaultNames = await loadSkinNamesFromR2(`${resourcePrefix}default/skin_ids.json`, getBufferFromR2)
+    skinNamesEn = { ...defaultNames }
+    console.log(`   Loaded ${Object.keys(defaultNames).length} default skin names`)
+  }
+  if (resourceLanguages.includes('en')) {
+    const enNames = await loadSkinNamesFromR2(`${resourcePrefix}en/skin_ids.json`, getBufferFromR2)
+    skinNamesEn = { ...skinNamesEn, ...enNames }
+    console.log(`   Loaded ${Object.keys(enNames).length} EN skin names`)
+  }
+
+  // Load VI skin names
+  let skinNamesVi: Record<string, string> = {}
+  if (resourceLanguages.includes('vi')) {
+    skinNamesVi = await loadSkinNamesFromR2(`${resourcePrefix}vi/skin_ids.json`, getBufferFromR2)
+    console.log(`   Loaded ${Object.keys(skinNamesVi).length} VI skin names`)
+  }
+
+  console.log(`   Total EN names: ${Object.keys(skinNamesEn).length}`)
+
+  // Helper to get champion name from skin names
+  function getChampNameFromSkinNames(championId: number): string {
+    const baseSkinId = championId * 1000
+    return skinNamesEn[baseSkinId.toString()] || `Champion ${championId}`
+  }
+
+  console.log(`\n🔍 Scanning R2 prefix: ${prefix}`)
   const objects = await listR2Objects(prefix)
 
   // Filter only .zip files (skip manifest.json etc.)
@@ -65,8 +114,8 @@ async function syncFromR2() {
   }
 
   // Parse championId and skinId from R2 keys: league-skins/{championId}/{skinId}.zip
-  const championsSet = new Map<number, string>()
-  const skinsFromR2: { skinId: number; championId: number; fileUrl: string; fileSize: number }[] = []
+  const championsSet = new Map<number, { nameEn: string; nameVi: string | null }>()
+  const skinsFromR2: { skinId: number; championId: number; nameEn: string; nameVi: string | null; fileUrl: string; fileSize: number }[] = []
 
   for (const obj of zipFiles) {
     // key format: league-skins/{championId}/{skinId}.zip
@@ -77,12 +126,19 @@ async function syncFromR2() {
     const skinId = parseInt(match[2])
 
     if (!championsSet.has(championId)) {
-      championsSet.set(championId, `Champion ${championId}`)
+      const champNameEn = getChampNameFromSkinNames(championId)
+      const champNameVi = skinNamesVi[(championId * 1000).toString()] || null
+      championsSet.set(championId, { nameEn: champNameEn, nameVi: champNameVi })
     }
+
+    const skinNameEn = skinNamesEn[skinId.toString()] || `Skin ${skinId}`
+    const skinNameVi = skinNamesVi[skinId.toString()] || null
 
     skinsFromR2.push({
       skinId,
       championId,
+      nameEn: skinNameEn,
+      nameVi: skinNameVi,
       fileUrl: obj.key,
       fileSize: obj.size,
     })
@@ -93,11 +149,11 @@ async function syncFromR2() {
   // Upsert champions
   console.log('\n🏗️  Upserting champions...')
   let champCount = 0
-  for (const [championId, nameEn] of championsSet) {
+  for (const [championId, data] of championsSet) {
     await prisma.leagueChampion.upsert({
       where: { championId },
-      create: { championId, nameEn },
-      update: {},
+      create: { championId, nameEn: data.nameEn, nameVi: data.nameVi },
+      update: { nameEn: data.nameEn, nameVi: data.nameVi },
     })
     champCount++
   }
@@ -112,11 +168,14 @@ async function syncFromR2() {
       create: {
         skinId: skin.skinId,
         championId: skin.championId,
-        nameEn: `Skin ${skin.skinId}`,
+        nameEn: skin.nameEn,
+        nameVi: skin.nameVi,
         fileUrl: skin.fileUrl,
         fileSize: skin.fileSize,
       },
       update: {
+        nameEn: skin.nameEn,
+        nameVi: skin.nameVi,
         fileUrl: skin.fileUrl,
         fileSize: skin.fileSize,
       },
@@ -127,17 +186,6 @@ async function syncFromR2() {
     }
   }
   console.log(`   ✅ ${skinCount} skins synced from R2`)
-
-  // Detect resource languages on R2
-  console.log('\n📦 Scanning R2 for resource files...')
-  const resourceObjects = await listR2Objects(`${R2_PREFIXES.LEAGUE_SKINS}/resources/`)
-  const resourceFiles = resourceObjects.filter(o => o.key.endsWith('/skin_ids.json'))
-  const resourceLanguages: string[] = []
-  for (const obj of resourceFiles) {
-    const match = obj.key.match(/resources\/([^/]+)\/skin_ids\.json$/)
-    if (match) resourceLanguages.push(match[1])
-  }
-  console.log(`   Found ${resourceLanguages.length} language resource files: ${resourceLanguages.join(', ')}`)
 
   // Generate manifest
   console.log('\n📋 Generating manifest...')
