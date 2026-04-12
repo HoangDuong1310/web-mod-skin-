@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { uploadToR2, deleteFromR2, R2_PREFIXES } from '@/lib/r2'
+import { uploadToR2, deleteFromR2, getLeagueSkinR2Key } from '@/lib/r2'
 import { createHash } from 'crypto'
 
 // PUT - Update skin metadata or replace file
@@ -36,7 +36,7 @@ export async function PUT(
 
       const buffer = Buffer.from(await file.arrayBuffer())
       const hash = createHash('md5').update(buffer).digest('hex')
-      const r2Key = `${R2_PREFIXES.LEAGUE_SKINS}/skins/${skin.championId}/${skinId}.zip`
+      const r2Key = getLeagueSkinR2Key(skin.championId, skinId, skin.parentSkinId)
 
       if (skin.fileUrl) {
         try { await deleteFromR2(skin.fileUrl) } catch {}

@@ -1,77 +1,65 @@
 /**
- * Cleanup old R2 objects at wrong paths
- * Deletes league-skins/{championId}/{skinId}.zip (old path)
- * Keeps league-skins/skins/... and league-skins/resources/... and league-skins/manifest.json
+ * Clean up old R2 objects that are no longer needed after migration
+ * - Removes leftover empty "folder marker" objects from leaked paths (league-skins/{champId}/)
  * 
- * Usage:
- *   npx tsx scripts/cleanup-old-r2-skins.ts          # Dry run (list only)
- *   npx tsx scripts/cleanup-old-r2-skins.ts --delete  # Actually delete
+ * Usage: npx tsx scripts/cleanup-old-r2-skins.ts [--dry-run]
  */
+import 'dotenv/config'
+import { S3Client, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
-import { listR2Objects, deleteFromR2, R2_PREFIXES } from '../lib/r2'
+const BUCKET = process.env.R2_BUCKET_NAME || 'modskinslol'
+const DRY_RUN = process.argv.includes('--dry-run')
 
-const shouldDelete = process.argv.includes('--delete')
+const c = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+})
 
 async function main() {
-  console.log(`🧹 Cleanup old R2 skin paths`)
-  console.log(`   Mode: ${shouldDelete ? '🔴 DELETE' : '🟡 DRY RUN (use --delete to actually delete)'}`)
-  console.log('')
+  console.log(`=== Cleanup Old R2 League Skins ${DRY_RUN ? '(DRY RUN)' : ''} ===\n`)
 
-  const prefix = R2_PREFIXES.LEAGUE_SKINS + '/'
-  console.log(`🔍 Scanning R2 prefix: ${prefix}`)
-  const objects = await listR2Objects(prefix)
-  console.log(`   Found ${objects.length} total objects`)
-
-  // Find objects that are NOT in skins/, resources/, or manifest.json
-  const oldObjects = objects.filter(o => {
-    const relativePath = o.key.substring(prefix.length) // e.g. "1/1000.zip" or "skins/1/1000.zip"
-    // Keep: skins/..., resources/..., manifest.json
-    if (relativePath.startsWith('skins/')) return false
-    if (relativePath.startsWith('resources/')) return false
-    if (relativePath === 'manifest.json') return false
-    return true
-  })
-
-  console.log(`   Old objects to delete: ${oldObjects.length}`)
-
-  if (oldObjects.length === 0) {
-    console.log('\n✅ No old objects found. Nothing to clean up!')
-    return
-  }
-
-  // Show some examples
-  console.log('\n📋 Examples:')
-  oldObjects.slice(0, 10).forEach(o => console.log(`   ${o.key} (${o.size} bytes)`))
-  if (oldObjects.length > 10) {
-    console.log(`   ... and ${oldObjects.length - 10} more`)
-  }
-
-  if (!shouldDelete) {
-    console.log('\n⚠️  Dry run complete. Use --delete to actually delete these objects.')
-    return
-  }
-
-  // Delete old objects
-  console.log('\n🗑️  Deleting old objects...')
-  let deleted = 0
-  let errors = 0
-
-  for (const obj of oldObjects) {
-    try {
-      await deleteFromR2(obj.key)
-      deleted++
-      if (deleted % 100 === 0) {
-        process.stdout.write(`   Deleted ${deleted}/${oldObjects.length}\r`)
+  // Check for remaining leaked files
+  let ct: string | undefined
+  const leaked: string[] = []
+  
+  do {
+    const r = await c.send(new ListObjectsV2Command({
+      Bucket: BUCKET,
+      Prefix: 'league-skins/',
+      MaxKeys: 1000,
+      ContinuationToken: ct,
+    }))
+    for (const o of r.Contents || []) {
+      if (o.Key && o.Key.match(/^league-skins\/\d+\//)) {
+        leaked.push(o.Key)
       }
-    } catch (err) {
-      errors++
-      console.error(`   ❌ Failed to delete: ${obj.key}`)
+    }
+    ct = r.NextContinuationToken
+  } while (ct)
+
+  console.log(`Found ${leaked.length} remaining leaked files`)
+  
+  let deleted = 0
+  for (const key of leaked) {
+    console.log(`  DELETE: ${key}`)
+    if (!DRY_RUN) {
+      try {
+        await c.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }))
+        deleted++
+      } catch (err) {
+        console.error(`    ERROR: ${err}`)
+      }
+    } else {
+      deleted++
     }
   }
 
-  console.log(`\n   ✅ Deleted: ${deleted}`)
-  if (errors > 0) console.log(`   ❌ Errors: ${errors}`)
-  console.log('\n✅ Cleanup done!')
+  console.log(`\nDeleted: ${deleted}`)
+  if (DRY_RUN) console.log('This was a DRY RUN.')
 }
 
 main().catch(console.error)

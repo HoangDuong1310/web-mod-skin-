@@ -1253,22 +1253,27 @@ model LeagueChampion {
 }
 
 model LeagueSkin {
-  id          String          @id @default(cuid())
-  skinId      Int             @unique
-  championId  Int
-  champion    LeagueChampion  @relation(fields: [championId], references: [championId], onDelete: Cascade)
-  nameEn      String
-  nameVi      String?
-  fileUrl     String?         @db.Text  // R2 key: league-skins/{championId}/{skinId}.zip
-  fileSize    Int?            // bytes
-  fileHash    String?         // md5 hash for change detection
-  version     Int             @default(1)
-  isActive    Boolean         @default(true)
+  id            String          @id @default(cuid())
+  skinId        Int             @unique
+  championId    Int
+  champion      LeagueChampion  @relation(fields: [championId], references: [championId], onDelete: Cascade)
+  parentSkinId  Int?            // null = main skin, set = chroma/variant of parent
+  parent        LeagueSkin?     @relation("SkinChromas", fields: [parentSkinId], references: [skinId])
+  chromas       LeagueSkin[]    @relation("SkinChromas")
+  nameEn        String
+  nameVi        String?
+  isChroma      Boolean         @default(false)
+  fileUrl       String?         @db.Text  // R2 key: league-skins/{championId}/{skinId}/{skinId}.zip or league-skins/{championId}/{parentSkinId}/{chromaId}/{chromaId}.zip
+  fileSize      Int?            // bytes
+  fileHash      String?         // md5 hash for change detection
+  version       Int             @default(1)
+  isActive      Boolean         @default(true)
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([championId])
+  @@index([parentSkinId])
   @@index([isActive])
   @@map("league_skins")
 }

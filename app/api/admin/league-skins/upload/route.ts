@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { uploadToR2, deleteFromR2, R2_PREFIXES } from '@/lib/r2'
+import { uploadToR2, deleteFromR2, getLeagueSkinR2Key } from '@/lib/r2'
 import { createHash } from 'crypto'
 
 // POST - Upload skin file(s)
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Skin not found in database' }, { status: 404 })
       }
 
-      const r2Key = `${R2_PREFIXES.LEAGUE_SKINS}/skins/${skin.championId}/${skinId}.zip`
+      const r2Key = getLeagueSkinR2Key(skin.championId, parseInt(skinId), skin.parentSkinId)
 
       // Delete old file if replacing
       if (skin.fileUrl) {
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        const r2Key = `${R2_PREFIXES.LEAGUE_SKINS}/skins/${skin.championId}/${skinId}.zip`
+        const r2Key = getLeagueSkinR2Key(skin.championId, skinId, skin.parentSkinId)
 
         if (skin.fileUrl) {
           try { await deleteFromR2(skin.fileUrl) } catch {}

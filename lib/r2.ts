@@ -35,6 +35,33 @@ export const R2_PREFIXES = {
 } as const
 
 /**
+ * Generate R2 key for league skin files (NEW nested structure)
+ * Main skin: league-skins/skins/{championId}/{skinId}/{skinId}.zip
+ * Chroma:    league-skins/skins/{championId}/{parentSkinId}/{chromaId}/{chromaId}.zip
+ */
+export function getLeagueSkinR2Key(
+  championId: number,
+  skinId: number,
+  parentSkinId?: number | null
+): string {
+  if (parentSkinId) {
+    return `${R2_PREFIXES.LEAGUE_SKINS}/skins/${championId}/${parentSkinId}/${skinId}/${skinId}.zip`
+  }
+  return `${R2_PREFIXES.LEAGUE_SKINS}/skins/${championId}/${skinId}/${skinId}.zip`
+}
+
+/**
+ * Generate OLD R2 key format (for migration/backward compat)
+ * Old format: league-skins/skins/{championId}/{skinId}.zip
+ */
+export function getLeagueSkinR2KeyOld(
+  championId: number,
+  skinId: number
+): string {
+  return `${R2_PREFIXES.LEAGUE_SKINS}/skins/${championId}/${skinId}.zip`
+}
+
+/**
  * Upload a file buffer to R2
  */
 export async function uploadToR2(
