@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import {
   Globe, Database, Sparkles, AlertTriangle, RefreshCw, Loader2,
-  Download, CheckCircle, Package, Search, Eye, FileUp,
+  Download, CheckCircle, Package, Search, Eye, FileUp, HardDrive,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SyncData } from './types'
@@ -42,6 +42,24 @@ export function SyncOverview({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [uploadTargetSkinId, setUploadTargetSkinId] = useState<number | null>(null)
+  const [syncingR2, setSyncingR2] = useState(false)
+
+  const handleSyncR2 = async () => {
+    setSyncingR2(true)
+    try {
+      const res = await fetch('/api/admin/league-skins/sync-r2', { method: 'POST' })
+      if (!res.ok) throw new Error('Sync failed')
+      const data = await res.json()
+      const { synced, removed, alreadyOk, r2Files, errors } = data.summary
+      toast.success(
+        `Sync R2 xong: ${synced} cap nhat, ${removed} xoa, ${alreadyOk} ok (${r2Files} file tren R2)${errors > 0 ? `, ${errors} loi` : ''}`
+      )
+    } catch {
+      toast.error('Sync R2 that bai')
+    } finally {
+      setSyncingR2(false)
+    }
+  }
 
   // Single file upload
   const handleUpload = async (skinId: number, file: File) => {
@@ -134,7 +152,11 @@ export function SyncOverview({
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onSync} disabled={syncing} variant="outline" className="gap-2">
           {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          {syncing ? 'Đang đồng bộ...' : 'Kiểm tra cập nhật'}
+          {syncing ? 'Dang dong bo...' : 'Kiem tra cap nhat'}
+        </Button>
+        <Button onClick={handleSyncR2} disabled={syncingR2} variant="outline" className="gap-2">
+          {syncingR2 ? <Loader2 className="h-4 w-4 animate-spin" /> : <HardDrive className="h-4 w-4" />}
+          {syncingR2 ? 'Dang sync R2...' : 'Sync R2 → DB'}
         </Button>
         {syncData && syncData.diff.totalNew > 0 && (
           <>
