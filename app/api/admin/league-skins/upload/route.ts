@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { uploadToR2, deleteFromR2, getLeagueSkinR2Key } from '@/lib/r2'
 import { createHash } from 'crypto'
+import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
 // POST - Upload skin file(s)
 export async function POST(request: NextRequest) {
@@ -56,6 +57,9 @@ export async function POST(request: NextRequest) {
           version: { increment: 1 },
         },
       })
+
+      // Auto-update manifest after upload
+      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
 
       return NextResponse.json({ success: true, skinId: parseInt(skinId), r2Key })
     }
@@ -118,15 +122,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      results,
-      summary: {
-        uploaded: results.filter(r => r.status === 'uploaded').length,
-        skipped: results.filter(r => r.status === 'skipped').length,
-        errors: results.filter(r => r.status === 'error').length,
-      },
-    })
+    const summary = {
+      uploaded: results.filter(r => r.status === 'uploaded').length,
+      skipped: results.filter(r => r.status === 'skipped').length,
+      errors: results.filter(r => r.status === 'error').length,
+    }
+
+    // Auto-update manifest if any files were uploaded
+    if (summary.uploaded > 0) {
+      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+    }
+
+    return NextResponse.json({ success: true, results, summary })
   } catch (error) {
     console.error('Error uploading league skin:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

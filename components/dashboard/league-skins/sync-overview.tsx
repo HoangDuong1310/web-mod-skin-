@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import {
   Globe, Database, Sparkles, AlertTriangle, RefreshCw, Loader2,
-  Download, CheckCircle, Package, Search, Eye, FileUp, HardDrive,
+  Download, CheckCircle, Package, Search, Eye, FileUp, HardDrive, Archive,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SyncData } from './types'
@@ -43,6 +43,73 @@ export function SyncOverview({
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [uploadTargetSkinId, setUploadTargetSkinId] = useState<number | null>(null)
   const [syncingR2, setSyncingR2] = useState(false)
+  const [buildingPackage, setBuildingPackage] = useState(false)
+  const [packageInfo, setPackageInfo] = useState<{
+    status: string
+    builtAt: string | null
+    hash: string | null
+    size: string | null
+    fileCount: string | null
+    existsOnR2: boolean
+    downloadUrl: string | null
+    progress: { current: number; total: number; percent: number; bytes: number; elapsed: string } | null
+  } | null>(null)
+
+  const fetchPackageStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/league-skins/build-package')
+      if (res.ok) {
+        const data = await res.json()
+        setPackageInfo(data)
+        return data.status
+      }
+    } catch {}
+    return null
+  }, [])
+
+  useEffect(() => {
+    fetchPackageStatus()
+  }, [fetchPackageStatus])
+
+  // Poll while building
+  useEffect(() => {
+    if (packageInfo?.status !== 'building') return
+    const interval = setInterval(async () => {
+      const status = await fetchPackageStatus()
+      if (status !== 'building') clearInterval(interval)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [packageInfo?.status, fetchPackageStatus])
+
+  const handleBuildPackage = async () => {
+    if (!confirm('Bạn muốn build lại Full Package? Quá trình này mất 15-30 phút.')) return
+    setBuildingPackage(true)
+    try {
+      const res = await fetch('/api/admin/league-skins/build-package', { method: 'POST' })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Build failed')
+      }
+      toast.success('Đã bắt đầu build package. Vui lòng đợi 15-30 phút.')
+      await fetchPackageStatus()
+    } catch (err: any) {
+      toast.error(err.message || 'Build thất bại')
+    } finally {
+      setBuildingPackage(false)
+    }
+  }
+
+  const handleResetBuild = async () => {
+    if (!confirm('Reset trạng thái build? Dùng khi build bị treo.')) return
+    try {
+      const res = await fetch('/api/admin/league-skins/build-package', { method: 'DELETE' })
+      if (!res.ok) throw new Error('Reset failed')
+      toast.success('Đã reset trạng thái build')
+      await fetchPackageStatus()
+    } catch {
+      toast.error('Reset thất bại')
+    }
+  }
 
   const handleSyncR2 = async () => {
     setSyncingR2(true)
@@ -279,6 +346,99 @@ export function SyncOverview({
           <Eye className="h-5 w-5 text-amber-500" />
         </button>
       )}
+
+      {/* Full Package Card */}
+      <Card className="border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-purple-700 dark:text-purple-400">
+            <Archive className="h-4 w-4" />
+            Full Package (ZIP)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              {packageInfo?.status === 'ready' && packageInfo.existsOnR2 ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-600 text-white text-xs">Sẵn sàng</Badge>
+                    {packageInfo.size && <span className="text-sm text-muted-foreground">{packageInfo.size}</span>}
+                    {packageInfo.fileCount && <span className="text-sm text-muted-foreground">• {packageInfo.fileCount} files</span>}
+                  </div>
+                  {packageInfo.builtAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Build lúc: {new Date(packageInfo.builtAt).toLocaleString('vi-VN')}
+                    </p>
+                  )}
+                </>
+              ) : packageInfo?.status === 'building' ? (
+                <div className="space-y-2 w-full">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                    <span className="text-sm text-purple-700 dark:text-purple-400">
+                      {packageInfo.progress
+                        ? `Đang nén: ${packageInfo.progress.current}/${packageInfo.progress.total} files (${packageInfo.progress.percent.toFixed(1)}%)`
+                        : 'Đang chuẩn bị...'}
+                    </span>
+                  </div>
+                  {packageInfo.progress && (
+                    <>
+                      <Progress value={packageInfo.progress.percent} className="h-2" />
+                      <p className="text-xs text-muted-foreground">
+                        Đã xử lý: {(packageInfo.progress.bytes / (1024 * 1024)).toFixed(1)} MB • Thời gian: {packageInfo.progress.elapsed}
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : packageInfo?.status === 'error' ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="destructive" className="text-xs">Lỗi</Badge>
+                  <span className="text-xs text-muted-foreground">Build thất bại</span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Chưa có package. Bấm Build để tạo.</p>
+              )}
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              {packageInfo?.downloadUrl && packageInfo.status === 'ready' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => window.open(packageInfo.downloadUrl!, '_blank')}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Tải
+                </Button>
+              )}
+              {(packageInfo?.status === 'building' || packageInfo?.status === 'error') && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleResetBuild}
+                >
+                  Reset
+                </Button>
+              )}
+              <Button
+                variant={packageInfo?.status === 'ready' ? 'outline' : 'default'}
+                size="sm"
+                className="gap-1.5"
+                disabled={buildingPackage || packageInfo?.status === 'building'}
+                onClick={handleBuildPackage}
+              >
+                {packageInfo?.status === 'building' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Archive className="h-3.5 w-3.5" />
+                )}
+                {packageInfo?.status === 'ready' ? 'Rebuild' : 'Build Package'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Missing Files Dialog */}
       <Dialog open={showMissingFiles} onOpenChange={setShowMissingFiles}>

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { listR2Objects, getLeagueSkinR2Key } from '@/lib/r2'
-import { R2_PREFIXES } from '@/lib/r2'
+import { listR2Objects, getLeagueSkinR2Key, R2_PREFIXES } from '@/lib/r2'
+import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
 /**
  * POST /api/admin/league-skins/sync-r2
@@ -109,6 +109,11 @@ export async function POST(request: NextRequest) {
       } else {
         alreadyOk++
       }
+    }
+
+    // Auto-update manifest after sync
+    if (synced > 0 || removed > 0) {
+      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
     }
 
     return NextResponse.json({

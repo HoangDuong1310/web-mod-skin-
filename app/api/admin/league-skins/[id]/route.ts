@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { uploadToR2, deleteFromR2, getLeagueSkinR2Key } from '@/lib/r2'
 import { createHash } from 'crypto'
+import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
 // PUT - Update skin metadata or replace file
 export async function PUT(
@@ -54,6 +55,9 @@ export async function PUT(
         },
       })
 
+      // Auto-update manifest after file upload
+      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+
       return NextResponse.json({ success: true, skin: updated })
     }
 
@@ -103,6 +107,9 @@ export async function DELETE(
       where: { skinId },
       data: { fileUrl: null, fileSize: null, fileHash: null },
     })
+
+    // Auto-update manifest after file deletion
+    generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
 
     return NextResponse.json({ success: true, message: 'File removed' })
   } catch (error) {
