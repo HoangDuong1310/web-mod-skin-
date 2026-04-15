@@ -3,14 +3,15 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
   Settings,
   Globe,
   Mail,
   Shield,
   Database,
   Bell,
-  Heart
+  Heart,
+  Radio
 } from 'lucide-react'
 import { SiteSettingsTab } from './site-settings-tab'
 import { EmailSettingsTab } from './email-settings-tab'
@@ -18,6 +19,7 @@ import { SecuritySettingsTab } from './security-settings-tab'
 import { SystemSettingsTab } from './system-settings-tab'
 import { NotificationsSettingsTab } from './notifications-settings-tab'
 import { DonationsSettingsTab } from './donations-settings-tab'
+import { PartySettingsTab } from '@/components/dashboard/party-settings-tab'
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
@@ -62,7 +64,7 @@ export default async function SettingsPage() {
       </div>
 
       <Tabs defaultValue="site" className="space-y-8">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="site" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
             Site
@@ -86,6 +88,10 @@ export default async function SettingsPage() {
           <TabsTrigger value="system" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             System
+          </TabsTrigger>
+          <TabsTrigger value="party" className="flex items-center gap-2">
+            <Radio className="h-4 w-4" />
+            Party
           </TabsTrigger>
         </TabsList>
 
@@ -111,6 +117,10 @@ export default async function SettingsPage() {
 
         <TabsContent value="system">
           <SystemSettingsTab systemStats={systemStats} systemInfo={systemInfo} />
+        </TabsContent>
+
+        <TabsContent value="party">
+          <PartySettingsTab />
         </TabsContent>
       </Tabs>
     </div>

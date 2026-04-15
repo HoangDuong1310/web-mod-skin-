@@ -5,6 +5,7 @@ import { EnhancedStats } from '@/components/dashboard/enhanced-stats'
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts'
 import { RecentActivities } from '@/components/dashboard/recent-activities'
 import { SystemInfo } from '@/components/dashboard/system-info'
+import { PartyWidget } from '@/components/dashboard/party-widget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 
@@ -82,10 +83,13 @@ export function DashboardClient() {
         topContent={stats?.topContent || {}}
       />
       
-      {/* System Info and Quick Actions Row */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+      {/* System Info, Party Widget and Quick Actions Row */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* System Information */}
         <SystemInfo className="lg:col-span-1" />
+        
+        {/* Party Mode Widget */}
+        <PartyWidget />
         
         {/* Quick Actions */}
         <Card className="lg:col-span-1">
