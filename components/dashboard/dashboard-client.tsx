@@ -6,6 +6,7 @@ import { DashboardCharts } from '@/components/dashboard/dashboard-charts'
 import { RecentActivities } from '@/components/dashboard/recent-activities'
 import { SystemInfo } from '@/components/dashboard/system-info'
 import { PartyWidget } from '@/components/dashboard/party-widget'
+import { LiveUsersWidget } from '@/components/dashboard/live-users-widget'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 
@@ -68,6 +69,9 @@ export function DashboardClient() {
 
   return (
     <div className="space-y-6">
+      {/* Live Users Widget */}
+      <LiveUsersWidget />
+      
       {/* Enhanced Statistics Cards */}
       <EnhancedStats stats={stats} />
       

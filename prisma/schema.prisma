@@ -1277,3 +1277,58 @@ model LeagueSkin {
   @@index([isActive])
   @@map("league_skins")
 }
+
+// ==========================================
+// Real-Time User Tracking
+// ==========================================
+
+model ActiveSession {
+  id              Int       @id @default(autoincrement())
+  licenseKey      String    @map("license_key")
+  hwid            String
+
+  // Status data from client
+  appVersion      String?   @map("app_version")
+  phase           String?
+  gameMode        String?   @map("game_mode")
+  champion        String?
+  championId      Int?      @map("champion_id")
+  skin            String?
+  skinId          Int?      @map("skin_id")
+  summonerName    String?   @map("summoner_name")
+  region          String?
+  partyMode       Boolean   @default(false) @map("party_mode")
+  uptimeMinutes   Int       @default(0) @map("uptime_minutes")
+  injectionCount  Int       @default(0) @map("injection_count")
+  lastInjectionSkin String? @map("last_injection_skin")
+
+  // Timestamps
+  sessionStart    DateTime  @default(now()) @map("session_start")
+  lastHeartbeat   DateTime  @default(now()) @map("last_heartbeat")
+
+  @@unique([licenseKey, hwid])
+  @@index([lastHeartbeat])
+  @@index([phase])
+  @@index([region])
+  @@map("active_sessions")
+}
+
+model SessionHistory {
+  id              Int       @id @default(autoincrement())
+  licenseKey      String    @map("license_key")
+  hwid            String
+  summonerName    String?   @map("summoner_name")
+  region          String?
+  sessionStart    DateTime  @map("session_start")
+  sessionEnd      DateTime  @map("session_end")
+  durationMinutes Int       @default(0) @map("duration_minutes")
+  injectionCount  Int       @default(0) @map("injection_count")
+  appVersion      String?   @map("app_version")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([licenseKey])
+  @@index([sessionEnd])
+  @@index([createdAt])
+  @@map("session_history")
+}

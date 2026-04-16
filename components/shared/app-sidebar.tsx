@@ -33,6 +33,7 @@ import {
   Shield,
   Gamepad2,
   Radio,
+  Activity,
 } from 'lucide-react'
 
 interface AppSidebarProps {
@@ -49,7 +50,8 @@ interface NavigationItem {
 
 const adminNavigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { 
+  { name: 'Live Users', href: '/dashboard/live-users', icon: Activity },
+  {
     name: 'Software Management', 
     href: '/dashboard/software', 
     icon: Package,

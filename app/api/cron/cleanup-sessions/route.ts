@@ -5,6 +5,8 @@
  * Chạy mỗi 5 phút để đảm bảo session hết hạn được dọn dẹp kịp thời,
  * giải phóng slot cho người dùng khác.
  * 
+ * Extended: Also cleans up expired active_sessions and moves to session_history
+ * 
  * Có thể gọi bằng:
  * - Vercel Cron (vercel.json)
  * - External cron service
@@ -13,6 +15,7 @@
 
 import { NextResponse } from 'next/server'
 import { cleanupAllStaleSessions, SESSION_TIMEOUT_MS, SESSION_GRACE_MS } from '@/lib/license-key'
+import { prisma } from '@/lib/prisma'
 
 const CRON_API_KEY = process.env.CRON_API_KEY
 
@@ -33,9 +36,46 @@ export async function GET(request: Request) {
 
     const result = await cleanupAllStaleSessions()
 
+    // Clean up expired active_sessions (no heartbeat in 5 minutes)
+    let activeSessionsCleaned = 0
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+
+      // Get expired sessions before deleting (for history)
+      const expired = await prisma.activeSession.findMany({
+        where: { lastHeartbeat: { lt: fiveMinutesAgo } },
+      })
+
+      // Move to session_history
+      if (expired.length > 0) {
+        await prisma.sessionHistory.createMany({
+          data: expired.map((s) => ({
+            licenseKey: s.licenseKey,
+            hwid: s.hwid,
+            summonerName: s.summonerName,
+            region: s.region,
+            sessionStart: s.sessionStart,
+            sessionEnd: s.lastHeartbeat,
+            durationMinutes: s.uptimeMinutes,
+            injectionCount: s.injectionCount,
+            appVersion: s.appVersion,
+          })),
+        })
+      }
+
+      // Delete expired active sessions
+      const deleted = await prisma.activeSession.deleteMany({
+        where: { lastHeartbeat: { lt: fiveMinutesAgo } },
+      })
+      activeSessionsCleaned = deleted.count
+    } catch (trackingCleanupError) {
+      console.error('Active session cleanup error:', trackingCleanupError)
+    }
+
     console.log(
       `[Session Cleanup Cron] ${new Date().toISOString()} - ` +
-      `Cleaned ${result.cleanedSessions} stale sessions from ${result.affectedKeys} keys`
+      `Cleaned ${result.cleanedSessions} stale sessions from ${result.affectedKeys} keys, ` +
+      `${activeSessionsCleaned} expired active tracking sessions`
     )
 
     return NextResponse.json({
@@ -44,6 +84,7 @@ export async function GET(request: Request) {
       data: {
         cleanedSessions: result.cleanedSessions,
         affectedKeys: result.affectedKeys,
+        activeSessionsCleaned,
         timeoutConfig: {
           sessionTimeoutMs: SESSION_TIMEOUT_MS,
           graceMs: SESSION_GRACE_MS,
