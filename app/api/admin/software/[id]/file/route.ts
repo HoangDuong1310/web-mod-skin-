@@ -7,19 +7,46 @@ export const runtime = 'nodejs'
 export const maxDuration = 300; // 5 minutes for Pro/Enterprise Vercel plans
 export const dynamic = 'force-dynamic'
 
-// CORS headers for cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://modskinslol.com',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': '*', // Allow all headers
-  'Access-Control-Allow-Credentials': 'true',
+const defaultAllowedOrigins = [
+  'https://modskinslol.com',
+  'https://www.modskinslol.com',
+  'https://upload.modskinslol.com',
+]
+
+function normalizeOrigin(value?: string | null): string {
+  return value?.trim().replace(/\/+$/, '') || ''
+}
+
+function getCorsHeaders(request: NextRequest) {
+  const configuredOrigins = [
+    process.env.NEXTAUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_UPLOAD_BASE_URL,
+    process.env.UPLOAD_BASE_URL,
+  ]
+    .map(normalizeOrigin)
+    .filter(Boolean)
+
+  const allowedOrigins = new Set([...defaultAllowedOrigins, ...configuredOrigins])
+  const requestOrigin = normalizeOrigin(request.headers.get('origin'))
+  const allowOrigin = allowedOrigins.has(requestOrigin)
+    ? requestOrigin
+    : defaultAllowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': request.headers.get('access-control-request-headers') || 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+    Vary: 'Origin, Access-Control-Request-Headers',
+  }
 }
 
 // Handle preflight requests
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
-    headers: corsHeaders,
+    headers: getCorsHeaders(request),
   })
 }
 
@@ -32,7 +59,7 @@ export async function POST(
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'CF-Cache-Status': 'BYPASS',
     'X-Accel-Buffering': 'no', // Disable nginx buffering
-    ...corsHeaders, // Add CORS headers
+    ...getCorsHeaders(request), // Add CORS headers
   }
 
   console.log(`🔵 Starting file upload to R2 for product ${params.id}`)

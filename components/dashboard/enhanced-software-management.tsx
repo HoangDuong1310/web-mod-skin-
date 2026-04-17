@@ -386,6 +386,7 @@ export default function EnhancedSoftwareManagement() {
               method: 'POST',
               body: fileFormData,
               signal: controller.signal,
+              credentials: 'include',
               headers: {
                 'Cache-Control': 'no-cache',
                 'CF-Cache-Status': 'BYPASS',
@@ -449,6 +450,7 @@ export default function EnhancedSoftwareManagement() {
               method: 'POST',
               body: uploadFormData,
               signal: controller.signal,
+              credentials: 'include',
               headers: {
                 'Cache-Control': 'no-cache',
                 'CF-Cache-Status': 'BYPASS',
