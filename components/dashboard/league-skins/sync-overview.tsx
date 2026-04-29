@@ -44,6 +44,8 @@ export function SyncOverview({
   const [uploadTargetSkinId, setUploadTargetSkinId] = useState<number | null>(null)
   const [syncingR2, setSyncingR2] = useState(false)
   const [buildingPackage, setBuildingPackage] = useState(false)
+  const [uploadingPackage, setUploadingPackage] = useState(false)
+  const packageFileRef = useRef<HTMLInputElement>(null)
   const [packageInfo, setPackageInfo] = useState<{
     status: string
     builtAt: string | null
@@ -108,6 +110,35 @@ export function SyncOverview({
       await fetchPackageStatus()
     } catch {
       toast.error('Reset thất bại')
+    }
+  }
+
+  const handleUploadPackage = async (file: File) => {
+    if (!file.name.endsWith('.zip')) {
+      toast.error('File phải là định dạng .zip')
+      return
+    }
+    if (!confirm(`Upload file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)} MB) làm Full Package?`)) return
+
+    setUploadingPackage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/admin/league-skins/build-package', {
+        method: 'PUT',
+        body: formData,
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Upload failed')
+      }
+      const data = await res.json()
+      toast.success(`Upload package thành công! Hash: ${data.package.hash}, Size: ${data.package.size}`)
+      await fetchPackageStatus()
+    } catch (err: any) {
+      toast.error(err.message || 'Upload package thất bại')
+    } finally {
+      setUploadingPackage(false)
     }
   }
 
@@ -421,11 +452,37 @@ export function SyncOverview({
                   Reset
                 </Button>
               )}
+              {/* Hidden file input for manual package upload */}
+              <input
+                ref={packageFileRef}
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) handleUploadPackage(file)
+                  e.target.value = ''
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={uploadingPackage || buildingPackage || packageInfo?.status === 'building'}
+                onClick={() => packageFileRef.current?.click()}
+              >
+                {uploadingPackage ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <FileUp className="h-3.5 w-3.5" />
+                )}
+                {uploadingPackage ? 'Đang upload...' : 'Upload ZIP'}
+              </Button>
               <Button
                 variant={packageInfo?.status === 'ready' ? 'outline' : 'default'}
                 size="sm"
                 className="gap-1.5"
-                disabled={buildingPackage || packageInfo?.status === 'building'}
+                disabled={buildingPackage || uploadingPackage || packageInfo?.status === 'building'}
                 onClick={handleBuildPackage}
               >
                 {packageInfo?.status === 'building' ? (

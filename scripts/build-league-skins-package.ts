@@ -115,6 +115,16 @@ async function main() {
   await upsertSetting('league_skins_package_size', formatBytes(result.size))
   await upsertSetting('league_skins_package_files', result.fileCount.toString())
 
+  // Regenerate manifest with new package hash so app detects the update
+  console.log('\n📋 Regenerating manifest with new package hash...')
+  try {
+    const { generateAndUploadManifest } = await import('../lib/league-skins-manifest')
+    const manifestResult = await generateAndUploadManifest()
+    console.log(`   ✅ Manifest updated: ${manifestResult.skinsCount} skins, ${manifestResult.resourceLanguages} languages`)
+  } catch (err) {
+    console.error('   ⚠️ Manifest generation failed:', err)
+  }
+
   console.log('\n✅ Package built successfully!')
   console.log(`   📦 Key: ${result.key}`)
   console.log(`   📊 Size: ${formatBytes(result.size)}`)
