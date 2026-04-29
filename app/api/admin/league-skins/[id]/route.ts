@@ -55,8 +55,12 @@ export async function PUT(
         },
       })
 
-      // Auto-update manifest after file upload
-      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+      // Auto-update manifest after file upload (updates hash + bumps version)
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after file upload:', err)
+      }
 
       return NextResponse.json({ success: true, skin: updated })
     }
@@ -73,6 +77,15 @@ export async function PUT(
       where: { skinId },
       data,
     })
+
+    // If isActive changed, regenerate manifest (adds/removes skin entry + bumps version)
+    if (body.isActive !== undefined) {
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after isActive change:', err)
+      }
+    }
 
     return NextResponse.json({ success: true, skin: updated })
   } catch (error) {
@@ -108,8 +121,12 @@ export async function DELETE(
       data: { fileUrl: null, fileSize: null, fileHash: null },
     })
 
-    // Auto-update manifest after file deletion
-    generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+    // Auto-update manifest after file deletion (removes skin entry + bumps version)
+    try {
+      await generateAndUploadManifest()
+    } catch (err) {
+      console.error('Manifest generation failed after file deletion:', err)
+    }
 
     return NextResponse.json({ success: true, message: 'File removed' })
   } catch (error) {

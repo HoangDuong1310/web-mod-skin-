@@ -58,8 +58,12 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Auto-update manifest after upload
-      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+      // Auto-update manifest after upload (updates hash + bumps version)
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after upload:', err)
+      }
 
       return NextResponse.json({ success: true, skinId: parseInt(skinId), r2Key })
     }
@@ -128,9 +132,13 @@ export async function POST(request: NextRequest) {
       errors: results.filter(r => r.status === 'error').length,
     }
 
-    // Auto-update manifest if any files were uploaded
+    // Auto-update manifest if any files were uploaded (updates hashes + bumps version)
     if (summary.uploaded > 0) {
-      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after bulk upload:', err)
+      }
     }
 
     return NextResponse.json({ success: true, results, summary })

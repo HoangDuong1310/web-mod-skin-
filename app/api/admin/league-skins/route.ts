@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { deleteFromR2 } from '@/lib/r2'
+import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
 // GET - List champions with skins count, search, pagination
 export async function GET(request: NextRequest) {
@@ -118,6 +119,14 @@ export async function DELETE(request: NextRequest) {
       }
 
       await prisma.leagueSkin.delete({ where: { skinId: parseInt(skinId) } })
+
+      // Regenerate manifest after skin deletion (removes skin entry + bumps version)
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after skin deletion:', err)
+      }
+
       return NextResponse.json({ success: true, message: 'Skin deleted' })
     }
 
@@ -138,6 +147,13 @@ export async function DELETE(request: NextRequest) {
       await prisma.leagueChampion.delete({
         where: { championId: parseInt(championId) },
       })
+
+      // Regenerate manifest after champion deletion (removes all champion skins + bumps version)
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after champion deletion:', err)
+      }
 
       return NextResponse.json({ success: true, message: 'Champion and all skins deleted' })
     }

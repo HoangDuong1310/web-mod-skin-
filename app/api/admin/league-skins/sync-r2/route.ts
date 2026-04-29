@@ -111,9 +111,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Auto-update manifest after sync
+    // Auto-update manifest after sync (updates hashes + bumps version)
     if (synced > 0 || removed > 0) {
-      generateAndUploadManifest().catch(err => console.error('Manifest generation failed:', err))
+      try {
+        await generateAndUploadManifest()
+      } catch (err) {
+        console.error('Manifest generation failed after sync:', err)
+      }
     }
 
     return NextResponse.json({
