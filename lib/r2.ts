@@ -136,6 +136,24 @@ export async function getFromR2(key: string): Promise<{
 }
 
 /**
+ * Download a file from R2 as a Buffer (for hashing, processing, etc.)
+ */
+export async function getR2Buffer(key: string): Promise<Buffer | null> {
+  try {
+    const response = await r2Client.send(
+      new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+      })
+    )
+    const bytes = await response.Body?.transformToByteArray()
+    return bytes ? Buffer.from(bytes) : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Get file from R2 as a Buffer (for smaller files)
  */
 export async function getBufferFromR2(key: string): Promise<{

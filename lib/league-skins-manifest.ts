@@ -12,7 +12,7 @@ export async function generateAndUploadManifest(): Promise<{
   resourceLanguages: number
 }> {
   const skins = await prisma.leagueSkin.findMany({
-    where: { isActive: true, fileUrl: { not: null } },
+    where: { isActive: true, fileUrl: { not: null }, fileHash: { not: null } },
     select: { skinId: true, fileHash: true, fileSize: true },
     orderBy: [{ championId: 'asc' }, { skinId: 'asc' }],
   })
@@ -25,10 +25,11 @@ export async function generateAndUploadManifest(): Promise<{
     if (match) resourceLanguages.push(match[1])
   }
 
-  const skinsMap: Record<string, { hash: string | null; size: number | null }> = {}
+  const skinsMap: Record<string, { hash: string; size: number | null }> = {}
   for (const s of skins) {
+    // Only include skins with valid hash (fileHash is guaranteed non-null by query filter)
     skinsMap[s.skinId.toString()] = {
-      hash: s.fileHash ? s.fileHash.substring(0, 8) : null,
+      hash: s.fileHash!.substring(0, 8),
       size: s.fileSize,
     }
   }

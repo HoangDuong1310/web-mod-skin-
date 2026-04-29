@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { listR2Objects, getLeagueSkinR2Key, R2_PREFIXES } from '@/lib/r2'
+import { listR2Objects, getLeagueSkinR2Key, R2_PREFIXES, getR2Buffer } from '@/lib/r2'
+import { createHash } from 'crypto'
 import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
 /**
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
         championId: true,
         fileUrl: true,
         fileSize: true,
+        fileHash: true,
         parentSkinId: true,
         isChroma: true,
       },
@@ -74,15 +76,27 @@ export async function POST(request: NextRequest) {
 
       if (r2File) {
         // File exists on R2
-        if (skin.fileUrl !== r2File.key || skin.fileSize !== r2File.size) {
-          // DB is out of sync - update it
+        const needsSync = skin.fileUrl !== r2File.key || skin.fileSize !== r2File.size
+        const needsHash = !skin.fileHash || needsSync // Hash missing or file changed - need to (re)compute
+
+        if (needsSync || needsHash) {
           try {
+            const updateData: any = {
+              fileUrl: r2File.key,
+              fileSize: r2File.size,
+            }
+
+            // Compute hash if missing (download file from R2 to calculate MD5)
+            if (needsHash) {
+              const buffer = await getR2Buffer(r2File.key)
+              if (buffer) {
+                updateData.fileHash = createHash('md5').update(buffer).digest('hex')
+              }
+            }
+
             await prisma.leagueSkin.update({
               where: { skinId: skin.skinId },
-              data: {
-                fileUrl: r2File.key,
-                fileSize: r2File.size,
-              },
+              data: updateData,
             })
             synced++
           } catch (err) {
