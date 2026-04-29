@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { getSettings, saveSettings } from '@/lib/settings'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
 
+export const dynamic = 'force-dynamic'
+
 const siteSettingsSchema = z.object({
   siteName: z.union([z.string(), z.null()]).optional(),
   siteDescription: z.union([z.string(), z.null()]).optional(),

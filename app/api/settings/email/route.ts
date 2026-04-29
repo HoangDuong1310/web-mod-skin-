@@ -7,6 +7,8 @@ import { getSettings, saveSettings } from '@/lib/settings'
 import { DEFAULT_CONFIG } from '@/lib/default-config'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 const emailSettingsSchema = z.object({
   smtpEnabled: z.boolean().default(false),
   smtpHost: z.string().optional().or(z.literal('')),

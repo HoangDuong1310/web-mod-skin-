@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { slugify } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 const createPostSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   slug: z.string().optional(), // Allow empty, will auto-generate from title

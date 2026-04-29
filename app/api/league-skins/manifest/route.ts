@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getBufferFromR2, R2_PREFIXES } from '@/lib/r2'
 
+export const dynamic = 'force-dynamic'
+
 // GET - Return the current manifest.json from R2
 export async function GET() {
   try {

@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { canManageReviews } from '@/lib/auth-utils'
 import { getSetting, setSetting } from '@/lib/settings'
 
+export const dynamic = 'force-dynamic'
+
 // Review settings keys
 const REVIEW_SETTINGS = {
   requireApproval: 'review.requireApproval',

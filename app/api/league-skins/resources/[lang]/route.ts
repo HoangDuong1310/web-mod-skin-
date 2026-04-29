@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBufferFromR2, R2_PREFIXES } from '@/lib/r2'
 
+export const dynamic = 'force-dynamic'
+
 // Allowed language codes to prevent path traversal
 const ALLOWED_LANGS = new Set([
   'ar', 'cs', 'de', 'default', 'el', 'en', 'es', 'fr', 'hu',

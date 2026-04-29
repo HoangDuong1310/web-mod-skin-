@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateReseller, updateApiKeyLastUsed, checkFreeKeyQuota, generateResellerFreeKey } from '@/lib/reseller'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Extract API key from Authorization header
  */

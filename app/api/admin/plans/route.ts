@@ -9,6 +9,8 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // GET - Lấy tất cả plans (bao gồm cả inactive)
 export async function GET(request: Request) {
   try {

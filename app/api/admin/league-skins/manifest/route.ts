@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { getR2PublicUrl, R2_PREFIXES } from '@/lib/r2'
 import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
+export const dynamic = 'force-dynamic'
+
 // POST - Generate and upload manifest.json to R2
 export async function POST(request: NextRequest) {
   try {

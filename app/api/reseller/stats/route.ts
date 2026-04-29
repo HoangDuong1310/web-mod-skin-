@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateReseller, getResellerStats } from '@/lib/reseller'
 
+export const dynamic = 'force-dynamic'
+
 function getApiKeyFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
   if (!authHeader) return null

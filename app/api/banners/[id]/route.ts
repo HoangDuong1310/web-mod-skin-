@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Schema validation for updating banners
 const updateBannerSchema = z.object({
   title: z.string().min(1).optional(),

@@ -10,6 +10,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { generateResellerApiKey } from '@/lib/reseller'
 
+export const dynamic = 'force-dynamic'
+
 // GET - List all resellers
 export async function GET(request: Request) {
   try {

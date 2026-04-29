@@ -7,6 +7,8 @@ import { generateVietQRUrl } from '@/lib/vietqr'
 import { BANK_CONFIG } from '@/lib/payment-config'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 function generateOrderCode(): string {
   const timestamp = Date.now().toString(36).toUpperCase()
   const random = Math.random().toString(36).substring(2, 6).toUpperCase()

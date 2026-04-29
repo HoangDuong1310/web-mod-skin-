@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const createGoalSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),

@@ -9,6 +9,8 @@ import { createReviewSchema, reviewQuerySchema } from '@/lib/validations'
 import { checkReviewContent } from '@/lib/review-filter'
 import { getSetting } from '@/lib/settings'
 
+export const dynamic = 'force-dynamic'
+
 // Function to recalculate product rating and review count
 async function recalculateProductStats(productId: string) {
   const visibleReviews = await prisma.review.findMany({

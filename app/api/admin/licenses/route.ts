@@ -11,6 +11,8 @@ import { authOptions } from '@/lib/auth'
 import { createLicenseKey, createMultipleLicenseKeys } from '@/lib/license-key'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 // GET - Lấy danh sách licenses
 export async function GET(request: Request) {
   try {

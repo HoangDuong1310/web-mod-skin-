@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getPresignedDownloadUrl, existsInR2, extractR2Key } from '@/lib/r2'
 
+export const dynamic = 'force-dynamic'
+
 // Common download handler for both GET and POST
 async function handleDownload(
   request: NextRequest,

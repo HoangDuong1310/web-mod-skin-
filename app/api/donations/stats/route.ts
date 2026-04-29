@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/donations/stats - Get donation statistics
 export async function GET(request: NextRequest) {
   try {

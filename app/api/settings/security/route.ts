@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { getSettings, saveSettings } from '@/lib/settings'
 
+export const dynamic = 'force-dynamic'
+
 const securitySettingsSchema = z.object({
   // Password Policies
   minPasswordLength: z.number().min(6).max(20).default(8),

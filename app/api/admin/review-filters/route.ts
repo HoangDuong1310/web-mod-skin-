@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canManageReviews } from '@/lib/auth-utils'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/admin/review-filters - List all filters
 export async function GET(request: NextRequest) {
   try {

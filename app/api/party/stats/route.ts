@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { canAccessDashboard } from '@/lib/auth-utils'
 
+export const dynamic = 'force-dynamic'
+
 const RELAY_ADMIN_URL = process.env.AINZ_RELAY_ADMIN_URL || 'http://localhost:8766'
 const RELAY_ADMIN_KEY = process.env.AINZ_RELAY_ADMIN_KEY || ''
 

@@ -6,6 +6,8 @@ import { uploadToR2, deleteFromR2, getLeagueSkinR2Key } from '@/lib/r2'
 import { createHash } from 'crypto'
 import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
+export const dynamic = 'force-dynamic'
+
 // PUT - Update skin metadata or replace file
 export async function PUT(
   request: NextRequest,

@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { calculateExpirationDate } from '@/lib/license-key'
 
+export const dynamic = 'force-dynamic'
+
 // POST - Check payment status and activate license
 export async function POST(
   request: NextRequest,

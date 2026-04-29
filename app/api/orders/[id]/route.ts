@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { calculateExpirationDate, generateKeyString } from '@/lib/license-key'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 // GET - Get order details
 export async function GET(
   request: NextRequest,

@@ -6,6 +6,8 @@ import { z } from 'zod'
 import { canManageSoftware } from '@/lib/auth-utils'
 import { revalidatePath } from 'next/cache'
 
+export const dynamic = 'force-dynamic'
+
 const updateProductSchema = z.object({
   title: z.string().min(1).max(100),
   slug: z.string().min(1).max(100),

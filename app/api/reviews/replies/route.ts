@@ -7,6 +7,8 @@ import { createReviewReplySchema, updateReviewReplySchema } from '@/lib/validati
 import { canManageReviews } from '@/lib/auth-utils'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/reviews/replies?reviewId=xxx - Get replies for a review
 export async function GET(request: NextRequest) {
   try {

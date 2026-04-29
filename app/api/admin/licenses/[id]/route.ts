@@ -11,6 +11,8 @@ import { authOptions } from '@/lib/auth'
 import { emailService } from '@/lib/email'
 import { calculateExpirationDate } from '@/lib/license-key'
 
+export const dynamic = 'force-dynamic'
+
 interface RouteParams {
   params: { id: string }
 }

@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { getSettings, saveSettings } from '@/lib/settings'
 
+export const dynamic = 'force-dynamic'
+
 const notificationSettingsSchema = z.object({
   // Admin Notifications
   newUserNotification: z.boolean().default(true),

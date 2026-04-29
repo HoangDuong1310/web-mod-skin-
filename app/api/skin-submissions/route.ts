@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { uploadToR2, generateR2Key, getR2PublicUrl, R2_PREFIXES } from '@/lib/r2'
 
+export const dynamic = 'force-dynamic'
+
 const submitSchema = z.object({
   name: z.string().min(3).max(100),
   description: z.string().min(10).max(1000),

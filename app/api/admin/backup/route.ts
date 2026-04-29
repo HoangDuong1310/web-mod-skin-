@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
+export const dynamic = 'force-dynamic'
+
 const execAsync = promisify(exec)
 
 export async function POST(request: NextRequest) {

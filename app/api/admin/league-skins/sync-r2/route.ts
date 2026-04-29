@@ -6,6 +6,8 @@ import { listR2Objects, getLeagueSkinR2Key, R2_PREFIXES, getR2Buffer } from '@/l
 import { createHash } from 'crypto'
 import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/admin/league-skins/sync-r2
  * Scan R2 storage and sync file info to DB

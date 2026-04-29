@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { strictLimiter } from '@/lib/rate-limit'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Validation schema cho donation
 // Sử dụng regex đơn giản tương thích với webpack
 const nameRegex = /^[a-zA-Z0-9\s\-_.'()ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀẾỂỄỆỉịọốồộổỗơớờởỡợụủứừửữựỳýỵỷỹ]+$/u

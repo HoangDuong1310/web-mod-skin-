@@ -7,6 +7,8 @@ import { hash } from 'bcryptjs'
 import { z } from 'zod'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 const updateUserSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100).optional(),
   email: z.string().email('Invalid email address').optional(),

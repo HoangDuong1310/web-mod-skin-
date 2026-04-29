@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { canManageReviews } from '@/lib/auth-utils'
 import { emailService } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 // Function to recalculate product rating and review count
 async function recalculateProductStats(productId: string) {
   const visibleReviews = await prisma.review.findMany({

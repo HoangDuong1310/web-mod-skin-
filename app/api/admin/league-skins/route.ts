@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { deleteFromR2 } from '@/lib/r2'
 import { generateAndUploadManifest } from '@/lib/league-skins-manifest'
 
+export const dynamic = 'force-dynamic'
+
 // GET - List champions with skins count, search, pagination
 export async function GET(request: NextRequest) {
   try {

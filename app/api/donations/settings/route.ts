@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // Public endpoint exposing only the fields needed by the client donation form.
 // Does not require auth. Avoids using the admin-only endpoint so non-admin visitors
 // can still see which methods are available and generate VietQR.

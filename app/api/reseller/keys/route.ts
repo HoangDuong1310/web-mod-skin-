@@ -11,6 +11,8 @@ import { authenticateReseller, updateApiKeyLastUsed, purchaseResellerKeys } from
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 function getApiKeyFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
   if (!authHeader) return null
