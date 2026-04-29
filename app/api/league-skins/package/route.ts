@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { existsInR2, getPresignedDownloadUrl } from '@/lib/r2'
 import { PACKAGE_KEY } from '@/lib/league-skins-package'
 
+// Prevent Next.js from caching this route — presigned URLs expire after 1 hour
+export const dynamic = 'force-dynamic'
+
 /**
  * GET - Download the full league-skins package
  * Returns a presigned URL redirect to the zip on R2

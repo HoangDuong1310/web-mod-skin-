@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getPresignedDownloadUrl } from '@/lib/r2'
 
+// Prevent Next.js from caching presigned URLs
+export const dynamic = 'force-dynamic'
+
 // GET - Download a skin file via presigned URL
 export async function GET(
   request: NextRequest,

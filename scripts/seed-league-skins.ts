@@ -1,12 +1,13 @@
 /**
  * Seed League Skins: Import champion/skin metadata from LeagueSkins data folder
  * and optionally upload .zip files to R2
- * 
+ *
  * Usage:
- *   npx tsx scripts/seed-league-skins.ts                    # Metadata only (needs data dir)
- *   npx tsx scripts/seed-league-skins.ts --upload           # Metadata + upload files to R2
- *   npx tsx scripts/seed-league-skins.ts --data-dir /path   # Custom data directory
- *   npx tsx scripts/seed-league-skins.ts --sync-r2          # Sync DB with files already on R2 (no local files needed)
+ *   npx tsx scripts/seed-league-skins.ts                              # Metadata only (needs data dir)
+ *   npx tsx scripts/seed-league-skins.ts --upload                     # Metadata + upload files to R2
+ *   npx tsx scripts/seed-league-skins.ts --data-dir C:\MyData         # Custom data directory
+ *   npx tsx scripts/seed-league-skins.ts --sync-r2                    # Sync DB with files already on R2 (no local files needed)
+ *   npx tsx scripts/seed-league-skins.ts --upload --exclude-champions 1,266,103  # Skip specific champion IDs
  */
 
 import { PrismaClient } from '@prisma/client'
@@ -22,12 +23,20 @@ const args = process.argv.slice(2)
 const shouldUpload = args.includes('--upload')
 const shouldSyncR2 = args.includes('--sync-r2')
 const dataDirIndex = args.indexOf('--data-dir')
-const DATA_DIR = dataDirIndex !== -1 ? args[dataDirIndex + 1] : 'D:\\data\\LeagueSkins-main'
+const DATA_DIR = dataDirIndex !== -1 ? args[dataDirIndex + 1] : 'C:\\LeagueSkins'
+
+// --exclude-champions 1,266,103 → skip these champion IDs
+const excludeIndex = args.indexOf('--exclude-champions')
+const EXCLUDE_CHAMPIONS = new Set<number>(
+  excludeIndex !== -1
+    ? args[excludeIndex + 1].split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+    : []
+)
 
 // Lazy import R2 only if uploading or syncing
 async function getR2() {
-  const { uploadToR2, R2_PREFIXES, listR2Objects, getBufferFromR2 } = await import('../lib/r2')
-  return { uploadToR2, R2_PREFIXES, listR2Objects, getBufferFromR2 }
+  const { uploadToR2, R2_PREFIXES, listR2Objects, getBufferFromR2, getLeagueSkinR2Key } = await import('../lib/r2')
+  return { uploadToR2, R2_PREFIXES, listR2Objects, getBufferFromR2, getLeagueSkinR2Key }
 }
 
 async function loadSkinNamesFromR2(r2Key: string, getBufferFromR2: (key: string) => Promise<{ buffer: Buffer }>): Promise<Record<string, string>> {
@@ -228,6 +237,9 @@ async function main() {
 
   console.log(`   Data dir: ${DATA_DIR}`)
   console.log(`   Upload to R2: ${shouldUpload ? 'YES' : 'NO (metadata only)'}`)
+  if (EXCLUDE_CHAMPIONS.size > 0) {
+    console.log(`   Excluding champions: ${[...EXCLUDE_CHAMPIONS].join(', ')}`)
+  }
   console.log('')
 
   if (!existsSync(DATA_DIR)) {
@@ -266,6 +278,7 @@ async function main() {
     nameEn: string
     nameVi: string | null
     zipPath: string | null
+    parentSkinId: number | null
   }[] = []
 
   let totalZips = 0
@@ -273,6 +286,9 @@ async function main() {
   for (const champDirName of championDirs) {
     const championId = parseInt(champDirName)
     if (isNaN(championId)) continue
+
+    // Skip excluded champions
+    if (EXCLUDE_CHAMPIONS.has(championId)) continue
 
     const champPath = join(skinsDir, champDirName)
     const champStat = await stat(champPath)
@@ -305,6 +321,7 @@ async function main() {
         nameEn: skinNamesEn[skinId.toString()] || `Skin ${skinId}`,
         nameVi: skinNamesVi[skinId.toString()] || null,
         zipPath: hasZip ? zipFile : null,
+        parentSkinId: null,
       })
 
       // Scan chroma subdirectories (e.g. skins/1/1013/1014/1014.zip)
@@ -327,6 +344,7 @@ async function main() {
           nameEn: skinNamesEn[chromaId.toString()] || `Skin ${chromaId}`,
           nameVi: skinNamesVi[chromaId.toString()] || null,
           zipPath: hasChromaZip ? chromaZip : null,
+          parentSkinId: skinId,
         })
       }
     }
@@ -342,6 +360,8 @@ async function main() {
     if (skinsData.some(s => s.skinId === skinId)) continue
 
     const championId = getChampionIdFromSkinId(skinId)
+    // Skip excluded champions in metadata-only skins too
+    if (EXCLUDE_CHAMPIONS.has(championId)) continue
     if (!championsMap.has(championId)) {
       championsMap.set(championId, {
         nameEn: getChampionName(skinNamesEn, championId),
@@ -355,6 +375,7 @@ async function main() {
       nameEn,
       nameVi: skinNamesVi[skinIdStr] || null,
       zipPath: null,
+      parentSkinId: null,
     })
   }
 
@@ -401,7 +422,7 @@ async function main() {
     if (shouldUpload && r2 && skin.zipPath) {
       const buffer = await readFile(skin.zipPath)
       const hash = createHash('md5').update(buffer).digest('hex')
-      const r2Key = `${r2.R2_PREFIXES.LEAGUE_SKINS}/skins/${skin.championId}/${skin.skinId}.zip`
+      const r2Key = r2.getLeagueSkinR2Key(skin.championId, skin.skinId, skin.parentSkinId)
 
       // Skip if same hash and correct path already uploaded
       if (existing?.fileHash === hash && existing.fileUrl === r2Key) {
