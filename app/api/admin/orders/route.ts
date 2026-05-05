@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { addDays, addMonths, format, startOfMonth } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
+
+type RevenueTrendRow = {
+  bucket: string
+  revenue: Prisma.Decimal | number | string | null
+  orders: bigint | number | null
+}
 
 // GET - Lấy tất cả orders (admin)
 export async function GET(request: NextRequest) {
@@ -100,6 +108,8 @@ export async function GET(request: NextRequest) {
       pendingCount,
       completedCount,
       todayOrders,
+      dailyRevenueRows,
+      monthlyRevenueRows,
     ] = await Promise.all([
       prisma.order.aggregate({
         where: { paymentStatus: 'COMPLETED' },
@@ -114,7 +124,75 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
+      prisma.$queryRaw<RevenueTrendRow[]>(Prisma.sql`
+        SELECT
+          DATE(COALESCE(paidAt, createdAt)) as bucket,
+          SUM(finalAmount) as revenue,
+          COUNT(*) as orders
+        FROM orders
+        WHERE paymentStatus = 'COMPLETED'
+          AND COALESCE(paidAt, createdAt) >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+        GROUP BY DATE(COALESCE(paidAt, createdAt))
+        ORDER BY bucket ASC
+      `),
+      prisma.$queryRaw<RevenueTrendRow[]>(Prisma.sql`
+        SELECT
+          DATE_FORMAT(COALESCE(paidAt, createdAt), '%Y-%m') as bucket,
+          SUM(finalAmount) as revenue,
+          COUNT(*) as orders
+        FROM orders
+        WHERE paymentStatus = 'COMPLETED'
+          AND COALESCE(paidAt, createdAt) >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 11 MONTH)
+        GROUP BY DATE_FORMAT(COALESCE(paidAt, createdAt), '%Y-%m')
+        ORDER BY bucket ASC
+      `),
     ])
+
+    const dailyRevenueMap = new Map(
+      dailyRevenueRows.map((row) => [
+        row.bucket,
+        {
+          revenue: Number(row.revenue || 0),
+          orders: Number(row.orders || 0),
+        },
+      ])
+    )
+
+    const monthlyRevenueMap = new Map(
+      monthlyRevenueRows.map((row) => [
+        row.bucket,
+        {
+          revenue: Number(row.revenue || 0),
+          orders: Number(row.orders || 0),
+        },
+      ])
+    )
+
+    const today = new Date()
+    const dailyRevenueTrend = Array.from({ length: 30 }, (_, index) => {
+      const date = addDays(today, index - 29)
+      const bucket = format(date, 'yyyy-MM-dd')
+      const values = dailyRevenueMap.get(bucket)
+
+      return {
+        date: bucket,
+        revenue: values?.revenue || 0,
+        orders: values?.orders || 0,
+      }
+    })
+
+    const currentMonth = startOfMonth(today)
+    const monthlyRevenueTrend = Array.from({ length: 12 }, (_, index) => {
+      const month = addMonths(currentMonth, index - 11)
+      const bucket = format(month, 'yyyy-MM')
+      const values = monthlyRevenueMap.get(bucket)
+
+      return {
+        month: bucket,
+        revenue: values?.revenue || 0,
+        orders: values?.orders || 0,
+      }
+    })
 
     return NextResponse.json({
       orders: orders.map(order => ({
@@ -132,6 +210,10 @@ export async function GET(request: NextRequest) {
         pendingCount,
         completedCount,
         todayOrders,
+        revenueTrend: {
+          daily: dailyRevenueTrend,
+          monthly: monthlyRevenueTrend,
+        },
       },
     })
   } catch (error) {

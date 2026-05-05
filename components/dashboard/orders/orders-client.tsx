@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -37,6 +38,17 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import {
   Search,
   RefreshCw,
   Eye,
@@ -50,6 +62,8 @@ import {
   Copy,
   Key,
 } from 'lucide-react'
+import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
 
 interface Order {
   id: string
@@ -84,6 +98,10 @@ interface Stats {
   pendingCount: number
   completedCount: number
   todayOrders: number
+  revenueTrend: {
+    daily: Array<{ date: string; revenue: number; orders: number }>
+    monthly: Array<{ month: string; revenue: number; orders: number }>
+  }
 }
 
 export function OrdersClient() {
@@ -98,6 +116,7 @@ export function OrdersClient() {
   const [paymentFilter, setPaymentFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [revenueView, setRevenueView] = useState<'daily' | 'monthly'>('daily')
   
   // Confirm payment dialog
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -223,6 +242,32 @@ export function OrdersClient() {
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString('vi-VN')
+  }
+
+  const formatCompactCurrency = (amount: number) => {
+    if (Math.abs(amount) >= 1_000_000_000) {
+      return `${(amount / 1_000_000_000).toFixed(1)}B`
+    }
+    if (Math.abs(amount) >= 1_000_000) {
+      return `${(amount / 1_000_000).toFixed(1)}M`
+    }
+    if (Math.abs(amount) >= 1_000) {
+      return `${(amount / 1_000).toFixed(1)}K`
+    }
+
+    return amount.toLocaleString('vi-VN')
+  }
+
+  const getNumericValue = (value: number | string | readonly (number | string)[] | undefined) => {
+    if (Array.isArray(value)) {
+      return Number(value[0] ?? 0)
+    }
+
+    return Number(value ?? 0)
+  }
+
+  const formatRevenueTooltip = (value: number | string | readonly (number | string)[] | undefined) => {
+    return [formatPrice(getNumericValue(value)), 'Doanh thu'] as [string, string]
   }
 
   const getStatusBadge = (status: string) => {
@@ -390,6 +435,67 @@ export function OrdersClient() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {stats && (
+        <Card>
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Biểu đồ doanh thu mua key</CardTitle>
+              <CardDescription>Doanh thu từ các đơn đã thanh toán hoàn tất</CardDescription>
+            </div>
+            <Tabs value={revenueView} onValueChange={(value) => setRevenueView(value as 'daily' | 'monthly')}>
+              <TabsList className="grid w-full grid-cols-2 sm:w-[220px]">
+                <TabsTrigger value="daily">30 ngày</TabsTrigger>
+                <TabsTrigger value="monthly">12 tháng</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={revenueView} onValueChange={(value) => setRevenueView(value as 'daily' | 'monthly')}>
+              <TabsContent value="daily" className="mt-0">
+                <ResponsiveContainer width="100%" height={320}>
+                  <AreaChart data={stats.revenueTrend.daily}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(value) => format(new Date(value), 'dd/MM', { locale: vi })}
+                    />
+                    <YAxis tickFormatter={(value: number) => formatCompactCurrency(value)} />
+                    <Tooltip
+                      labelFormatter={(value) => format(new Date(value), 'dd/MM/yyyy', { locale: vi })}
+                      formatter={(value) => formatRevenueTooltip(value)}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#16a34a"
+                      fill="#86efac"
+                      fillOpacity={0.55}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </TabsContent>
+              <TabsContent value="monthly" className="mt-0">
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={stats.revenueTrend.monthly}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="month"
+                      tickFormatter={(value) => format(new Date(`${value}-01`), 'MM/yyyy', { locale: vi })}
+                    />
+                    <YAxis tickFormatter={(value: number) => formatCompactCurrency(value)} />
+                    <Tooltip
+                      labelFormatter={(value) => format(new Date(`${value}-01`), 'MM/yyyy', { locale: vi })}
+                      formatter={(value) => formatRevenueTooltip(value)}
+                    />
+                    <Bar dataKey="revenue" fill="#16a34a" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       )}
 
       {/* Filters */}
