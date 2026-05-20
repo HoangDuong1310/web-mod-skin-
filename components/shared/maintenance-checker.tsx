@@ -9,9 +9,16 @@ import { DEFAULT_CONFIG } from '@/lib/default-config'
 export function MaintenanceChecker({ children }: { children: React.ReactNode }) {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [siteSettings, setSiteSettings] = useState({
+  const [siteSettings, setSiteSettings] = useState<{
+    siteName: string
+    supportEmail: string
+    maintenanceMessage?: string | null
+    maintenanceEstimatedEnd?: string | null
+  }>({
     siteName: DEFAULT_CONFIG.siteName,
-    supportEmail: DEFAULT_CONFIG.supportEmail
+    supportEmail: DEFAULT_CONFIG.supportEmail,
+    maintenanceMessage: null,
+    maintenanceEstimatedEnd: null
   })
   const { data: session, status } = useSession()
   const pathname = usePathname()
@@ -46,12 +53,12 @@ export function MaintenanceChecker({ children }: { children: React.ReactNode }) 
           setIsMaintenanceMode(data.maintenanceMode || false)
           
           // Get site settings for display
-          if (data.siteName || data.supportEmail) {
-            setSiteSettings({
-              siteName: data.siteName || DEFAULT_CONFIG.siteName,
-              supportEmail: data.supportEmail || DEFAULT_CONFIG.supportEmail
-            })
-          }
+          setSiteSettings({
+            siteName: data.siteName || DEFAULT_CONFIG.siteName,
+            supportEmail: data.supportEmail || DEFAULT_CONFIG.supportEmail,
+            maintenanceMessage: data.maintenanceMessage || null,
+            maintenanceEstimatedEnd: data.maintenanceEstimatedEnd || null
+          })
         }
       } catch (error) {
         console.error('Error checking maintenance mode:', error)
@@ -80,6 +87,8 @@ export function MaintenanceChecker({ children }: { children: React.ReactNode }) 
       <MaintenanceDisplay
         siteName={siteSettings.siteName}
         supportEmail={siteSettings.supportEmail}
+        message={siteSettings.maintenanceMessage}
+        estimatedEnd={siteSettings.maintenanceEstimatedEnd}
       />
     )
   }

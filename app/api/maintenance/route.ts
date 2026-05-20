@@ -15,6 +15,8 @@ export async function GET() {
     const maintenanceMode = await getSetting('site.maintenanceMode')
     const siteName = await getSetting('site.siteName')
     const supportEmail = await getSetting('site.supportEmail')
+    const maintenanceMessage = await getSetting('site.maintenanceMessage')
+    const maintenanceEstimatedEnd = await getSetting('site.maintenanceEstimatedEnd')
 
     // Update cache for middleware
     maintenanceCache = {
@@ -25,7 +27,9 @@ export async function GET() {
     return NextResponse.json({
       maintenanceMode: maintenanceMode || false,
       siteName: siteName || null,
-      supportEmail: supportEmail || null
+      supportEmail: supportEmail || null,
+      maintenanceMessage: maintenanceMessage || null,
+      maintenanceEstimatedEnd: maintenanceEstimatedEnd || null
     })
 
   } catch (error) {
@@ -34,7 +38,9 @@ export async function GET() {
     return NextResponse.json({
       maintenanceMode: false,
       siteName: null,
-      supportEmail: null
+      supportEmail: null,
+      maintenanceMessage: null,
+      maintenanceEstimatedEnd: null
     })
   }
 }

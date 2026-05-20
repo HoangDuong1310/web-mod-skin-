@@ -34,6 +34,8 @@ export function SiteSettingsTab() {
     language: 'en',
     timezone: 'UTC',
     maintenanceMode: false,
+    maintenanceMessage: '',
+    maintenanceEstimatedEnd: '',
     allowRegistration: true,
     requireEmailVerification: false,
     defaultUserRole: 'USER',
@@ -865,35 +867,64 @@ export function SiteSettingsTab() {
           </div>
 
           {settings.maintenanceMode && (
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⚠️ Maintenance mode is enabled. Regular users cannot access the site.
-              </p>
-              <div className="mt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/maintenance/sync', { method: 'POST' })
-                      const data = await response.json()
-                      
-                      if (response.ok) {
-                        toast.info(`📋 ${data.recommendation}`, {
-                          duration: 8000,
-                        })
-                      } else {
-                        toast.error('Failed to sync maintenance mode')
-                      }
-                    } catch (error) {
-                      toast.error('Error syncing maintenance mode')
-                    }
-                  }}
-                >
-                  Sync Server Settings
-                </Button>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="maintenance-message">Nội dung thông báo bảo trì</Label>
+                <Textarea
+                  id="maintenance-message"
+                  value={settings.maintenanceMessage || ''}
+                  onChange={(e) => setSettings(prev => ({ ...prev, maintenanceMessage: e.target.value }))}
+                  placeholder="Ví dụ: Chúng tôi đang nâng cấp hệ thống để mang lại trải nghiệm tốt hơn. Mong bạn thông cảm!"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nội dung này sẽ hiển thị trên trang bảo trì cho người dùng.
+                </p>
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maintenance-estimated-end">Thời gian dự kiến mở lại</Label>
+                <Input
+                  id="maintenance-estimated-end"
+                  type="datetime-local"
+                  value={settings.maintenanceEstimatedEnd || ''}
+                  onChange={(e) => setSettings(prev => ({ ...prev, maintenanceEstimatedEnd: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Thời điểm dự kiến website sẽ hoạt động trở lại. Để trống nếu chưa xác định.
+                </p>
+              </div>
+
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  ⚠️ Maintenance mode is enabled. Regular users cannot access the site.
+                </p>
+                <div className="mt-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/maintenance/sync', { method: 'POST' })
+                        const data = await response.json()
+                        
+                        if (response.ok) {
+                          toast.info(`📋 ${data.recommendation}`, {
+                            duration: 8000,
+                          })
+                        } else {
+                          toast.error('Failed to sync maintenance mode')
+                        }
+                      } catch (error) {
+                        toast.error('Error syncing maintenance mode')
+                      }
+                    }}
+                  >
+                    Sync Server Settings
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
