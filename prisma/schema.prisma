@@ -54,6 +54,12 @@ model User {
   deletedAt           DateTime?
   password            String?
   passwordUpdatedAt   DateTime?
+
+  // Founder status (users who purchased before the free transition)
+  isFounder           Boolean           @default(false)
+  founderSince        DateTime?         // Date of their first completed order
+  founderTier         String?           // "BASIC" | "PRO" | "LIFETIME" — highest plan purchased
+
   accounts            Account[]
   auditLogs           AuditLog[]
   downloads           Download[]
@@ -76,6 +82,7 @@ model User {
 
   @@index([email])
   @@index([createdAt])
+  @@index([isFounder])
   @@map("users")
 }
 
