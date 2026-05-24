@@ -221,15 +221,9 @@ export function UserLicensesClient() {
         <CardContent className="py-12 text-center">
           <Key className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">Chưa có license nào</h3>
-          <p className="text-muted-foreground mb-4">
-            Bạn chưa có license key nào. Hãy mua gói cước để bắt đầu sử dụng!
+          <p className="text-muted-foreground">
+            Ứng dụng hiện tại miễn phí, không cần license key.
           </p>
-          <Button asChild>
-            <Link href="/pricing">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Xem bảng giá
-            </Link>
-          </Button>
         </CardContent>
       </Card>
     )
@@ -348,11 +342,6 @@ export function UserLicensesClient() {
                 >
                   Xem chi tiết
                 </Button>
-                {license.status === 'EXPIRED' && (
-                  <Button size="sm" asChild>
-                    <Link href="/pricing">Gia hạn</Link>
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>

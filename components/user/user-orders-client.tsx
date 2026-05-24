@@ -137,12 +137,9 @@ export function UserOrdersClient() {
           <CardContent className="py-12 text-center">
             <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
             <h3 className="font-medium mb-2">Chưa có đơn hàng nào</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Mua gói cước để bắt đầu sử dụng
+            <p className="text-sm text-muted-foreground">
+              Ứng dụng hiện tại miễn phí, không cần mua gói cước.
             </p>
-            <Button asChild>
-              <Link href="/pricing">Xem bảng giá</Link>
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -258,12 +255,6 @@ export function UserOrdersClient() {
                             Vui lòng hoàn tất thanh toán trong 30 phút
                           </p>
                         </div>
-                        <Button asChild variant="default" size="sm">
-                          <Link href={`/checkout/${order.plan.slug}`}>
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            Thanh toán
-                          </Link>
-                        </Button>
                       </div>
                     </>
                   )}
@@ -282,12 +273,6 @@ export function UserOrdersClient() {
               <Link href="/profile/licenses">
                 <Key className="h-4 w-4 mr-2" />
                 Quản lý Licenses
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/pricing">
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Mua thêm gói
               </Link>
             </Button>
           </div>

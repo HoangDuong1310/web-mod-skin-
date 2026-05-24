@@ -11,14 +11,13 @@ import { getPostLogoutRedirectUrl } from '@/lib/redirect-utils'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Menu, 
-  X, 
-  Home, 
-  Package, 
-  Palette, 
-  CreditCard, 
-  FileText, 
+import {
+  Menu,
+  X,
+  Home,
+  Package,
+  Palette,
+  FileText,
   Mail,
   User,
   Key,
@@ -35,7 +34,6 @@ const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Apps', href: '/products', icon: Package },
   { name: 'Custom Skins', href: '/custom-skins', icon: Palette },
-  { name: 'Pricing', href: '/pricing', icon: CreditCard },
   { name: 'Blog', href: '/blog', icon: FileText },
   { name: 'Contact', href: '/contact', icon: Mail },
 ]

@@ -19,7 +19,6 @@ const navigation: { name: string; href: Route }[] = [
   { name: 'Home', href: '/' },
   { name: 'Apps', href: '/products' },
   { name: 'Custom Skins', href: '/custom-skins' },
-  { name: 'Pricing', href: '/pricing' },
   { name: 'Blog', href: '/blog' },
   { name: 'Contact', href: '/contact' },
 ]
