@@ -10,27 +10,15 @@ export const dynamic = 'force-dynamic'
 const nameRegex = /^[a-zA-Z0-9\s\-_.'()ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀẾỂỄỆỉịọốồộổỗơớờởỡợụủứừửữựỳýỵỷỹ]+$/u
 
 const createDonationSchema = z.object({
-  amount: z.number()
-    .min(1, 'Số tiền tối thiểu là 1')
-    .max(10000, 'Số tiền tối đa là 10,000 USD')
-    .positive('Số tiền phải lớn hơn 0'),
-  currency: z.string().default('USD'),
-  paymentMethod: z.enum(['KOFI', 'BANK_TRANSFER', 'MANUAL']),
-  donorName: z.string()
-    .min(2, 'Tên phải có ít nhất 2 ký tự')
-    .max(100, 'Tên không được vượt quá 100 ký tự')
-    .regex(nameRegex, 'Tên chỉ được chứa chữ cái, số, khoảng trắng và một số ký tự đặc biệt'),
-  donorEmail: z.string()
-    .email('Email không hợp lệ')
-    .max(255, 'Email không được vượt quá 255 ký tự')
-    .or(z.literal('')),
-  message: z.string()
-    .max(500, 'Lời nhắn không được vượt quá 500 ký tự')
-    .optional(),
+  amountVND: z.number()
+    .int('Số tiền phải là số nguyên')
+    .min(1000, 'Số tiền tối thiểu là 1.000₫')
+    .max(500_000_000, 'Số tiền quá lớn'),
+  paymentMethod: z.enum(['VIETQR', 'KOFI']),
+  donorName: z.string().min(2).max(100).regex(nameRegex).optional(),
+  message: z.string().max(500).optional(),
   isAnonymous: z.boolean().default(false),
   goalId: z.string().optional(),
-  qrUrl: z.string().url().optional().or(z.literal('')),
-  transferNote: z.string().max(200).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -119,66 +107,43 @@ export async function POST(req: NextRequest) {
 
     const data = validationResult.data
 
-    // Kiểm tra IP đã donate gần đây chưa (trong vòng 1 phút)
-    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     req.ip || 
-                     'unknown'
+    const { getServerSession } = await import('next-auth')
+    const { authOptions } = await import('@/lib/auth')
+    const session = await getServerSession(authOptions)
+    const userId = (session?.user as any)?.id ?? null
 
-    const recentDonation = await prisma.donation.findFirst({
-      where: {
-        OR: [
-          { donorEmail: data.donorEmail },
-          { 
-            // Lưu IP vào DB để kiểm tra (nếu cần mở rộng schema)
-            // Hiện tại chỉ kiểm tra email
-          }
-        ],
-        createdAt: {
-          gte: new Date(Date.now() - 60 * 1000) // 1 phút
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const { generateTransferNote } = await import('@/lib/transfer-note')
+    const transferNote = generateTransferNote(userId)
 
-    if (recentDonation) {
-      return NextResponse.json(
-        { error: 'Bạn đã tạo donation gần đây. Vui lòng đợi 1 phút trước khi tạo mới.' },
-        { status: 429 }
-      )
-    }
-
-    // Tạo donation với status PENDING (chờ xác nhận)
     const donation = await prisma.donation.create({
       data: {
-        amount: data.amount,
-        currency: data.currency,
-        paymentMethod: data.paymentMethod,
-        donorName: data.donorName,
-        donorEmail: data.donorEmail || null,
-        message: data.message || null,
+        amount: data.amountVND,           // legacy Decimal column mirrors VND
+        amountVND: data.amountVND,
+        currency: 'VND',
+        paymentMethod: data.paymentMethod === 'KOFI' ? 'KOFI' : 'BANK_TRANSFER',
+        userId,
+        donorName: data.isAnonymous ? null : (data.donorName ?? session?.user?.name ?? null),
+        donorEmail: session?.user?.email ?? null,
+        message: data.message ?? null,
         isAnonymous: data.isAnonymous,
-        goalId: data.goalId,
+        goalId: data.goalId ?? null,
+        transferNote,
         status: 'PENDING',
-        transferNote: data.transferNote || null,
-      }
+      },
     })
 
     return NextResponse.json(
-      { 
-        success: true, 
-        donation: {
-          id: donation.id,
-          amount: donation.amount,
-          message: 'Donation đã được tạo. Vui lòng hoàn tất thanh toán.'
-        }
+      {
+        donationId: donation.id,
+        transferNote,
+        amountVND: data.amountVND,
       },
-      { 
+      {
         status: 201,
         headers: {
           'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-          'X-RateLimit-Remaining': rateLimitResult.remaining.toString()
-        }
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        },
       }
     )
   } catch (error) {
