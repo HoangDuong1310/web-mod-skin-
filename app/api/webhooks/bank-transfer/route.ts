@@ -3,8 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { parseTransferNote } from '@/lib/transfer-note'
 import { verifyDonation } from '@/lib/donation-service'
+import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
+
+// Constant-time secret comparison. Hash both sides to a fixed length first so
+// timingSafeEqual never throws on length mismatch and no length is leaked.
+function safeEqual(a: string, b: string): boolean {
+  const ah = crypto.createHash('sha256').update(a).digest()
+  const bh = crypto.createHash('sha256').update(b).digest()
+  return crypto.timingSafeEqual(ah, bh)
+}
 
 // Sepay/Casso-style payload
 interface BankWebhookBody {
@@ -14,9 +23,10 @@ interface BankWebhookBody {
 }
 
 export async function POST(req: NextRequest) {
-  // 1. Validate webhook secret
+  // 1. Validate webhook secret (constant-time; fail closed if unconfigured)
   const secret = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (!secret || secret !== process.env.BANK_WEBHOOK_SECRET) {
+  const expectedSecret = process.env.BANK_WEBHOOK_SECRET
+  if (!expectedSecret || !secret || !safeEqual(secret, expectedSecret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
