@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Donate — WebModSkin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; color: #0a0a0a; background: #fff; }
+    .border-soft { border-color: #e5e5e5; }
+    details > summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-50 bg-white border-b border-soft">
+    <div class="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <a href="#" class="font-bold tracking-tight">WebModSkin</a>
+      <nav class="hidden md:flex items-center gap-8 text-sm text-neutral-600">
+        <a href="#" class="hover:text-black">Skins</a>
+        <a href="#" class="hover:text-black">Custom</a>
+        <a href="#" class="hover:text-black">Blog</a>
+        <a href="#" class="hover:text-black">About</a>
+      </nav>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="#" class="text-neutral-600 hover:text-black">Sign in</a>
+        <a href="#form" class="px-4 h-9 inline-flex items-center rounded-md bg-black text-white font-medium hover:bg-neutral-800">
+          Donate
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="border-b border-soft">
+    <div class="max-w-5xl mx-auto px-6 py-24">
+      <div class="max-w-2xl">
+        <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-6">
+          Hỗ trợ dự án
+        </div>
+        <h1 class="text-5xl font-bold tracking-tight leading-[1.1]">
+          Giúp WebModSkin<br/>tiếp tục miễn phí.
+        </h1>
+        <p class="mt-6 text-lg text-neutral-600 leading-relaxed">
+          Toàn bộ skins, công cụ và bản cập nhật đều miễn phí. Sự ủng hộ của bạn giúp chúng tôi duy trì server, băng thông và phát triển tính năng mới.
+        </p>
+      </div>
+
+      <!-- Goal progress: clean, single line -->
+      <div class="mt-12 max-w-2xl">
+        <div class="flex items-baseline justify-between text-sm mb-3">
+          <span class="font-medium">Mục tiêu tháng 5/2026</span>
+          <span class="text-neutral-500">còn 6 ngày</span>
+        </div>
+        <div class="h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+          <div class="h-full bg-black rounded-full" style="width:64.8%"></div>
+        </div>
+        <div class="flex items-baseline justify-between mt-3 text-sm">
+          <div>
+            <span class="font-semibold">3.240.000₫</span>
+            <span class="text-neutral-500"> / 5.000.000₫</span>
+          </div>
+          <span class="text-neutral-500">247 người ủng hộ</span>
+        </div>
+      </div>
+
+      <div class="mt-12 flex items-center gap-3">
+        <a href="#form" class="px-5 h-11 inline-flex items-center rounded-md bg-black text-white font-medium hover:bg-neutral-800">
+          Ủng hộ ngay
+        </a>
+        <a href="#tiers" class="px-5 h-11 inline-flex items-center rounded-md border border-soft font-medium hover:bg-neutral-50">
+          Xem các mức
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- DONATE FORM -->
+  <section id="form" class="border-b border-soft">
+    <div class="max-w-5xl mx-auto px-6 py-24">
+      <div class="grid lg:grid-cols-[1fr_1.2fr] gap-16">
+        <!-- Left: Title + method tabs -->
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight">Cách ủng hộ</h2>
+          <p class="mt-3 text-neutral-600">VietQR là cách nhanh nhất tại Việt Nam, không mất phí giao dịch.</p>
+
+          <div class="mt-8 flex border-b border-soft">
+            <button class="pb-3 px-1 mr-6 font-medium border-b-2 border-black -mb-px">
+              VietQR
+            </button>
+            <button class="pb-3 px-1 font-medium text-neutral-500 hover:text-black">
+              Ko-fi
+            </button>
+          </div>
+
+          <div class="mt-8">
+            <label class="text-sm font-medium block mb-3">Số tiền</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="h-10 rounded-md border border-soft text-sm hover:border-black">20.000₫</button>
+              <button class="h-10 rounded-md border-2 border-black text-sm font-semibold">50.000₫</button>
+              <button class="h-10 rounded-md border border-soft text-sm hover:border-black">100.000₫</button>
+              <button class="h-10 rounded-md border border-soft text-sm hover:border-black">200.000₫</button>
+              <button class="h-10 rounded-md border border-soft text-sm hover:border-black">500.000₫</button>
+              <button class="h-10 rounded-md border border-soft text-sm hover:border-black">1.000.000₫</button>
+            </div>
+            <input type="text" placeholder="Số tiền tùy chọn" class="mt-2 w-full h-10 px-3 rounded-md border border-soft focus:border-black outline-none text-sm" />
+
+            <label class="text-sm font-medium block mt-6 mb-3">Lời nhắn (tùy chọn)</label>
+            <textarea rows="3" placeholder="Cảm ơn vì đã làm tool này..." class="w-full px-3 py-2 rounded-md border border-soft focus:border-black outline-none text-sm resize-none"></textarea>
+
+            <div class="mt-4 text-xs text-neutral-600 border-l-2 border-neutral-900 pl-3">
+              Mức 50.000₫ tương ứng tier <strong>Bronze</strong>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: QR -->
+        <div>
+          <div class="rounded-lg border border-soft p-8 bg-neutral-50">
+            <div class="grid md:grid-cols-[auto_1fr] gap-6 items-start">
+              <!-- QR code -->
+              <div class="w-44 h-44 bg-white rounded-md border border-soft p-2 mx-auto">
+                <div class="w-full h-full bg-[conic-gradient(from_45deg,_#000_25%,_#fff_25%_50%,_#000_50%_75%,_#fff_75%)] bg-[length:10px_10px] rounded"></div>
+              </div>
+              <!-- Bank info -->
+              <div class="text-sm">
+                <div class="text-neutral-500 text-xs uppercase tracking-wider mb-1">Ngân hàng</div>
+                <div class="font-semibold mb-3">Vietcombank</div>
+
+                <div class="text-neutral-500 text-xs uppercase tracking-wider mb-1">Số tài khoản</div>
+                <div class="font-mono font-semibold mb-3">1234 5678 9012</div>
+
+                <div class="text-neutral-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</div>
+                <div class="font-semibold mb-3">NGUYEN VAN A</div>
+
+                <div class="text-neutral-500 text-xs uppercase tracking-wider mb-1">Nội dung chuyển khoản</div>
+                <div class="font-mono font-semibold text-sm bg-white border border-soft rounded px-2 py-1 inline-block">
+                  DONATE-U5K7-AB12
+                </div>
+              </div>
+            </div>
+
+            <p class="mt-6 text-xs text-neutral-500 leading-relaxed">
+              Quét QR bằng app ngân hàng. Nội dung chuyển khoản được sinh tự động — vui lòng không thay đổi để hệ thống xác nhận chính xác.
+            </p>
+          </div>
+
+          <button class="mt-4 w-full h-11 rounded-md bg-black text-white font-medium hover:bg-neutral-800">
+            Tôi đã chuyển khoản
+          </button>
+          <p class="mt-3 text-center text-xs text-neutral-500">
+            Hệ thống xác nhận tự động trong 5 phút.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIERS -->
+  <section id="tiers" class="border-b border-soft">
+    <div class="max-w-5xl mx-auto px-6 py-24">
+      <div class="max-w-2xl mb-14">
+        <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-3">Các mức ủng hộ</div>
+        <h2 class="text-3xl font-bold tracking-tight">Lời cảm ơn dành cho bạn</h2>
+        <p class="mt-3 text-neutral-600">Tier được tính theo tổng số tiền tích lũy. Bạn có thể donate nhiều lần để lên tier cao hơn.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-px bg-neutral-200 border border-soft rounded-lg overflow-hidden">
+        <!-- Bronze -->
+        <div class="bg-white p-8">
+          <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-4">Bronze</div>
+          <div class="flex items-baseline gap-1 mb-6">
+            <span class="text-3xl font-bold">50.000₫</span>
+            <span class="text-neutral-500 text-sm">trở lên</span>
+          </div>
+          <ul class="space-y-3 text-sm text-neutral-700">
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Bronze badge trên profile</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Tên trên Donor Wall</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Email cảm ơn cá nhân</span>
+            </li>
+          </ul>
+          <button class="mt-8 w-full h-10 rounded-md border border-soft text-sm font-medium hover:border-black">
+            Chọn Bronze
+          </button>
+        </div>
+
+        <!-- Silver -->
+        <div class="bg-white p-8 relative">
+          <div class="absolute top-4 right-4 text-[10px] font-semibold tracking-wider uppercase text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">
+            Phổ biến
+          </div>
+          <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-4">Silver</div>
+          <div class="flex items-baseline gap-1 mb-6">
+            <span class="text-3xl font-bold">200.000₫</span>
+            <span class="text-neutral-500 text-sm">trở lên</span>
+          </div>
+          <ul class="space-y-3 text-sm text-neutral-700">
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Tất cả quyền lợi Bronze</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Silver badge nổi bật</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Early access skin mới (7 ngày)</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Discord supporter role</span>
+            </li>
+          </ul>
+          <button class="mt-8 w-full h-10 rounded-md bg-black text-white text-sm font-medium hover:bg-neutral-800">
+            Chọn Silver
+          </button>
+        </div>
+
+        <!-- Gold -->
+        <div class="bg-white p-8">
+          <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-4">Gold</div>
+          <div class="flex items-baseline gap-1 mb-6">
+            <span class="text-3xl font-bold">500.000₫</span>
+            <span class="text-neutral-500 text-sm">trở lên</span>
+          </div>
+          <ul class="space-y-3 text-sm text-neutral-700">
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Tất cả quyền lợi Silver</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Gold badge</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Priority support 24h</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Vote feature ưu tiên</span>
+            </li>
+            <li class="flex gap-2">
+              <span class="text-neutral-400 mt-0.5">—</span>
+              <span>Tên trong credits của app</span>
+            </li>
+          </ul>
+          <button class="mt-8 w-full h-10 rounded-md border border-soft text-sm font-medium hover:border-black">
+            Chọn Gold
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DONOR WALL -->
+  <section class="border-b border-soft">
+    <div class="max-w-5xl mx-auto px-6 py-24">
+      <div class="flex items-end justify-between mb-10">
+        <div>
+          <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-3">Donor wall</div>
+          <h2 class="text-3xl font-bold tracking-tight">Người ủng hộ gần đây</h2>
+        </div>
+        <a href="#" class="text-sm font-medium underline underline-offset-4 hover:text-neutral-600">Xem tất cả</a>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 text-sm">
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Anh Tú</div>
+            <div class="text-xs text-neutral-500">Gold · 2 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Minh</div>
+            <div class="text-xs text-neutral-500">Silver · 2 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Linh</div>
+            <div class="text-xs text-neutral-500">Bronze · 3 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Khoa</div>
+            <div class="text-xs text-neutral-500">Gold · 4 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium text-neutral-500 italic">Anonymous</div>
+            <div class="text-xs text-neutral-500">Bronze · 5 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Trang</div>
+            <div class="text-xs text-neutral-500">Silver · 6 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Hùng</div>
+            <div class="text-xs text-neutral-500">Bronze · 7 ngày trước</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between py-3 border-b border-soft">
+          <div>
+            <div class="font-medium">Lan</div>
+            <div class="text-xs text-neutral-500">Silver · 8 ngày trước</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="border-b border-soft">
+    <div class="max-w-3xl mx-auto px-6 py-24">
+      <div class="text-xs font-semibold tracking-wider uppercase text-neutral-500 mb-3">FAQ</div>
+      <h2 class="text-3xl font-bold tracking-tight mb-10">Câu hỏi thường gặp</h2>
+
+      <div class="divide-y divide-neutral-200 border-t border-soft">
+        <details class="group py-5">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">
+            Tiền donate được dùng vào việc gì?
+            <span class="text-neutral-400 group-open:rotate-45 transition">+</span>
+          </summary>
+          <p class="mt-3 text-sm text-neutral-600 leading-relaxed">
+            Chi phí server (~40%), băng thông CDN (~30%), domain & dịch vụ (~15%), và phát triển tính năng mới (~15%). Báo cáo tài chính minh bạch hàng tháng.
+          </p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">
+            Sau khi chuyển khoản, bao lâu thì tier được kích hoạt?
+            <span class="text-neutral-400 group-open:rotate-45 transition">+</span>
+          </summary>
+          <p class="mt-3 text-sm text-neutral-600 leading-relaxed">
+            Hệ thống tự động xác nhận trong vòng 5 phút thông qua webhook ngân hàng. Nếu sau 30 phút chưa thấy, vui lòng liên hệ qua email kèm ảnh chụp giao dịch.
+          </p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">
+            Tôi có thể donate ẩn danh không?
+            <span class="text-neutral-400 group-open:rotate-45 transition">+</span>
+          </summary>
+          <p class="mt-3 text-sm text-neutral-600 leading-relaxed">
+            Có. Khi điền form, bỏ tích "Hiển thị tên trên Donor Wall". Tier vẫn được kích hoạt bình thường.
+          </p>
+        </details>
+        <details class="group py-5">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">
+            Tier có hết hạn không?
+            <span class="text-neutral-400 group-open:rotate-45 transition">+</span>
+          </summary>
+          <p class="mt-3 text-sm text-neutral-600 leading-relaxed">
+            Tier dựa trên tổng số tiền tích lũy và là vĩnh viễn. Một số quyền lợi như "early access" hoạt động liên tục theo tier hiện tại của bạn.
+          </p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="max-w-5xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-neutral-500">
+      <div>© 2026 WebModSkin. Made in Vietnam.</div>
+      <div class="flex items-center gap-6">
+        <a href="#" class="hover:text-black">Báo cáo tài chính</a>
+        <a href="#" class="hover:text-black">Liên hệ</a>
+        <a href="#" class="hover:text-black">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

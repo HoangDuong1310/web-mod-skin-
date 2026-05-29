@@ -1,6 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShoppingCart } from 'lucide-react'
 
+// Sales/cart page — keep out of the search index (donate-first site).
+// Crawlable (not blocked in robots.txt) so Google can read this noindex and
+// drop any already-indexed /cart URL. follow:true still lets links be crawled.
+export const metadata = {
+  robots: { index: false, follow: true },
+}
+
 export default function CartPage() {
   return (
     <div className="container mx-auto py-8">

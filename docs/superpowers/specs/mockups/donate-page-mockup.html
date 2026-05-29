@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Donate Page Mockup — WebModSkin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            bronze: { 400: '#cd7f32', 500: '#b8732e', 600: '#a05f24' },
+            silver: { 400: '#c0c0c0', 500: '#a8a8a8', 600: '#8e8e8e' },
+            gold:   { 400: '#facc15', 500: '#eab308', 600: '#ca8a04' },
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.6s ease-out',
+            'slide-up': 'slideUp 0.5s ease-out',
+            'pulse-soft': 'pulseSoft 2.5s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+            slideUp: { '0%': { transform: 'translateY(20px)', opacity: 0 }, '100%': { transform: 'translateY(0)', opacity: 1 } },
+            pulseSoft: { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.85 } },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root { --primary: 240 5.9% 10%; --bg: 0 0% 100%; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%); }
+    .grain::before { content:''; position:absolute; inset:0; background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px); background-size: 4px 4px; pointer-events:none; }
+    .glow-bronze { box-shadow: 0 8px 32px -8px rgba(205,127,50,0.4); }
+    .glow-silver { box-shadow: 0 8px 32px -8px rgba(168,168,168,0.45); }
+    .glow-gold   { box-shadow: 0 12px 40px -8px rgba(234,179,8,0.55); }
+  </style>
+</head>
+<body class="text-zinc-900 antialiased">
+
+  <!-- ============ HEADER (sticky) ============ -->
+  <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-zinc-200">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2 font-bold text-lg">
+        <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 grid place-items-center text-white">♥</span>
+        WebModSkin
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600">
+        <a href="#" class="hover:text-zinc-900">Skins</a>
+        <a href="#" class="hover:text-zinc-900">Custom Skins</a>
+        <a href="#" class="hover:text-zinc-900">Blog</a>
+        <a href="#" class="hover:text-zinc-900">About</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="#" class="text-sm text-zinc-600 hover:text-zinc-900">Sign in</a>
+        <a href="#donate-form" class="inline-flex items-center gap-2 px-4 h-9 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 text-white text-sm font-semibold shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 transition">
+          ♥ Donate
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-amber-50"></div>
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-rose-200/40 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-200/40 rounded-full blur-3xl"></div>
+
+    <div class="relative max-w-6xl mx-auto px-6 pt-20 pb-16 grid lg:grid-cols-2 gap-12 items-center">
+      <!-- Left: copy + goal -->
+      <div class="animate-fade-in">
+        <div class="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-white/80 border border-zinc-200 text-xs font-medium text-zinc-700 mb-6">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-soft"></span>
+          247 supporters this month
+        </div>
+        <h1 class="text-5xl lg:text-6xl font-black tracking-tight leading-[1.05]">
+          Giúp <span class="bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">WebModSkin</span> miễn phí cho mọi người
+        </h1>
+        <p class="mt-6 text-lg text-zinc-600 leading-relaxed max-w-xl">
+          Toàn bộ skins, công cụ và bản cập nhật đều miễn phí. Nguồn duy nhất duy trì server, băng thông và phát triển tính năng mới chính là sự ủng hộ của bạn.
+        </p>
+
+        <!-- Monthly goal progress -->
+        <div class="mt-8 p-5 rounded-2xl bg-white/80 backdrop-blur border border-zinc-200/80">
+          <div class="flex items-baseline justify-between mb-2">
+            <span class="text-sm font-semibold text-zinc-700">Mục tiêu tháng 5/2026</span>
+            <span class="text-xs text-zinc-500">còn 6 ngày</span>
+          </div>
+          <div class="flex items-baseline gap-2 mb-3">
+            <span class="text-2xl font-bold text-zinc-900">3.240.000₫</span>
+            <span class="text-zinc-500 text-sm">/ 5.000.000₫</span>
+          </div>
+          <div class="h-2 rounded-full bg-zinc-200 overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-rose-500 to-pink-600 rounded-full" style="width:64.8%"></div>
+          </div>
+          <p class="mt-3 text-xs text-zinc-500">64.8% hoàn thành — cảm ơn 247 người ủng hộ ❤</p>
+        </div>
+
+        <div class="mt-8 flex items-center gap-4">
+          <a href="#donate-form" class="inline-flex items-center gap-2 px-6 h-12 rounded-full bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
+            Ủng hộ ngay →
+          </a>
+          <a href="#tiers" class="inline-flex items-center gap-2 px-6 h-12 rounded-full border border-zinc-300 font-semibold hover:bg-white transition">
+            Xem các tier
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: visual / stats card -->
+      <div class="relative animate-slide-up">
+        <div class="relative aspect-square max-w-md ml-auto rounded-3xl bg-gradient-to-br from-rose-500 via-pink-500 to-amber-500 p-1 shadow-2xl shadow-rose-500/30">
+          <div class="w-full h-full rounded-[22px] bg-zinc-900 p-8 grid place-items-center text-white relative overflow-hidden">
+            <div class="absolute inset-0 grain"></div>
+            <div class="relative text-center">
+              <div class="text-7xl mb-4">♥</div>
+              <div class="text-5xl font-black mb-2">12.847</div>
+              <div class="text-zinc-400 text-sm uppercase tracking-widest">Total supporters</div>
+              <div class="mt-8 grid grid-cols-3 gap-4 text-left">
+                <div>
+                  <div class="text-amber-400 font-bold text-2xl">142</div>
+                  <div class="text-xs text-zinc-400">Gold donors</div>
+                </div>
+                <div>
+                  <div class="text-zinc-300 font-bold text-2xl">684</div>
+                  <div class="text-xs text-zinc-400">Silver</div>
+                </div>
+                <div>
+                  <div class="text-orange-400 font-bold text-2xl">2.1k</div>
+                  <div class="text-xs text-zinc-400">Bronze</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DONATE FORM (centered) ============ -->
+  <section id="donate-form" class="py-20 px-6">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl lg:text-4xl font-bold tracking-tight">Chọn cách ủng hộ</h2>
+        <p class="mt-3 text-zinc-600">VietQR là cách nhanh và miễn phí phí giao dịch nhất tại Việt Nam.</p>
+      </div>
+
+      <div class="bg-white rounded-3xl border border-zinc-200 shadow-xl shadow-zinc-200/50 overflow-hidden">
+        <!-- Tabs -->
+        <div class="flex border-b border-zinc-200">
+          <button class="flex-1 h-14 font-semibold text-zinc-900 border-b-2 border-rose-500 bg-rose-50/50">
+            🇻🇳 VietQR Banking
+          </button>
+          <button class="flex-1 h-14 font-semibold text-zinc-500 hover:text-zinc-700">
+            ☕ Ko-fi (International)
+          </button>
+        </div>
+
+        <div class="p-8 grid md:grid-cols-2 gap-8">
+          <!-- Left: amount + message -->
+          <div>
+            <label class="text-sm font-semibold text-zinc-700">Số tiền</label>
+            <div class="mt-3 grid grid-cols-3 gap-2">
+              <button class="h-11 rounded-xl border border-zinc-200 text-sm font-medium hover:border-zinc-400">20.000₫</button>
+              <button class="h-11 rounded-xl border-2 border-rose-500 bg-rose-50 text-sm font-bold text-rose-700">50.000₫</button>
+              <button class="h-11 rounded-xl border border-zinc-200 text-sm font-medium hover:border-zinc-400">100.000₫</button>
+              <button class="h-11 rounded-xl border border-zinc-200 text-sm font-medium hover:border-zinc-400">200.000₫</button>
+              <button class="h-11 rounded-xl border border-zinc-200 text-sm font-medium hover:border-zinc-400">500.000₫</button>
+              <button class="h-11 rounded-xl border border-zinc-200 text-sm font-medium hover:border-zinc-400">1.000.000₫</button>
+            </div>
+            <input type="text" placeholder="Hoặc nhập số tiền tùy chọn..." class="mt-3 w-full h-11 px-4 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none text-sm" />
+
+            <label class="text-sm font-semibold text-zinc-700 mt-6 block">Lời nhắn (tùy chọn)</label>
+            <textarea placeholder="Cảm ơn vì đã làm tool này!" rows="3" class="mt-3 w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none text-sm resize-none"></textarea>
+
+            <div class="mt-4 flex items-center gap-2 text-xs text-zinc-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <span>🥈</span>
+              <span><strong class="text-zinc-900">50.000₫</strong> sẽ unlock tier <strong class="text-zinc-900">Bronze</strong></span>
+            </div>
+          </div>
+
+          <!-- Right: QR preview -->
+          <div class="bg-zinc-50 rounded-2xl p-6 border border-zinc-200">
+            <div class="text-center">
+              <div class="inline-flex items-center gap-2 px-3 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-3">
+                ⚡ QR cập nhật real-time
+              </div>
+              <div class="aspect-square w-full max-w-[240px] mx-auto bg-white rounded-2xl p-3 border border-zinc-200">
+                <!-- Placeholder QR pattern -->
+                <div class="w-full h-full bg-[conic-gradient(from_45deg,_#000_25%,_#fff_25%_50%,_#000_50%_75%,_#fff_75%)] bg-[length:12px_12px] rounded-lg opacity-90"></div>
+              </div>
+              <div class="mt-4 space-y-1 text-sm">
+                <div class="text-zinc-500">Vietcombank</div>
+                <div class="font-bold text-zinc-900">1234 5678 9012</div>
+                <div class="text-zinc-500">NGUYEN VAN A</div>
+              </div>
+              <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-mono">
+                DONATE-U5K7-AB12
+              </div>
+              <p class="mt-3 text-[11px] text-zinc-500 leading-relaxed">
+                Quét QR bằng app ngân hàng. Tiền sẽ được xác nhận tự động trong vòng 5 phút.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-8 pb-8">
+          <button class="w-full h-12 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold shadow-lg shadow-rose-500/30 hover:shadow-rose-500/50 transition">
+            Tôi đã chuyển khoản — Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TIER LADDER ============ -->
+  <section id="tiers" class="py-20 px-6 bg-white">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-14">
+        <div class="inline-flex items-center gap-2 px-3 h-7 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold mb-4">
+          DONOR PERKS
+        </div>
+        <h2 class="text-3xl lg:text-4xl font-bold tracking-tight">Quà tặng dành cho người ủng hộ</h2>
+        <p class="mt-3 text-zinc-600 max-w-2xl mx-auto">Không bắt buộc, nhưng chúng tôi muốn cảm ơn bạn theo cách đặc biệt.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Bronze -->
+        <div class="relative rounded-3xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 p-7 glow-bronze">
+          <div class="text-5xl mb-4">🥉</div>
+          <h3 class="text-2xl font-bold">Bronze</h3>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-3xl font-black text-bronze-600">50K</span>
+            <span class="text-zinc-500 text-sm">₫ trở lên</span>
+          </div>
+          <ul class="mt-6 space-y-3 text-sm text-zinc-700">
+            <li class="flex gap-2"><span class="text-bronze-600">✓</span> Bronze badge trên profile</li>
+            <li class="flex gap-2"><span class="text-bronze-600">✓</span> Tên trên Donor Wall</li>
+            <li class="flex gap-2"><span class="text-bronze-600">✓</span> Email cảm ơn cá nhân</li>
+          </ul>
+          <button class="mt-7 w-full h-11 rounded-xl border-2 border-bronze-500 text-bronze-600 font-semibold hover:bg-bronze-500 hover:text-white transition">
+            Chọn Bronze
+          </button>
+        </div>
+
+        <!-- Silver (popular) -->
+        <div class="relative rounded-3xl bg-gradient-to-br from-zinc-100 to-zinc-50 border-2 border-zinc-400 p-7 glow-silver scale-[1.02]">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-zinc-900 text-white text-xs font-bold">
+            POPULAR
+          </div>
+          <div class="text-5xl mb-4">🥈</div>
+          <h3 class="text-2xl font-bold">Silver</h3>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-3xl font-black text-zinc-700">200K</span>
+            <span class="text-zinc-500 text-sm">₫ trở lên</span>
+          </div>
+          <ul class="mt-6 space-y-3 text-sm text-zinc-700">
+            <li class="flex gap-2"><span class="text-zinc-600">✓</span> Tất cả quyền lợi Bronze</li>
+            <li class="flex gap-2"><span class="text-zinc-600">✓</span> Silver badge nổi bật</li>
+            <li class="flex gap-2"><span class="text-zinc-600">✓</span> Early access skin mới (7 ngày)</li>
+            <li class="flex gap-2"><span class="text-zinc-600">✓</span> Discord supporter role</li>
+          </ul>
+          <button class="mt-7 w-full h-11 rounded-xl bg-zinc-900 text-white font-semibold hover:bg-zinc-800 transition">
+            Chọn Silver
+          </button>
+        </div>
+
+        <!-- Gold -->
+        <div class="relative rounded-3xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-300 p-7 glow-gold">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold">
+            BEST VALUE
+          </div>
+          <div class="text-5xl mb-4">🥇</div>
+          <h3 class="text-2xl font-bold">Gold</h3>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span class="text-3xl font-black text-gold-600">500K</span>
+            <span class="text-zinc-500 text-sm">₫ trở lên</span>
+          </div>
+          <ul class="mt-6 space-y-3 text-sm text-zinc-700">
+            <li class="flex gap-2"><span class="text-gold-600">✓</span> Tất cả quyền lợi Silver</li>
+            <li class="flex gap-2"><span class="text-gold-600">✓</span> Gold badge animated</li>
+            <li class="flex gap-2"><span class="text-gold-600">✓</span> <strong>License key 1 năm</strong> (full features)</li>
+            <li class="flex gap-2"><span class="text-gold-600">✓</span> Priority support 24h</li>
+            <li class="flex gap-2"><span class="text-gold-600">✓</span> Vote feature ưu tiên</li>
+          </ul>
+          <button class="mt-7 w-full h-11 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold hover:from-amber-600 hover:to-yellow-600 transition">
+            Chọn Gold
+          </button>
+        </div>
+      </div>
+
+      <p class="text-center text-xs text-zinc-500 mt-8">
+        Tier được tính theo <strong>tổng số tiền tích lũy</strong>. Bạn có thể donate nhiều lần để lên tier.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ DONOR WALL ============ -->
+  <section class="py-20 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-end justify-between mb-10">
+        <div>
+          <h2 class="text-3xl lg:text-4xl font-bold tracking-tight">Tường vinh danh</h2>
+          <p class="mt-2 text-zinc-600">Cảm ơn những người đã ủng hộ trong 30 ngày qua.</p>
+        </div>
+        <a href="#" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Xem tất cả →</a>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <!-- Donor card examples -->
+        <div class="rounded-2xl bg-white border border-zinc-200 p-4 text-center hover:shadow-lg transition">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 mx-auto grid place-items-center text-white text-xl font-bold">A</div>
+          <div class="mt-3 font-semibold text-sm text-zinc-900">Anh Tú</div>
+          <div class="text-xs text-amber-600 font-semibold mt-1">🥇 Gold</div>
+          <div class="text-[10px] text-zinc-400 mt-1">2 ngày trước</div>
+        </div>
+        <div class="rounded-2xl bg-white border border-zinc-200 p-4 text-center hover:shadow-lg transition">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-zinc-300 to-zinc-500 mx-auto grid place-items-center text-white text-xl font-bold">M</div>
+          <div class="mt-3 font-semibold text-sm text-zinc-900">Minh</div>
+          <div class="text-xs text-zinc-600 font-semibold mt-1">🥈 Silver</div>
+          <div class="text-[10px] text-zinc-400 mt-1">2 ngày trước</div>
+        </div>
+        <div class="rounded-2xl bg-white border border-zinc-200 p-4 text-center hover:shadow-lg transition">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 mx-auto grid place-items-center text-white text-xl font-bold">L</div>
+          <div class="mt-3 font-semibold text-sm text-zinc-900">Linh</div>
+          <div class="text-xs text-orange-700 font-semibold mt-1">🥉 Bronze</div>
+          <div class="text-[10px] text-zinc-400 mt-1">3 ngày trước</div>
+        </div>
+        <div class="rounded-2xl bg-white border border-zinc-200 p-4 text-center hover:shadow-lg transition">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-yellow-600 mx-auto grid place-items-center text-white text-xl font-bold">K</div>
+          <div class="mt-3 font-semibold text-sm text-zinc-900">Khoa</div>
+          <div class="text-xs text-amber-600 font-semibold mt-1">🥇 Gold</div>
+          <div class="text-[10px] text-zinc-400 mt-1">4 ngày trước</div>
+        </div>
+        <div class="rounded-2xl bg-white border border-zinc-200 p-4 text-center hover:shadow-lg transition">
+          <div class="w-14 h-14 rounded-full bg-zinc-300 mx-auto grid place-items-center text-white text-xl font-bold">?</div>
+          <div class="mt-3 font-semibold text-sm text-zinc-900 italic">Anonymous</div>
+          <div class="text-xs text-orange-700 font-semibold mt-1">🥉 Bronze</div>
+          <div class="text-[10px] text-zinc-400 mt-1">5 ngày trước</div>
+        </div>
+        <div class="rounded-2xl bg-white border border-zinc-200 p-4 text-center hover:shadow-lg transition">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-zinc-300 to-zinc-500 mx-auto grid place-items-center text-white text-xl font-bold">T</div>
+          <div class="mt-3 font-semibold text-sm text-zinc-900">Trang</div>
+          <div class="text-xs text-zinc-600 font-semibold mt-1">🥈 Silver</div>
+          <div class="text-[10px] text-zinc-400 mt-1">6 ngày trước</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="py-20 px-6 bg-zinc-50">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-3xl lg:text-4xl font-bold tracking-tight text-center mb-10">Câu hỏi thường gặp</h2>
+      <div class="space-y-3">
+        <details class="group bg-white rounded-2xl border border-zinc-200 p-5 cursor-pointer">
+          <summary class="font-semibold flex items-center justify-between list-none">
+            Tiền donate được dùng vào việc gì?
+            <span class="text-zinc-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-3 text-sm text-zinc-600 leading-relaxed">Chi phí server (~40%), băng thông CDN cho việc download skins (~30%), domain & dịch vụ (~15%), và phát triển tính năng mới (~15%). Báo cáo tài chính minh bạch hàng tháng tại trang Báo cáo.</p>
+        </details>
+        <details class="group bg-white rounded-2xl border border-zinc-200 p-5 cursor-pointer">
+          <summary class="font-semibold flex items-center justify-between list-none">
+            Sau khi chuyển khoản, bao lâu thì tier của tôi được kích hoạt?
+            <span class="text-zinc-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-3 text-sm text-zinc-600 leading-relaxed">Hệ thống tự động xác nhận trong vòng 5 phút thông qua webhook ngân hàng. Nếu sau 30 phút chưa thấy, vui lòng liên hệ qua email kèm ảnh chụp giao dịch.</p>
+        </details>
+        <details class="group bg-white rounded-2xl border border-zinc-200 p-5 cursor-pointer">
+          <summary class="font-semibold flex items-center justify-between list-none">
+            Tôi có thể donate ẩn danh không?
+            <span class="text-zinc-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-3 text-sm text-zinc-600 leading-relaxed">Có. Khi điền form, bỏ tích "Hiển thị tên trên Donor Wall". Tier vẫn được kích hoạt bình thường nhưng tên sẽ không xuất hiện công khai.</p>
+        </details>
+        <details class="group bg-white rounded-2xl border border-zinc-200 p-5 cursor-pointer">
+          <summary class="font-semibold flex items-center justify-between list-none">
+            Tier có hết hạn không?
+            <span class="text-zinc-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-3 text-sm text-zinc-600 leading-relaxed">Bronze và Silver tier <strong>vĩnh viễn</strong>. Gold tier bao gồm license key có thời hạn 1 năm; sau đó badge Gold vẫn còn nhưng license cần được gia hạn bằng cách donate thêm.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="py-10 px-6 border-t border-zinc-200 bg-white">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
+      <div>© 2026 WebModSkin. Made with ♥ in Vietnam.</div>
+      <div class="flex items-center gap-6">
+        <a href="#" class="hover:text-zinc-900">Báo cáo tài chính</a>
+        <a href="#" class="hover:text-zinc-900">Liên hệ</a>
+        <a href="#" class="hover:text-zinc-900">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

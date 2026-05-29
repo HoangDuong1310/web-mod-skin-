@@ -34,47 +34,31 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     }
 
   // Default robots.txt
+  //
+  // Notes:
+  // - Everything is crawlable by default (`allow: '/'`). We only block paths
+  //   that are private/auth-gated or non-content (admin, api, auth, account).
+  // - We do NOT block URLs with tracking params (utm/fbclid/gclid). Blocking
+  //   them caused "Indexed, though blocked by robots.txt" for socially-shared
+  //   links (Facebook auto-appends ?fbclid=). Canonical tags (see
+  //   lib/dynamic-seo.ts) already consolidate those URLs, which is Google's
+  //   recommended approach.
+  // - We do NOT block /_next so Googlebot can fetch CSS/JS needed to render.
+  // - Sales/pricing pages (/cart, /checkout, /pricing) are intentionally NOT
+  //   blocked here. To DROP already-indexed URLs, Google must be able to crawl
+  //   them and read either a `noindex` tag (cart) or the redirect to /products
+  //   (pricing, checkout). Blocking them in robots.txt would freeze them in the
+  //   "Indexed, though blocked" state instead of removing them.
   const rules: MetadataRoute.Robots['rules'] = [
     {
       userAgent: '*',
-      allow: [
-        '/',
-        '/products',
-        '/categories',
-        '/blog',
-        '/about',
-        '/contact',
-      ],
+      allow: '/',
       disallow: [
         '/admin',
-        '/app',
         '/api',
         '/auth',
-        '/_next',
-        '/private',
-        '*.json',
-        '*?*utm_*',
-        '*?*fbclid*',
-        '*?*gclid*',
-      ],
-      crawlDelay: 1,
-    },
-    {
-      userAgent: 'Googlebot',
-      allow: [
-        '/',
-        '/products',
-        '/categories',
-        '/blog',
-        '/about',
-        '/contact',
-      ],
-      disallow: [
-        '/admin',
-        '/app',
-        '/api',
-        '/auth',
-        '/_next',
+        '/dashboard',
+        '/profile',
         '/private',
       ],
     },
