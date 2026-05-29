@@ -60,6 +60,12 @@ model User {
   founderSince        DateTime?         // Date of their first completed order
   founderTier         String?           // "BASIC" | "PRO" | "LIFETIME" — highest plan purchased
 
+  // Donor tier tracking
+  totalDonatedVND     Int               @default(0)
+  donorTier           String?           // BRONZE | SILVER | GOLD
+  donorSince          DateTime?
+  showOnDonorWall     Boolean           @default(true)
+
   accounts            Account[]
   auditLogs           AuditLog[]
   downloads           Download[]
@@ -436,6 +442,12 @@ model Donation {
   qrCodeUrl    String? // Generated VietQR URL
   transferNote String? // Bank transfer note/reference
 
+  // VND amount + verification (VND-first donation model)
+  amountVND    Int       @default(0)
+  verifiedAt   DateTime?
+  bankTxId     String?   @unique
+  tierAtTime   String?   // tier this donation contributed to, at verification time
+
   // Status
   status DonationStatus @default(PENDING)
 
@@ -464,6 +476,8 @@ model Donation {
   @@index([createdAt])
   @@index([isAnonymous])
   @@index([kofiTransactionId])
+  @@index([transferNote])
+  @@index([status, createdAt])
   @@map("donations")
 }
 
@@ -507,6 +521,8 @@ model DonationGoal {
 enum DonationStatus {
   PENDING
   COMPLETED
+  VERIFIED
+  EXPIRED
   FAILED
   REFUNDED
   CANCELLED
