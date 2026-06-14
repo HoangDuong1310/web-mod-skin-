@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { X, ExternalLink, Radio } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner, BANNER_STYLES, BannerType } from '@/types/banner'
@@ -22,46 +22,59 @@ export function BannerModal({ className }: BannerModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { status } = useSession()
 
-  useEffect(() => {
-    const fetchModalBanners = async () => {
-      try {
-        const res = await fetch(`/api/banners?position=MODAL&_t=${Date.now()}`, { cache: 'no-store' })
-        if (res.ok) {
-          const data = await res.json()
-          const banners = data.banners || []
+  const fetchModalBanners = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/banners?position=MODAL&_t=${Date.now()}`, { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        const banners = data.banners || []
 
-          // Check dismissed modal banners
-          const stored = localStorage.getItem('dismissedModalBanners')
-          const dismissed = stored ? JSON.parse(stored) : {}
-          const now = Date.now()
+        // Check dismissed modal banners
+        const stored = localStorage.getItem('dismissedModalBanners')
+        const dismissed = stored ? JSON.parse(stored) : {}
+        const now = Date.now()
 
-          // Find first non-dismissed banner
-          const banner = banners.find((b: Banner) => {
-            // Check if dismissed within last 24 hours
-            if (dismissed[b.id] && now - dismissed[b.id] < 24 * 60 * 60 * 1000) {
-              return false
-            }
-            // Check audience
-            if (b.targetAudience === 'AUTHENTICATED' && status !== 'authenticated') return false
-            if (b.targetAudience === 'GUEST' && status === 'authenticated') return false
-            return true
-          })
-
-          if (banner) {
-            setModalBanner(banner)
-            // Delay showing modal for better UX
-            setTimeout(() => setIsOpen(true), 1000)
+        // Find first non-dismissed banner
+        const banner = banners.find((b: Banner) => {
+          // Check if dismissed within last 24 hours
+          if (dismissed[b.id] && now - dismissed[b.id] < 24 * 60 * 60 * 1000) {
+            return false
           }
-        }
-      } catch (error) {
-        console.error('Error fetching modal banners:', error)
-      }
-    }
+          // Check audience
+          if (b.targetAudience === 'AUTHENTICATED' && status !== 'authenticated') return false
+          if (b.targetAudience === 'GUEST' && status === 'authenticated') return false
+          return true
+        })
 
-    if (status !== 'loading') {
-      fetchModalBanners()
+        if (banner) {
+          setModalBanner(banner)
+          // Delay showing modal for better UX
+          setTimeout(() => setIsOpen(true), 1000)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching modal banners:', error)
     }
   }, [status])
+
+  useEffect(() => {
+    if (status === 'loading') return
+
+    fetchModalBanners()
+    // Refresh every 60 seconds so open tabs pick up new modal banners
+    const interval = setInterval(fetchModalBanners, 60 * 1000)
+    // Refresh immediately when the tab regains focus
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchModalBanners()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [status, fetchModalBanners])
 
   const handleClose = () => {
     if (modalBanner) {
