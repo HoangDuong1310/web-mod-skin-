@@ -12,6 +12,7 @@ import { DEFAULT_CONFIG } from '@/lib/default-config'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
 import { Live2DWidget } from '@/components/shared/live2d-widget'
+import { PostDownloadDonateModal } from '@/components/donation/post-download-donate-modal'
 import Script from 'next/script'
 
 const inter = Inter({ 
@@ -87,6 +88,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             <Toaster richColors position="top-right" />
             {/* Live2D Widget */}
             <Live2DWidget />
+            {/* Global post-download donate modal */}
+            <PostDownloadDonateModal />
           </AuthProvider>
         </ThemeProvider>
       </body>
