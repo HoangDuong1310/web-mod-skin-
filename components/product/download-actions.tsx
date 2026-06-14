@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import { ExternalLink, Key } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useDonation } from '@/hooks/use-donation'
 
 interface DownloadActionsProps {
   productId: string
@@ -27,6 +28,7 @@ export default function DownloadActions({
   adBypassEnabled = false,
   className = ""
 }: DownloadActionsProps) {
+  const openModal = useDonation((s) => s.openModal)
   const [isLoading, setIsLoading] = useState(false)
   const [downloadSettings, setDownloadSettings] = useState({
     downloadDelayEnabled: true,
@@ -78,6 +80,7 @@ export default function DownloadActions({
         window.location.href = data.redirect
         // no toast to avoid duplicates
         toast.success('Đang chuyển hướng đến trang tải xuống...')
+        openModal('post-download')
       } else if (data.downloadUrl || data.filename) {
         // Local file download
         const downloadUrl = data.downloadUrl || `/api/download/software/${data.filename}`
@@ -92,6 +95,7 @@ export default function DownloadActions({
         document.body.removeChild(link)
 
         toast.success('Bắt đầu tải xuống!')
+        openModal('post-download')
       } else {
         toast.error('Không tìm thấy file để tải xuống')
       }
