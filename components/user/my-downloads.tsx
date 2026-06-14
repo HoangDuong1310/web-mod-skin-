@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Download, Star, Calendar, Package } from 'lucide-react'
 import Link from 'next/link'
+import { useDonation } from '@/hooks/use-donation'
 
 interface DownloadHistory {
   id: string
@@ -37,6 +38,7 @@ export default function MyDownloads() {
     favoriteCategory: ''
   })
   const [loading, setLoading] = useState(true)
+  const openModal = useDonation((s) => s.openModal)
 
   useEffect(() => {
     fetchDownloads()
@@ -91,6 +93,9 @@ export default function MyDownloads() {
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+
+        // Prompt the user to support the project after a successful re-download
+        openModal('post-download')
       } else {
         // Fallback: redirect to product page for direct download
         window.open(`/products/${download.softwareSlug}`, '_blank')
