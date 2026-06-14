@@ -61,9 +61,21 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
 
   useEffect(() => {
     fetchBanners()
-    // Refresh banners every 5 minutes
-    const interval = setInterval(fetchBanners, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    // Refresh banners every 60 seconds
+    const interval = setInterval(fetchBanners, 60 * 1000)
+
+    // Re-fetch when the tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBanners()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [fetchBanners])
 
   // Filter banners based on audience
