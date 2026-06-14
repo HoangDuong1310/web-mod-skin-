@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
 import { toast } from 'sonner'
+import { useDonation } from '@/hooks/use-donation'
 
 interface DownloadButtonProps {
   skinId: string
@@ -11,6 +12,7 @@ interface DownloadButtonProps {
 
 export function DownloadButton({ skinId }: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false)
+  const openModal = useDonation((s) => s.openModal)
 
   const handleDownload = async () => {
     // No authentication required for downloads - public access for approved skins
@@ -40,6 +42,9 @@ export function DownloadButton({ skinId }: DownloadButtonProps) {
           })
         }, 2000)
         
+        // Optimistic success: prompt the user to support the project
+        openModal('post-download')
+
       } catch (error) {
         console.log('Custom protocol failed, falling back to direct download')
         await handleDirectDownload()
@@ -85,6 +90,7 @@ export function DownloadButton({ skinId }: DownloadButtonProps) {
       document.body.removeChild(a)
 
       toast.success('Download started successfully!')
+      openModal('post-download')
     } catch (error) {
       console.error('Direct download error:', error)
       toast.error(error instanceof Error ? error.message : 'Download failed')
