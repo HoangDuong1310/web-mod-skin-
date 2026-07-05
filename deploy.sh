@@ -23,10 +23,15 @@ npm install
 echo "==> [3/6] Sinh lại Prisma Client (theo schema mới)..."
 npx prisma generate
 
-echo "==> [4/6] Áp dụng migration database..."
-# migrate deploy = an toàn cho production: chỉ chạy các migration ĐÃ commit
-# trong prisma/migrations, không hỏi tương tác, không bao giờ reset/xoá dữ liệu.
-npx prisma migrate deploy
+echo "==> [4/6] Đồng bộ schema vào database..."
+# Dự án này quản lý DB bằng `db push` (lịch sử migration đã lệch — bảng
+# league_skins được tạo ngoài migration), nên KHÔNG dùng `migrate deploy`.
+# `db push` đồng bộ thẳng schema.prisma vào DB, không cần file migration.
+# --accept-data-loss: cần vì Prisma cảnh báo khi thêm unique index (bankTxId).
+#   Cột bankTxId là cột MỚI, mọi dòng cũ đều NULL, MySQL cho phép nhiều NULL
+#   trong unique index nên KHÔNG mất dữ liệu. LƯU Ý: mỗi lần deploy về sau,
+#   nếu bạn đổi schema theo kiểu xoá/đổi cột thì hãy đọc kỹ cảnh báo trước.
+npx prisma db push --accept-data-loss
 
 echo "==> [5/6] Build ứng dụng..."
 npm run build
