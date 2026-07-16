@@ -15,6 +15,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// This endpoint is consumed by a desktop client and must never be served from
+// the Next.js/hosting data cache. Banner changes should be visible on the next
+// client poll rather than waiting for a platform cache window.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     const now = new Date()
@@ -67,7 +73,9 @@ export async function GET() {
         status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'public, max-age=60',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         },
       }
     )
