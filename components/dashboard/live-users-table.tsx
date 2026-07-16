@@ -17,7 +17,10 @@ interface LiveUser {
   phase: string | null
   gameMode: string | null
   champion: string | null
+  championId: number | null
   skin: string | null
+  skinId: number | null
+  lastInjectionSkin: string | null
   appVersion: string | null
   uptimeMinutes: number
   injectionCount: number
@@ -99,6 +102,7 @@ export function LiveUsersTable() {
       (u.licenseKey || '').toLowerCase().includes(search.toLowerCase()) ||
       (u.champion || '').toLowerCase().includes(search.toLowerCase()) ||
       (u.skin || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.lastInjectionSkin || '').toLowerCase().includes(search.toLowerCase()) ||
       (u.region || '').toLowerCase().includes(search.toLowerCase())
   )
 
@@ -160,9 +164,14 @@ export function LiveUsersTable() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">{u.gameMode || '-'}</TableCell>
-                    <TableCell className="text-sm">{u.champion || '-'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-sm" title={u.skin || ''}>
-                      {u.skin || '-'}
+                    <TableCell className="text-sm">
+                      {u.champion || (u.championId ? `Champion ${u.championId}` : '-')}
+                    </TableCell>
+                    <TableCell
+                      className="max-w-[200px] truncate text-sm"
+                      title={u.skin || u.lastInjectionSkin || ''}
+                    >
+                      {u.skin || u.lastInjectionSkin || (u.skinId ? `Skin ${u.skinId}` : '-')}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{u.appVersion || '-'}</TableCell>
                     <TableCell className="text-sm">{formatUptime(u.uptimeMinutes)}</TableCell>
