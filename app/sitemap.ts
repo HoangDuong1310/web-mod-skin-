@@ -12,7 +12,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
     
     const baseUrl = settings.siteUrl || 'https://example.com' // Already handles fallback logic in getSEOSettings()
-    // Static pages
+    // Static pages — chỉ liệt kê các trang công khai, có nội dung thật,
+    // mong muốn xuất hiện trên Google. Auth/checkout/cart/maintenance KHÔNG vào sitemap.
     const staticPages = [
       {
         url: baseUrl,
@@ -22,6 +23,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
       {
         url: `${baseUrl}/products`,
+        lastModified: new Date(),
+        changeFrequency: 'daily' as const,
+        priority: 0.9,
+      },
+      {
+        url: `${baseUrl}/custom-skins`,
         lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: 0.9,
@@ -49,6 +56,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
+      },
+      {
+        url: `${baseUrl}/donate`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.5,
       },
     ]
 
@@ -90,6 +103,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }))
 
+    // Dynamic custom-skins detail pages — đây là trang công khai có giá trị SEO,
+    // hiện đang nằm ngoài sitemap nên Google chỉ "Discovered/Crawled - not indexed".
+    let customSkinPages: Array<{
+      url: string
+      lastModified: Date
+      changeFrequency: 'weekly'
+      priority: number
+    }> = []
+
+    try {
+      const customSkins = await prisma.customSkin.findMany({
+        where: {
+          status: { in: ['APPROVED', 'FEATURED'] },
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 5000, // hard cap để sitemap không vượt 50k URL
+      })
+
+      customSkinPages = customSkins.map((skin) => ({
+        url: `${baseUrl}/custom-skins/${skin.id}`,
+        lastModified: skin.updatedAt,
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+      }))
+    } catch (skinError) {
+      console.warn('Custom skins table not available for sitemap:', skinError)
+    }
+
     // Dynamic blog pages - safely handle if post table doesn't exist
     let blogPages: Array<{
       url: string
@@ -121,7 +167,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Continue without blog pages
     }
 
-    return [...staticPages, ...productPages, ...categoryPages, ...blogPages]
+    return [
+      ...staticPages,
+      ...productPages,
+      ...categoryPages,
+      ...customSkinPages,
+      ...blogPages,
+    ]
   } catch (error) {
     console.error('Error generating sitemap:', error)
     

@@ -28,8 +28,8 @@ export function PostDownloadDonateModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden sm:max-w-md">
+        <DialogHeader className="pr-6">
           <DialogTitle className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-rose-500" />
             Cảm ơn bạn đã tải xuống!
@@ -40,9 +40,15 @@ export function PostDownloadDonateModal() {
           </DialogDescription>
         </DialogHeader>
 
-        <DonateForm onSubmitted={closeModal} />
+        <div className="-mr-2 mt-4 flex-1 overflow-y-auto pr-2">
+          <DonateForm compact onSubmitted={closeModal} />
+        </div>
 
-        <Button variant="ghost" className="w-full" onClick={closeModal}>
+        <Button
+          variant="ghost"
+          className="mt-4 w-full shrink-0"
+          onClick={closeModal}
+        >
           Để sau
         </Button>
       </DialogContent>

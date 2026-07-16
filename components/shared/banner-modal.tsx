@@ -5,6 +5,7 @@ import { X, ExternalLink, Radio } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner, BANNER_STYLES, BannerType } from '@/types/banner'
 import { useSession } from 'next-auth/react'
+import { onBannersUpdated } from '@/lib/banner-events'
 import {
   Dialog,
   DialogContent,
@@ -70,9 +71,15 @@ export function BannerModal({ className }: BannerModalProps) {
       }
     }
     document.addEventListener('visibilitychange', handleVisibility)
+
+    // Re-fetch immediately when an admin creates/updates/deletes a banner
+    // in another tab (dashboard), instead of waiting for the next poll.
+    const unsubscribe = onBannersUpdated(fetchModalBanners)
+
     return () => {
       clearInterval(interval)
       document.removeEventListener('visibilitychange', handleVisibility)
+      unsubscribe()
     }
   }, [status, fetchModalBanners])
 

@@ -42,7 +42,15 @@ export async function GET(
       return NextResponse.json({ error: 'Banner không tồn tại' }, { status: 404 })
     }
 
-    return NextResponse.json({ banner })
+    return NextResponse.json(
+      { banner },
+      {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      }
+    )
   } catch (error) {
     console.error('Error fetching banner:', error)
     return NextResponse.json(

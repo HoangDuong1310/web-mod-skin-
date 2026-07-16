@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
+import { notifyBannersUpdated } from '@/lib/banner-events'
 import {
   Banner,
   BannerType,
@@ -77,7 +78,7 @@ export default function BannersPage() {
 
   const fetchBanners = async () => {
     try {
-      const res = await fetch('/api/banners?mode=manage')
+      const res = await fetch('/api/banners?mode=manage', { cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
         setBanners(data.banners || [])
@@ -111,6 +112,7 @@ export default function BannersPage() {
           description: `Banner đã được ${!banner.isActive ? 'kích hoạt' : 'tắt'}`,
         })
         fetchBanners()
+        notifyBannersUpdated()
       }
     } catch (error) {
       toast({
@@ -129,6 +131,7 @@ export default function BannersPage() {
       if (res.ok) {
         toast({ title: 'Thành công', description: 'Đã xóa banner' })
         fetchBanners()
+        notifyBannersUpdated()
       }
     } catch (error) {
       toast({

@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
+import { notifyBannersUpdated } from '@/lib/banner-events'
 import {
   BannerFormData,
   BannerType,
@@ -81,6 +82,7 @@ export default function NewBannerPage() {
 
       if (res.ok) {
         toast({ title: 'Thành công', description: 'Đã tạo banner mới' })
+        notifyBannersUpdated()
         router.push('/dashboard/banners')
       } else {
         const data = await res.json()

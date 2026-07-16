@@ -14,9 +14,11 @@ function fmt(n: number) {
 interface Props {
   initialAmount?: number
   onSubmitted?: (r: { donationId: string; transferNote: string }) => void
+  /** Renders a single-column, tighter layout for use inside modals/dialogs. */
+  compact?: boolean
 }
 
-export function DonateForm({ initialAmount, onSubmitted }: Props) {
+export function DonateForm({ initialAmount, onSubmitted, compact = false }: Props) {
   const { settings, fetchSettings, paymentMethod, setPaymentMethod } = useDonation()
   const [amount, setAmount] = useState<number | null>(initialAmount ?? 50_000)
   const [custom, setCustom] = useState('')
@@ -64,9 +66,9 @@ export function DonateForm({ initialAmount, onSubmitted }: Props) {
   }
 
   return (
-    <div className="grid lg:grid-cols-[1fr_1.2fr] gap-12">
+    <div className={compact ? 'grid gap-6' : 'grid lg:grid-cols-[1fr_1.2fr] gap-12'}>
       <div>
-        <div className="flex border-b border-neutral-200 mb-8">
+        <div className={compact ? 'flex border-b border-neutral-200 mb-5' : 'flex border-b border-neutral-200 mb-8'}>
           <button onClick={() => setPaymentMethod('VIETQR')}
             className={paymentMethod === 'VIETQR' ? 'pb-3 px-1 mr-6 font-medium border-b-2 border-black -mb-px' : 'pb-3 px-1 mr-6 font-medium text-neutral-500'}>
             VietQR
@@ -116,7 +118,7 @@ export function DonateForm({ initialAmount, onSubmitted }: Props) {
 
       {paymentMethod === 'VIETQR' && (
         <div>
-          <div className="rounded-lg border border-neutral-200 p-8 bg-neutral-50">
+          <div className={compact ? 'rounded-lg border border-neutral-200 p-5 bg-neutral-50' : 'rounded-lg border border-neutral-200 p-8 bg-neutral-50'}>
             {qrUrl ? (
               <img src={qrUrl} alt="VietQR" className="w-44 h-44 mx-auto bg-white rounded-md border border-neutral-200 p-2" />
             ) : (

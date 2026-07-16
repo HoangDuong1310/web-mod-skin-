@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { emailService } from '@/lib/email'
+import { strictLimiter } from '@/lib/rate-limit'
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Tên phải có ít nhất 2 ký tự').max(100),
@@ -11,6 +12,23 @@ const contactSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  // Rate limit: max 10 contact submissions per minute per IP.
+  const rl = await strictLimiter(request)
+  if (!rl.success) {
+    return NextResponse.json(
+      {
+        error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
+        retryAfter: Math.ceil((rl.resetTime - Date.now()) / 1000),
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rl.resetTime - Date.now()) / 1000).toString(),
+        },
+      }
+    )
+  }
+
   try {
     const body = await request.json()
     const data = contactSchema.parse(body)

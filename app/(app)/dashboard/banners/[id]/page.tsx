@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
+import { notifyBannersUpdated } from '@/lib/banner-events'
 import {
   Banner,
   BannerFormData,
@@ -83,7 +84,7 @@ export default function EditBannerPage() {
   useEffect(() => {
     const fetchBanner = async () => {
       try {
-        const res = await fetch(`/api/banners/${id}`)
+        const res = await fetch(`/api/banners/${id}`, { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
           setBanner(data.banner)
@@ -158,6 +159,7 @@ export default function EditBannerPage() {
 
       if (res.ok) {
         toast({ title: 'Thành công', description: 'Đã cập nhật banner' })
+        notifyBannersUpdated()
         router.push('/dashboard/banners')
       } else {
         const data = await res.json()
@@ -183,6 +185,7 @@ export default function EditBannerPage() {
       const res = await fetch(`/api/banners/${id}`, { method: 'DELETE' })
       if (res.ok) {
         toast({ title: 'Thành công', description: 'Đã xóa banner' })
+        notifyBannersUpdated()
         router.push('/dashboard/banners')
       }
     } catch (error) {

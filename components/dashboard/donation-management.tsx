@@ -244,7 +244,7 @@ export function DonationManagement() {
               {formatCurrency(
                 donations
                   .filter(d => d.status === 'COMPLETED')
-                  .reduce((sum, d) => sum + d.amount, 0)
+                  .reduce((sum, d) => sum + Number(d.amount), 0)
               )}
             </div>
           </CardContent>

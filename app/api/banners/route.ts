@@ -59,15 +59,23 @@ export async function GET(request: NextRequest) {
         prisma.banner.count({ where: { deletedAt: null } }),
       ])
 
-      return NextResponse.json({
-        banners,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+      return NextResponse.json(
+        {
+          banners,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
         },
-      })
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        }
+      )
     }
 
     // Public: return only active banners

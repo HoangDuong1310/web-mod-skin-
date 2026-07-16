@@ -3,8 +3,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-// Rate limiting is disabled for now
-// import { rateLimit } from '@/lib/rate-limit'
+import { strictLimiter } from '@/lib/rate-limit'
 import { createReviewSchema, reviewQuerySchema } from '@/lib/validations'
 import { checkReviewContent } from '@/lib/review-filter'
 import { getSetting } from '@/lib/settings'
@@ -208,18 +207,29 @@ export async function GET(request: NextRequest) {
 
 // POST /api/reviews - Create a new review
 export async function POST(request: NextRequest) {
+  // Rate limit: max 10 review submissions per minute per IP.
+  // This stops bot floods like the 89k/3k spam attacks observed on 2026-05-04.
+  const rl = await strictLimiter(request)
+  if (!rl.success) {
+    return NextResponse.json(
+      {
+        error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
+        retryAfter: Math.ceil((rl.resetTime - Date.now()) / 1000),
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil((rl.resetTime - Date.now()) / 1000).toString(),
+          'X-RateLimit-Limit': rl.limit.toString(),
+          'X-RateLimit-Remaining': rl.remaining.toString(),
+          'X-RateLimit-Reset': Math.ceil(rl.resetTime / 1000).toString(),
+        },
+      }
+    )
+  }
+
   try {
     console.log('=== POST /api/reviews ===')
-    
-    // Rate limiting is disabled for now
-    // const identifier = request.ip ?? 'anonymous'
-    // const { success } = await rateLimit.limit(identifier)
-    // if (!success) {
-    //   return NextResponse.json(
-    //     { error: 'Too many requests' },
-    //     { status: 429 }
-    //   )
-    // }
 
     const session = await getServerSession(authOptions)
     console.log('Session:', session?.user?.email || 'No session')

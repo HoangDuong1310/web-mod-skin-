@@ -122,15 +122,24 @@ export function SyncOverview({
 
     setUploadingPackage(true)
     try {
+      // Step 1: Get a short-lived upload token and the bypass URL.
+      // upload.modskinslol.com is DNS-only (no Cloudflare proxy) so it has
+      // no 100 MB body limit, unlike modskinslol.com which is proxied.
+      const tokenRes = await fetch('/api/admin/league-skins/build-package?action=get-upload-token')
+      if (!tokenRes.ok) throw new Error('Không thể lấy upload token')
+      const { token, uploadUrl } = await tokenRes.json()
+
+      // Step 2: Upload the file directly to the bypass URL with the token header.
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch('/api/admin/league-skins/build-package', {
+      const res = await fetch(uploadUrl, {
         method: 'PUT',
         body: formData,
+        headers: { 'X-Upload-Token': token },
       })
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Upload failed')
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Upload thất bại (HTTP ${res.status})`)
       }
       const data = await res.json()
       toast.success(`Upload package thành công! Hash: ${data.package.hash}, Size: ${data.package.size}`)

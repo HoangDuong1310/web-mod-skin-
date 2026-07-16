@@ -18,7 +18,8 @@ echo "==> [1/6] Kéo code mới nhất từ git..."
 git pull --ff-only
 
 echo "==> [2/6] Cài/cập nhật dependencies..."
-npm install
+# --frozen-lockfile: cài đúng theo pnpm-lock.yaml, không tự ý sửa lockfile trên server.
+pnpm install --frozen-lockfile
 
 echo "==> [3/6] Sinh lại Prisma Client (theo schema mới)..."
 npx prisma generate
@@ -34,7 +35,7 @@ echo "==> [4/6] Đồng bộ schema vào database..."
 npx prisma db push --accept-data-loss
 
 echo "==> [5/6] Build ứng dụng..."
-npm run build
+pnpm run build
 
 echo "==> [6/6] Restart PM2..."
 pm2 restart ecosystem.config.js --update-env

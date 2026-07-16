@@ -5,6 +5,7 @@ import { X, ExternalLink, Radio, Gift, AlertTriangle, CheckCircle, Calendar, Inf
 import { cn } from '@/lib/utils'
 import { Banner, BANNER_STYLES, BannerType } from '@/types/banner'
 import { useSession } from 'next-auth/react'
+import { onBannersUpdated } from '@/lib/banner-events'
 
 interface AnnouncementBannerProps {
   position?: 'TOP' | 'BOTTOM'
@@ -72,9 +73,14 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
 
+    // Re-fetch immediately when an admin creates/updates/deletes a banner
+    // in another tab (dashboard), instead of waiting for the next poll.
+    const unsubscribe = onBannersUpdated(fetchBanners)
+
     return () => {
       clearInterval(interval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      unsubscribe()
     }
   }, [fetchBanners])
 
