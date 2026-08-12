@@ -1,7 +1,16 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { X, ExternalLink, Radio, Gift, AlertTriangle, CheckCircle, Calendar, Info } from 'lucide-react'
+import {
+  X,
+  ExternalLink,
+  Radio,
+  Gift,
+  AlertTriangle,
+  CheckCircle,
+  Calendar,
+  Info,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Banner, BANNER_STYLES, BannerType } from '@/types/banner'
 import { useSession } from 'next-auth/react'
@@ -10,6 +19,7 @@ import { onBannersUpdated } from '@/lib/banner-events'
 interface AnnouncementBannerProps {
   position?: 'TOP' | 'BOTTOM'
   className?: string
+  initialBanners?: Banner[]
 }
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -21,10 +31,14 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   calendar: Calendar,
 }
 
-export function AnnouncementBanner({ position = 'TOP', className }: AnnouncementBannerProps) {
-  const [banners, setBanners] = useState<Banner[]>([])
+export function AnnouncementBanner({
+  position = 'TOP',
+  className,
+  initialBanners = [],
+}: AnnouncementBannerProps) {
+  const [banners, setBanners] = useState<Banner[]>(initialBanners)
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(initialBanners.length === 0)
   const { data: session, status } = useSession()
 
   // Load dismissed banners from localStorage
@@ -36,7 +50,9 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
         // Clear old dismissed banners (older than 24 hours)
         const now = Date.now()
         const validDismissed = Object.entries(parsed)
-          .filter(([, timestamp]) => now - (timestamp as number) < 24 * 60 * 60 * 1000)
+          .filter(
+            ([, timestamp]) => now - (timestamp as number) < 24 * 60 * 60 * 1000
+          )
           .map(([id]) => id)
         setDismissedIds(new Set(validDismissed))
       } catch {
@@ -48,7 +64,10 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
   // Fetch banners
   const fetchBanners = useCallback(async () => {
     try {
-      const res = await fetch(`/api/banners?position=${position}&_t=${Date.now()}`, { cache: 'no-store' })
+      const res = await fetch(
+        `/api/banners?position=${position}&_t=${Date.now()}`,
+        { cache: 'no-store' }
+      )
       if (res.ok) {
         const data = await res.json()
         setBanners(data.banners || [])
@@ -90,8 +109,10 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
     if (dismissedIds.has(banner.id)) return false
 
     // Check audience
-    if (banner.targetAudience === 'AUTHENTICATED' && status !== 'authenticated') return false
-    if (banner.targetAudience === 'GUEST' && status === 'authenticated') return false
+    if (banner.targetAudience === 'AUTHENTICATED' && status !== 'authenticated')
+      return false
+    if (banner.targetAudience === 'GUEST' && status === 'authenticated')
+      return false
 
     return true
   })
@@ -141,7 +162,9 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
   const style = BANNER_STYLES[banner.type as BannerType] || BANNER_STYLES.INFO
   const IconComponent = ICONS[style.icon] || Info
 
-  const bgStyle = banner.backgroundColor ? { backgroundColor: banner.backgroundColor } : {}
+  const bgStyle = banner.backgroundColor
+    ? { backgroundColor: banner.backgroundColor }
+    : {}
   const textStyle = banner.textColor ? { color: banner.textColor } : {}
 
   return (
@@ -160,12 +183,12 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
         <div className="flex items-center justify-between gap-4">
           {/* Image (if exists) */}
           {banner.imageUrl && (
-            <div className="hidden sm:block flex-shrink-0">
+            <div className="hidden flex-shrink-0 sm:block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={banner.imageUrl}
                 alt={banner.title}
-                className="h-12 w-12 rounded-lg object-cover border-2 border-white/30"
+                className="h-12 w-12 rounded-lg border-2 border-white/30 object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.style.display = 'none'
@@ -173,10 +196,12 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
               />
             </div>
           )}
-          
+
           {/* Icon and content */}
           <div className="flex flex-1 items-center gap-3">
-            {!banner.imageUrl && <IconComponent className="h-5 w-5 flex-shrink-0" />}
+            {!banner.imageUrl && (
+              <IconComponent className="h-5 w-5 flex-shrink-0" />
+            )}
             <div className="flex-1">
               <p className="font-medium">{banner.title}</p>
               {banner.content && (
@@ -192,7 +217,7 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
                 onClick={() => handleClick(banner)}
                 className={cn(
                   'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium',
-                  'bg-white/20 hover:bg-white/30 transition-colors',
+                  'border border-white/40 bg-black/30 text-white transition-colors hover:bg-black/40',
                   'focus:outline-none focus:ring-2 focus:ring-white/50'
                 )}
               >
@@ -205,7 +230,7 @@ export function AnnouncementBanner({ position = 'TOP', className }: Announcement
               <button
                 onClick={() => handleDismiss(banner.id)}
                 className={cn(
-                  'rounded-full p-1 hover:bg-white/20 transition-colors',
+                  'rounded-full p-1 transition-colors hover:bg-white/20',
                   'focus:outline-none focus:ring-2 focus:ring-white/50'
                 )}
                 aria-label="Đóng thông báo"

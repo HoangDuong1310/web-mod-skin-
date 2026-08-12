@@ -1,26 +1,23 @@
-import Script from 'next/script'
-
 interface StructuredDataProps {
   data: Record<string, any>
 }
 
 export function StructuredData({ data }: StructuredDataProps) {
   return (
-    <Script
-      id="structured-data"
+    <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(data),
+        __html: JSON.stringify(data).replace(/</g, '\\u003c'),
       }}
     />
   )
 }
 
 // Website Schema
-export function WebsiteStructuredData({ 
-  siteName, 
-  siteDescription, 
-  siteUrl 
+export function WebsiteStructuredData({
+  siteName,
+  siteDescription,
+  siteUrl,
 }: {
   siteName: string
   siteDescription: string
@@ -32,11 +29,6 @@ export function WebsiteStructuredData({
     name: siteName,
     description: siteDescription,
     url: siteUrl,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${siteUrl}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
   }
 
   return <StructuredData data={schema} />

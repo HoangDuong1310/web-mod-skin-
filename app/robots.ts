@@ -1,10 +1,14 @@
 import type { MetadataRoute } from 'next'
 import { getSEOSettings } from '@/lib/dynamic-seo'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   try {
     const settings = await getSEOSettings()
-    const baseUrl = settings.siteUrl // Already handles fallback logic in getSEOSettings()
+    const baseUrl = (settings.siteUrl || DEFAULT_CONFIG.siteUrl).replace(
+      /\/$/,
+      ''
+    )
 
     // If robots is disabled, return minimal robots.txt
     if (!settings.robotsEnabled) {
@@ -33,46 +37,46 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       }
     }
 
-  // Default robots.txt
-  //
-  // Notes:
-  // - Everything is crawlable by default (`allow: '/'`). We only block paths
-  //   that are private/auth-gated, transactional, or have no SEO value.
-  // - We do NOT block URLs with tracking params (utm/fbclid/gclid). Blocking
-  //   them caused "Indexed, though blocked by robots.txt" for socially-shared
-  //   links (Facebook auto-appends ?fbclid=). Canonical tags (see
-  //   lib/dynamic-seo.ts) already consolidate those URLs, which is Google's
-  //   recommended approach.
-  // - We do NOT block /_next so Googlebot can fetch CSS/JS needed to render.
-  // - Sales/transactional pages (/cart, /checkout) are intentionally NOT
-  //   blocked here. To DROP already-indexed URLs, Google must be able to crawl
-  //   them and read either a `noindex` tag (cart) or the redirect (checkout).
-  //   Blocking them in robots.txt would freeze them in the "Indexed, though
-  //   blocked" state instead of removing them.
-  // - /auth, /maintenance carry `noindex` meta on the pages themselves; they're
-  //   listed below to also save crawl budget.
-  const rules: MetadataRoute.Robots['rules'] = [
-    {
-      userAgent: '*',
-      allow: '/',
-      disallow: [
-        '/admin',
-        '/api/',
-        '/dashboard',
-        '/profile',
-        '/private',
-        '/maintenance',
-        // Auth flows: token URLs leak, no SEO value
-        '/auth/',
-        // Free-key claim flow is gated and includes one-time tokens
-        '/free-key/',
-        // Personal submit dashboard for users
-        '/custom-skins/submit',
-        // Demo/preview pages
-        '/demo/',
-      ],
-    },
-  ]
+    // Default robots.txt
+    //
+    // Notes:
+    // - Everything is crawlable by default (`allow: '/'`). We only block paths
+    //   that are private/auth-gated, transactional, or have no SEO value.
+    // - We do NOT block URLs with tracking params (utm/fbclid/gclid). Blocking
+    //   them caused "Indexed, though blocked by robots.txt" for socially-shared
+    //   links (Facebook auto-appends ?fbclid=). Canonical tags (see
+    //   lib/dynamic-seo.ts) already consolidate those URLs, which is Google's
+    //   recommended approach.
+    // - We do NOT block /_next so Googlebot can fetch CSS/JS needed to render.
+    // - Sales/transactional pages (/cart, /checkout) are intentionally NOT
+    //   blocked here. To DROP already-indexed URLs, Google must be able to crawl
+    //   them and read either a `noindex` tag (cart) or the redirect (checkout).
+    //   Blocking them in robots.txt would freeze them in the "Indexed, though
+    //   blocked" state instead of removing them.
+    // - /auth, /maintenance carry `noindex` meta on the pages themselves; they're
+    //   listed below to also save crawl budget.
+    const rules: MetadataRoute.Robots['rules'] = [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: [
+          '/admin',
+          '/api/',
+          '/dashboard',
+          '/profile',
+          '/private',
+          '/maintenance',
+          // Auth flows: token URLs leak, no SEO value
+          '/auth/',
+          // Free-key claim flow is gated and includes one-time tokens
+          '/free-key/',
+          // Personal submit dashboard for users
+          '/custom-skins/submit',
+          // Demo/preview pages
+          '/demo/',
+        ],
+      },
+    ]
 
     return {
       rules,
@@ -81,7 +85,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     }
   } catch (error) {
     console.error('Error generating robots.txt:', error)
-    
+
     // Return safe default robots.txt
     return {
       rules: [
@@ -91,8 +95,8 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           disallow: ['/admin', '/app', '/api'],
         },
       ],
-      host: 'https://example.com',
+      sitemap: `${DEFAULT_CONFIG.siteUrl}/sitemap.xml`,
+      host: DEFAULT_CONFIG.siteUrl,
     }
   }
 }
-

@@ -1,5 +1,11 @@
 // Banner types for both web and app
-export type BannerType = 'INFO' | 'LIVESTREAM' | 'PROMOTION' | 'WARNING' | 'SUCCESS' | 'EVENT'
+export type BannerType =
+  | 'INFO'
+  | 'LIVESTREAM'
+  | 'PROMOTION'
+  | 'WARNING'
+  | 'SUCCESS'
+  | 'EVENT'
 export type BannerPosition = 'TOP' | 'BOTTOM' | 'MODAL'
 export type BannerAudience = 'ALL' | 'AUTHENTICATED' | 'GUEST'
 
@@ -56,19 +62,19 @@ export interface AppBannerData {
   showAsNotification?: boolean
   notificationTitle?: string
   notificationBody?: string
-  
+
   // Deep link
   deepLink?: string
-  
+
   // Styling for app
   appBackgroundColor?: string
   appTextColor?: string
   appButtonColor?: string
-  
+
   // Schedule
   repeatDaily?: boolean
   reminderTime?: string // HH:mm format
-  
+
   // Extra data
   extra?: Record<string, any>
 }
@@ -90,13 +96,16 @@ export interface BannerResponse {
 }
 
 // Banner style mapping
-export const BANNER_STYLES: Record<BannerType, { bg: string; text: string; icon: string }> = {
-  INFO: { bg: 'bg-blue-500', text: 'text-white', icon: 'info' },
-  LIVESTREAM: { bg: 'bg-red-500', text: 'text-white', icon: 'video' },
-  PROMOTION: { bg: 'bg-purple-500', text: 'text-white', icon: 'gift' },
+export const BANNER_STYLES: Record<
+  BannerType,
+  { bg: string; text: string; icon: string }
+> = {
+  INFO: { bg: 'bg-blue-700', text: 'text-white', icon: 'info' },
+  LIVESTREAM: { bg: 'bg-red-700', text: 'text-white', icon: 'video' },
+  PROMOTION: { bg: 'bg-purple-700', text: 'text-white', icon: 'gift' },
   WARNING: { bg: 'bg-yellow-500', text: 'text-black', icon: 'alert-triangle' },
-  SUCCESS: { bg: 'bg-green-500', text: 'text-white', icon: 'check-circle' },
-  EVENT: { bg: 'bg-orange-500', text: 'text-white', icon: 'calendar' },
+  SUCCESS: { bg: 'bg-green-700', text: 'text-white', icon: 'check-circle' },
+  EVENT: { bg: 'bg-orange-700', text: 'text-white', icon: 'calendar' },
 }
 
 export const BANNER_TYPE_LABELS: Record<BannerType, string> = {

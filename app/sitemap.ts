@@ -1,65 +1,61 @@
 import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getSEOSettings } from '@/lib/dynamic-seo'
+import { DEFAULT_CONFIG } from '@/lib/default-config'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const settings = await getSEOSettings()
-    
+
     // If sitemap is disabled, return empty sitemap
     if (!settings.sitemapEnabled) {
       return []
     }
-    
-    const baseUrl = settings.siteUrl || 'https://example.com' // Already handles fallback logic in getSEOSettings()
+
+    const baseUrl = (settings.siteUrl || DEFAULT_CONFIG.siteUrl).replace(
+      /\/$/,
+      ''
+    )
     // Static pages — chỉ liệt kê các trang công khai, có nội dung thật,
     // mong muốn xuất hiện trên Google. Auth/checkout/cart/maintenance KHÔNG vào sitemap.
     const staticPages = [
       {
         url: baseUrl,
-        lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: 1.0,
       },
       {
         url: `${baseUrl}/products`,
-        lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: 0.9,
       },
       {
         url: `${baseUrl}/custom-skins`,
-        lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: 0.9,
       },
       {
         url: `${baseUrl}/categories`,
-        lastModified: new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       },
       {
         url: `${baseUrl}/blog`,
-        lastModified: new Date(),
         changeFrequency: 'daily' as const,
         priority: 0.8,
       },
       {
         url: `${baseUrl}/about`,
-        lastModified: new Date(),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
       },
       {
         url: `${baseUrl}/contact`,
-        lastModified: new Date(),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
       },
       {
         url: `${baseUrl}/donate`,
-        lastModified: new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.5,
       },
@@ -143,7 +139,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly'
       priority: number
     }> = []
-    
+
     try {
       const posts = await prisma.post.findMany({
         where: {
@@ -176,17 +172,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]
   } catch (error) {
     console.error('Error generating sitemap:', error)
-    
+
     // Return basic sitemap if database query fails
-    const baseUrl = 'https://example.com'
+    const baseUrl = DEFAULT_CONFIG.siteUrl
     return [
       {
         url: baseUrl,
-        lastModified: new Date(),
         changeFrequency: 'daily',
         priority: 1.0,
       },
     ]
   }
 }
-

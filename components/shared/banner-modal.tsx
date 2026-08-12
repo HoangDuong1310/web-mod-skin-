@@ -25,7 +25,9 @@ export function BannerModal({ className }: BannerModalProps) {
 
   const fetchModalBanners = useCallback(async () => {
     try {
-      const res = await fetch(`/api/banners?position=MODAL&_t=${Date.now()}`, { cache: 'no-store' })
+      const res = await fetch(`/api/banners?position=MODAL&_t=${Date.now()}`, {
+        cache: 'no-store',
+      })
       if (res.ok) {
         const data = await res.json()
         const banners = data.banners || []
@@ -42,8 +44,13 @@ export function BannerModal({ className }: BannerModalProps) {
             return false
           }
           // Check audience
-          if (b.targetAudience === 'AUTHENTICATED' && status !== 'authenticated') return false
-          if (b.targetAudience === 'GUEST' && status === 'authenticated') return false
+          if (
+            b.targetAudience === 'AUTHENTICATED' &&
+            status !== 'authenticated'
+          )
+            return false
+          if (b.targetAudience === 'GUEST' && status === 'authenticated')
+            return false
           return true
         })
 
@@ -121,7 +128,8 @@ export function BannerModal({ className }: BannerModalProps) {
 
   if (!modalBanner) return null
 
-  const style = BANNER_STYLES[modalBanner.type as BannerType] || BANNER_STYLES.INFO
+  const style =
+    BANNER_STYLES[modalBanner.type as BannerType] || BANNER_STYLES.INFO
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -133,7 +141,7 @@ export function BannerModal({ className }: BannerModalProps) {
         }}
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-[inherit]">
             {modalBanner.type === 'LIVESTREAM' && (
               <span className="relative flex h-3 w-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
@@ -155,7 +163,9 @@ export function BannerModal({ className }: BannerModalProps) {
         )}
 
         {modalBanner.content && (
-          <p className="text-sm text-muted-foreground">{modalBanner.content}</p>
+          <p className="text-sm text-[inherit] opacity-90">
+            {modalBanner.content}
+          </p>
         )}
 
         <div className="flex gap-2">

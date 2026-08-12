@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { 
-  generateMetadata, 
-  generateWebsiteSchema, 
+import {
+  generateMetadata,
+  generateWebsiteSchema,
   generateBreadcrumbSchema,
   generateProductSchema,
-  generateArticleSchema 
+  generateArticleSchema,
 } from '../seo'
 
 describe('SEO utilities', () => {
@@ -39,7 +39,9 @@ describe('SEO utilities', () => {
         url: '/test-page',
       })
 
-      expect(metadata.alternates?.canonical).toBe('http://localhost:3000/test-page')
+      expect(metadata.alternates?.canonical).toBe(
+        'http://localhost:3000/test-page'
+      )
     })
   })
 
@@ -51,11 +53,7 @@ describe('SEO utilities', () => {
       expect(schema['@type']).toBe('WebSite')
       expect(schema.name).toBe('Test App')
       expect(schema.url).toBe('http://localhost:3000')
-      expect(schema.potentialAction).toEqual({
-        '@type': 'SearchAction',
-        target: 'http://localhost:3000/search?q={search_term_string}',
-        'query-input': 'required name=search_term_string',
-      })
+      expect(schema).not.toHaveProperty('potentialAction')
     })
   })
 
@@ -164,7 +162,7 @@ describe('SEO utilities', () => {
         name: 'Test App',
         logo: {
           '@type': 'ImageObject',
-          url: 'http://localhost:3000/logo.png',
+          url: 'http://localhost:3000/images/logo.ico',
         },
       })
       expect(schema.datePublished).toBe('2024-01-01T00:00:00Z')
@@ -178,4 +176,3 @@ describe('SEO utilities', () => {
     })
   })
 })
-

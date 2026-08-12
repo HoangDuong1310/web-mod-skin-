@@ -61,7 +61,7 @@ export function Live2DWidget() {
     <>
       <Script
         src="/live2d-project/live2d-widget.js"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         onError={() => {
           console.warn('[Live2D] Script failed to load')
         }}

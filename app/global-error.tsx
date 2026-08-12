@@ -14,7 +14,7 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>
         <div style={{
           minHeight: '100vh',

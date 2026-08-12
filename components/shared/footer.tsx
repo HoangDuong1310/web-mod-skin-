@@ -1,41 +1,18 @@
-import Link from 'next/link'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Route } from 'next'
-import { Github, Twitter, Linkedin } from 'lucide-react'
 
 const footerNavigation = {
-  company: [
-    { name: 'About', href: '/about' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Careers', href: '/careers' },
-    { name: 'Contact', href: '/contact' },
+  explore: [
+    { name: 'Ứng dụng Mod Skin LoL', href: '/products' },
+    { name: 'Kho custom skins', href: '/custom-skins' },
+    { name: 'Danh mục', href: '/categories' },
+    { name: 'Blog hướng dẫn', href: '/blog' },
   ],
-  support: [
-    { name: 'Help Center', href: '/help' },
-    { name: 'Safety Center', href: '/safety' },
-    { name: 'Community Guidelines', href: '/guidelines' },
-  ],
-  legal: [
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' },
-    { name: 'Cookie Policy', href: '/cookies' },
-  ],
-  social: [
-    {
-      name: 'Twitter',
-      href: '#',
-      icon: Twitter,
-    },
-    {
-      name: 'GitHub',
-      href: '#',
-      icon: Github,
-    },
-    {
-      name: 'LinkedIn',
-      href: '#',
-      icon: Linkedin,
-    },
+  information: [
+    { name: 'Giới thiệu', href: '/about' },
+    { name: 'Liên hệ hỗ trợ', href: '/contact' },
+    { name: 'Ủng hộ dự án', href: '/donate' },
   ],
 }
 
@@ -43,85 +20,38 @@ export function Footer() {
   return (
     <footer className="border-t bg-background">
       <div className="container py-12 md:py-16">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-          <div className="col-span-2 md:col-span-1">
-            <Link href={'/' as Route} className="flex items-center space-x-2">
+        <div className="grid gap-10 md:grid-cols-3">
+          <div>
+            <Link
+              href={'/' as Route}
+              className="inline-flex items-center gap-3 font-semibold"
+            >
               <Image
                 src="/images/logo.ico"
-                alt="Home"
-                width={24}
-                height={24}
-                className="h-6 w-6"
-                priority
+                alt="Logo Mod Skin LoL"
+                width={32}
+                height={32}
+                className="h-8 w-8"
               />
-              <span className="sr-only">Home</span>
+              <span>Mod Skin LoL</span>
             </Link>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Building the future of e-commerce with modern technology and 
-              exceptional user experience.
+            <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
+              Nơi tổng hợp ứng dụng, custom skin Liên Minh Huyền Thoại và hướng
+              dẫn cài đặt dành cho cộng đồng game thủ Việt.
             </p>
-            <div className="mt-6 flex space-x-4">
-              {footerNavigation.social.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="text-muted-foreground hover:text-primary"
-                  aria-label={item.name}
-                >
-                  <item.icon className="h-5 w-5" aria-hidden="true" />
-                </a>
-              ))}
-            </div>
+            <p className="mt-3 max-w-sm text-xs leading-5 text-muted-foreground">
+              Dự án cộng đồng, không liên kết hoặc được Riot Games tài trợ.
+            </p>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold">Company</h3>
-            <ul role="list" className="mt-4 space-y-3">
-              {footerNavigation.company.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href as Route}
-                    className="text-sm text-muted-foreground hover:text-primary"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold">Support</h3>
-            <ul role="list" className="mt-4 space-y-3">
-              {footerNavigation.support.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href as Route}
-                    className="text-sm text-muted-foreground hover:text-primary"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold">Legal</h3>
-            <ul role="list" className="mt-4 space-y-3">
-              {footerNavigation.legal.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href as Route}
-                    className="text-sm text-muted-foreground hover:text-primary"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FooterColumn title="Khám phá" items={footerNavigation.explore} />
+          <FooterColumn
+            title="Thông tin"
+            items={footerNavigation.information}
+          />
         </div>
-        <div className="mt-8 border-t pt-8">
+        <div className="mt-10 border-t pt-8">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} All rights reserved.
+            &copy; {new Date().getFullYear()} Mod Skin LoL. All rights reserved.
           </p>
         </div>
       </div>
@@ -129,4 +59,28 @@ export function Footer() {
   )
 }
 
-
+function FooterColumn({
+  title,
+  items,
+}: {
+  title: string
+  items: Array<{ name: string; href: string }>
+}) {
+  return (
+    <div>
+      <h2 className="text-sm font-semibold">{title}</h2>
+      <ul className="mt-4 space-y-3">
+        {items.map((item) => (
+          <li key={item.href}>
+            <Link
+              href={item.href as Route}
+              className="text-sm text-muted-foreground hover:text-primary"
+            >
+              {item.name}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

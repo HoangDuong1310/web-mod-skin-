@@ -16,7 +16,7 @@ const defaultConfig = {
   siteName: DEFAULT_CONFIG.siteName,
   description: DEFAULT_CONFIG.siteDescription,
   url: DEFAULT_CONFIG.siteUrl,
-  locale: 'en_US',
+  locale: 'vi_VN',
 }
 
 export function generateMetadata(config: SEOConfig): Metadata {
@@ -33,9 +33,14 @@ export function generateMetadata(config: SEOConfig): Metadata {
 
   const fullTitle = title ? `${title} | ${siteName}` : siteName
   const fullUrl = url ? `${defaultConfig.url}${url}` : defaultConfig.url
-  const imageUrl = image ? (image.startsWith('http') ? image : `${defaultConfig.url}${image}`) : null
+  const imageUrl = image
+    ? image.startsWith('http')
+      ? image
+      : `${defaultConfig.url}${image}`
+    : null
 
   return {
+    metadataBase: new URL(`${defaultConfig.url.replace(/\/$/, '')}/`),
     title: fullTitle,
     description,
     keywords: keywords.join(', '),
@@ -60,14 +65,16 @@ export function generateMetadata(config: SEOConfig): Metadata {
       title: fullTitle,
       description,
       siteName,
-      images: imageUrl ? [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: title || siteName,
-        },
-      ] : [],
+      images: imageUrl
+        ? [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+              alt: title || siteName,
+            },
+          ]
+        : [],
     },
     twitter: {
       card: 'summary_large_image',
@@ -94,15 +101,12 @@ export function generateWebsiteSchema() {
     name: defaultConfig.siteName,
     description: defaultConfig.description,
     url: defaultConfig.url,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${defaultConfig.url}/search?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
   }
 }
 
-export function generateBreadcrumbSchema(items: Array<{ name: string; url: string }>) {
+export function generateBreadcrumbSchema(
+  items: Array<{ name: string; url: string }>
+) {
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -152,7 +156,7 @@ export function generateProductSchema(data: ProductSchemaData) {
   }
 
   if (data.image && Array.isArray(data.image) && data.image.length > 0) {
-    schema.image = data.image.map(img => 
+    schema.image = data.image.map((img) =>
       img.startsWith('http') ? img : `${defaultConfig.url}${img}`
     )
   }
@@ -209,7 +213,7 @@ export function generateArticleSchema(data: ArticleSchemaData) {
       name: defaultConfig.siteName,
       logo: {
         '@type': 'ImageObject',
-        url: `${defaultConfig.url}/logo.png`,
+        url: `${defaultConfig.url}/images/logo.ico`,
       },
     },
     datePublished: data.publishedAt,
@@ -218,7 +222,11 @@ export function generateArticleSchema(data: ArticleSchemaData) {
       '@type': 'WebPage',
       '@id': `${defaultConfig.url}${data.url}`,
     },
-    image: data.image ? (data.image.startsWith('http') ? data.image : `${defaultConfig.url}${data.image}`) : undefined,
+    image: data.image
+      ? data.image.startsWith('http')
+        ? data.image
+        : `${defaultConfig.url}${data.image}`
+      : undefined,
     articleSection: data.category,
   }
 }
@@ -232,5 +240,3 @@ export function createJsonLdScript(schema: any) {
     },
   }
 }
-
-
