@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/prisma'
@@ -12,8 +18,15 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   return generateDynamicMetadata({
     title: 'App Categories',
-    description: 'Browse apps by categories. Find mobile apps, desktop software, and more.',
-    keywords: ['app categories', 'mobile apps', 'desktop software', 'categories'],
+    description:
+      'Browse apps by categories. Find mobile apps, desktop software, and more.',
+    keywords: [
+      'app categories',
+      'mobile apps',
+      'desktop software',
+      'categories',
+    ],
+    url: '/categories',
   })
 }
 
@@ -57,40 +70,46 @@ export default async function CategoriesPage() {
     return (
       <div className="container py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">
+        <div className="mb-12 text-center">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight">
             App Categories
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Browse our collection of apps organized by categories. 
-            Find exactly what you're looking for quickly and easily.
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+            Browse our collection of apps organized by categories. Find exactly
+            what you're looking for quickly and easily.
           </p>
         </div>
 
         {/* Categories Grid */}
         {categories.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {categories.map((category) => {
               const Icon = getCategoryIcon(category.slug)
               const appCount = category._count.products
-              
+
               return (
-                <Card key={category.id} className="group hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
+                <Card
+                  key={category.id}
+                  className="group border-2 transition-all duration-300 hover:border-primary/20 hover:shadow-lg"
+                >
+                  <CardHeader className="pb-4 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/20">
                       <Icon className="h-8 w-8 text-primary" />
                     </div>
-                    <CardTitle className="text-xl mb-2">{category.name}</CardTitle>
-                    <Badge variant="secondary" className="w-fit mx-auto">
+                    <CardTitle className="mb-2 text-xl">
+                      {category.name}
+                    </CardTitle>
+                    <Badge variant="secondary" className="mx-auto w-fit">
                       {appCount} {appCount === 1 ? 'App' : 'Apps'}
                     </Badge>
                   </CardHeader>
-                  
+
                   <CardContent className="text-center">
                     <CardDescription className="mb-6">
-                      {category.description || `Discover amazing ${category.name.toLowerCase()} applications and software.`}
+                      {category.description ||
+                        `Discover amazing ${category.name.toLowerCase()} applications and software.`}
                     </CardDescription>
-                    
+
                     <Button asChild className="w-full">
                       <Link href={`/categories/${category.slug}`}>
                         Browse {category.name}
@@ -103,9 +122,11 @@ export default async function CategoriesPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📂</div>
-            <h3 className="text-xl font-semibold mb-2">No Categories Available</h3>
+          <div className="py-12 text-center">
+            <div className="mb-4 text-6xl">📂</div>
+            <h3 className="mb-2 text-xl font-semibold">
+              No Categories Available
+            </h3>
             <p className="text-muted-foreground">
               We're working on organizing our apps. Check back soon!
             </p>
@@ -113,15 +134,13 @@ export default async function CategoriesPage() {
         )}
 
         {/* All Apps Section */}
-        <div className="mt-16 text-center bg-muted/30 rounded-lg p-8">
-          <h2 className="text-2xl font-bold mb-4">
-            Browse All Apps
-          </h2>
-          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Want to see everything we have to offer? Browse our complete collection 
-            of apps and software without any category filters.
+        <div className="mt-16 rounded-lg bg-muted/30 p-8 text-center">
+          <h2 className="mb-4 text-2xl font-bold">Browse All Apps</h2>
+          <p className="mx-auto mb-6 max-w-2xl text-muted-foreground">
+            Want to see everything we have to offer? Browse our complete
+            collection of apps and software without any category filters.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Button asChild size="lg">
               <Link href="/products">
                 View All Apps
@@ -138,19 +157,26 @@ export default async function CategoriesPage() {
 
         {/* Featured Categories */}
         <div className="mt-16">
-          <h2 className="text-2xl font-bold text-center mb-8">Popular This Week</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h2 className="mb-8 text-center text-2xl font-bold">
+            Popular This Week
+          </h2>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {[
               { name: 'Mobile Games', count: '50+', icon: '🎮' },
               { name: 'Productivity', count: '30+', icon: '📋' },
               { name: 'Photo & Video', count: '25+', icon: '📸' },
               { name: 'Social Media', count: '20+', icon: '💬' },
             ].map((item) => (
-              <Card key={item.name} className="text-center hover:shadow-md transition-shadow cursor-pointer">
+              <Card
+                key={item.name}
+                className="cursor-pointer text-center transition-shadow hover:shadow-md"
+              >
                 <CardContent className="p-4">
-                  <div className="text-2xl mb-2">{item.icon}</div>
-                  <div className="font-semibold text-sm">{item.name}</div>
-                  <div className="text-xs text-muted-foreground">{item.count} apps</div>
+                  <div className="mb-2 text-2xl">{item.icon}</div>
+                  <div className="text-sm font-semibold">{item.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {item.count} apps
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -160,12 +186,12 @@ export default async function CategoriesPage() {
     )
   } catch (error) {
     console.error('Error loading categories:', error)
-    
+
     return (
       <div className="container py-12 text-center">
-        <div className="text-6xl mb-4">⚠️</div>
-        <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-        <p className="text-muted-foreground mb-6">
+        <div className="mb-4 text-6xl">⚠️</div>
+        <h1 className="mb-4 text-2xl font-bold">Something went wrong</h1>
+        <p className="mb-6 text-muted-foreground">
           We're having trouble loading the categories. Please try again later.
         </p>
         <Button asChild>
@@ -175,5 +201,3 @@ export default async function CategoriesPage() {
     )
   }
 }
-
-

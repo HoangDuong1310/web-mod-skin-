@@ -20,7 +20,7 @@ async function getSkinDetail(id: string) {
       where: {
         id,
         status: 'APPROVED',
-        deletedAt: null
+        deletedAt: null,
       },
       include: {
         champion: {
@@ -28,23 +28,23 @@ async function getSkinDetail(id: string) {
             id: true,
             name: true,
             alias: true,
-            squarePortraitPath: true
-          }
+            squarePortraitPath: true,
+          },
         },
         category: {
           select: {
             id: true,
             name: true,
-            slug: true
-          }
+            slug: true,
+          },
         },
         author: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     })
 
     return skin
@@ -62,26 +62,27 @@ export default async function SkinDetailPage({ params }: PageProps) {
   }
 
   const previewImages = skin.previewImages ? JSON.parse(skin.previewImages) : []
-  const primaryImage = skin.thumbnailImage || previewImages[0] || '/placeholder-image.svg'
+  const primaryImage =
+    skin.thumbnailImage || previewImages[0] || '/placeholder-image.svg'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+          <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
             <span>Custom Skins</span>
             <span>/</span>
             <span>{skin.champion?.name}</span>
             <span>/</span>
             <span className="text-foreground">{skin.name}</span>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-4xl font-bold text-transparent">
             {skin.name}
           </h1>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid gap-8 lg:grid-cols-3">
           {/* Image Gallery */}
           <div className="lg:col-span-2">
             <Card className="overflow-hidden">
@@ -96,19 +97,22 @@ export default async function SkinDetailPage({ params }: PageProps) {
                     priority
                   />
                 </div>
-                
+
                 {/* Preview Images */}
                 {previewImages.length > 1 && (
                   <div className="p-4">
-                    <h3 className="font-semibold mb-3">Preview Images</h3>
-                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                    <h3 className="mb-3 font-semibold">Preview Images</h3>
+                    <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
                       {previewImages.map((imagePath: string, index: number) => (
-                        <div key={index} className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+                        <div
+                          key={index}
+                          className="relative aspect-square overflow-hidden rounded-lg bg-muted"
+                        >
                           <Image
                             src={getImageUrl(imagePath)}
                             alt={`${skin.name} preview ${index + 1}`}
                             fill
-                            className="object-cover hover:scale-105 transition-transform cursor-pointer"
+                            className="cursor-pointer object-cover transition-transform hover:scale-105"
                           />
                         </div>
                       ))}
@@ -133,7 +137,7 @@ export default async function SkinDetailPage({ params }: PageProps) {
                 {/* Champion */}
                 <div className="flex items-center gap-3">
                   {skin.champion?.squarePortraitPath && (
-                    <div className="relative w-12 h-12 rounded-lg overflow-hidden">
+                    <div className="relative h-12 w-12 overflow-hidden rounded-lg">
                       <Image
                         src={getImageUrl(skin.champion.squarePortraitPath)}
                         alt={skin.champion.name}
@@ -150,14 +154,16 @@ export default async function SkinDetailPage({ params }: PageProps) {
 
                 {/* Category */}
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Category</p>
+                  <p className="mb-1 text-sm text-muted-foreground">Category</p>
                   <Badge variant="secondary">{skin.category?.name}</Badge>
                 </div>
 
                 {/* Version */}
                 {skin.version && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Version</p>
+                    <p className="mb-1 text-sm text-muted-foreground">
+                      Version
+                    </p>
                     <Badge variant="outline">{skin.version}</Badge>
                   </div>
                 )}
@@ -171,7 +177,9 @@ export default async function SkinDetailPage({ params }: PageProps) {
                 {/* Download Count */}
                 <div className="flex items-center gap-2">
                   <Download className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{skin.downloadCount} downloads</span>
+                  <span className="text-sm">
+                    {skin.downloadCount} downloads
+                  </span>
                 </div>
 
                 {/* Upload Date */}
@@ -194,11 +202,18 @@ export default async function SkinDetailPage({ params }: PageProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-sm text-muted-foreground">
-                  <p><strong>File:</strong> {skin.fileName}</p>
-                  <p><strong>Size:</strong> {(skin.fileSize / (1024 * 1024)).toFixed(2)} MB</p>
-                  <p><strong>Type:</strong> {skin.fileType.toUpperCase()}</p>
+                  <p>
+                    <strong>File:</strong> {skin.fileName}
+                  </p>
+                  <p>
+                    <strong>Size:</strong>{' '}
+                    {(skin.fileSize / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                  <p>
+                    <strong>Type:</strong> {skin.fileType.toUpperCase()}
+                  </p>
                 </div>
-                
+
                 <div className="space-y-4">
                   <DownloadButton skinId={skin.id} />
                 </div>
@@ -212,7 +227,7 @@ export default async function SkinDetailPage({ params }: PageProps) {
                   <CardTitle>Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
                     {skin.description}
                   </p>
                 </CardContent>
@@ -230,12 +245,25 @@ export async function generateMetadata({ params }: PageProps) {
 
   if (!skin) {
     return {
-      title: 'Skin not found'
+      title: 'Skin not found',
     }
   }
 
   return {
     title: `${skin.name} - ${skin.champion?.name} Custom Skin`,
-    description: skin.description || `Download ${skin.name} custom skin for ${skin.champion?.name}`,
+    description:
+      skin.description ||
+      `Download ${skin.name} custom skin for ${skin.champion?.name}`,
+    alternates: {
+      canonical: `/custom-skins/${params.id}`,
+    },
+    openGraph: {
+      title: `${skin.name} - ${skin.champion?.name} Custom Skin`,
+      description:
+        skin.description ||
+        `Download ${skin.name} custom skin for ${skin.champion?.name}`,
+      type: 'website',
+      url: `/custom-skins/${params.id}`,
+    },
   }
 }

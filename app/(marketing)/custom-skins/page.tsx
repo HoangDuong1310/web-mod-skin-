@@ -4,14 +4,20 @@ import { EnhancedCustomSkinsPage } from '@/components/custom-skins/enhanced-cust
 
 export const metadata: Metadata = {
   title: 'Custom Skins - League of Legends Mods',
-  description: 'Khám phá và tải xuống hàng nghìn custom skins độc đáo cho League of Legends. Cộng đồng modding lớn nhất Việt Nam.',
-  keywords: 'lol custom skins, league of legends mods, skin mods, lol skins việt nam',
+  description:
+    'Khám phá và tải xuống hàng nghìn custom skins độc đáo cho League of Legends. Cộng đồng modding lớn nhất Việt Nam.',
+  keywords:
+    'lol custom skins, league of legends mods, skin mods, lol skins việt nam',
+  alternates: {
+    canonical: '/custom-skins',
+  },
   openGraph: {
     title: 'Custom Skins Collection - LoL Mods',
     description: 'Bộ sưu tập custom skins chất lượng cao cho League of Legends',
     type: 'website',
-    images: ['/og-custom-skins.jpg']
-  }
+    url: '/custom-skins',
+    images: ['/og-custom-skins.jpg'],
+  },
 }
 
 // Revalidate every 60 seconds to show new skins
@@ -23,11 +29,11 @@ async function getInitialData() {
     const featuredSkins = await prisma.customSkin.findMany({
       where: {
         status: 'FEATURED',
-        deletedAt: null
+        deletedAt: null,
       },
       take: 6,
       orderBy: {
-        downloadCount: 'desc'
+        downloadCount: 'desc',
       },
       include: {
         champion: {
@@ -35,35 +41,35 @@ async function getInitialData() {
             id: true,
             name: true,
             alias: true,
-            squarePortraitPath: true
-          }
+            squarePortraitPath: true,
+          },
         },
         category: {
           select: {
             id: true,
             name: true,
-            slug: true
-          }
+            slug: true,
+          },
         },
         author: {
           select: {
             id: true,
             name: true,
-            image: true
-          }
-        }
-      }
+            image: true,
+          },
+        },
+      },
     })
 
     // Get recent skins
     const recentSkins = await prisma.customSkin.findMany({
       where: {
         status: { in: ['APPROVED', 'FEATURED'] },
-        deletedAt: null
+        deletedAt: null,
       },
       take: 12,
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'desc',
       },
       include: {
         champion: {
@@ -71,24 +77,24 @@ async function getInitialData() {
             id: true,
             name: true,
             alias: true,
-            squarePortraitPath: true
-          }
+            squarePortraitPath: true,
+          },
         },
         category: {
           select: {
             id: true,
             name: true,
-            slug: true
-          }
+            slug: true,
+          },
         },
         author: {
           select: {
             id: true,
             name: true,
-            image: true
-          }
-        }
-      }
+            image: true,
+          },
+        },
+      },
     })
 
     // Get popular skins
@@ -96,11 +102,11 @@ async function getInitialData() {
       where: {
         status: { in: ['APPROVED', 'FEATURED'] },
         deletedAt: null,
-        downloadCount: { gt: 50 }
+        downloadCount: { gt: 50 },
       },
       take: 12,
       orderBy: {
-        downloadCount: 'desc'
+        downloadCount: 'desc',
       },
       include: {
         champion: {
@@ -108,24 +114,24 @@ async function getInitialData() {
             id: true,
             name: true,
             alias: true,
-            squarePortraitPath: true
-          }
+            squarePortraitPath: true,
+          },
         },
         category: {
           select: {
             id: true,
             name: true,
-            slug: true
-          }
+            slug: true,
+          },
         },
         author: {
           select: {
             id: true,
             name: true,
-            image: true
-          }
-        }
-      }
+            image: true,
+          },
+        },
+      },
     })
 
     // Get categories with counts
@@ -140,15 +146,15 @@ async function getInitialData() {
             customSkins: {
               where: {
                 status: { in: ['APPROVED', 'FEATURED'] },
-                deletedAt: null
-              }
-            }
-          }
-        }
+                deletedAt: null,
+              },
+            },
+          },
+        },
       },
       orderBy: {
-        name: 'asc'
-      }
+        name: 'asc',
+      },
     })
 
     // Get champions with skin counts
@@ -163,26 +169,26 @@ async function getInitialData() {
             customSkins: {
               where: {
                 status: { in: ['APPROVED', 'FEATURED'] },
-                deletedAt: null
-              }
-            }
-          }
-        }
+                deletedAt: null,
+              },
+            },
+          },
+        },
       },
       where: {
         customSkins: {
           some: {
             status: { in: ['APPROVED', 'FEATURED'] },
-            deletedAt: null
-          }
-        }
+            deletedAt: null,
+          },
+        },
       },
       orderBy: {
         customSkins: {
-          _count: 'desc'
-        }
+          _count: 'desc',
+        },
       },
-      take: 20
+      take: 20,
     })
 
     // Get statistics
@@ -190,59 +196,65 @@ async function getInitialData() {
       prisma.customSkin.count({
         where: {
           status: { in: ['APPROVED', 'FEATURED'] },
-          deletedAt: null
-        }
+          deletedAt: null,
+        },
       }),
       prisma.customSkin.aggregate({
         where: {
           status: { in: ['APPROVED', 'FEATURED'] },
-          deletedAt: null
+          deletedAt: null,
         },
         _sum: {
-          downloadCount: true
-        }
+          downloadCount: true,
+        },
       }),
       prisma.customSkin.groupBy({
         by: ['authorId'],
         where: {
           status: { in: ['APPROVED', 'FEATURED'] },
-          deletedAt: null
-        }
-      })
+          deletedAt: null,
+        },
+      }),
     ])
 
     return {
-      featuredSkins: featuredSkins.map(skin => ({
+      featuredSkins: featuredSkins.map((skin) => ({
         ...skin,
-        previewImages: skin.previewImages ? 
-          (typeof skin.previewImages === 'string' ? JSON.parse(skin.previewImages) : skin.previewImages) 
-          : []
+        previewImages: skin.previewImages
+          ? typeof skin.previewImages === 'string'
+            ? JSON.parse(skin.previewImages)
+            : skin.previewImages
+          : [],
       })),
-      recentSkins: recentSkins.map(skin => ({
+      recentSkins: recentSkins.map((skin) => ({
         ...skin,
-        previewImages: skin.previewImages ? 
-          (typeof skin.previewImages === 'string' ? JSON.parse(skin.previewImages) : skin.previewImages) 
-          : []
+        previewImages: skin.previewImages
+          ? typeof skin.previewImages === 'string'
+            ? JSON.parse(skin.previewImages)
+            : skin.previewImages
+          : [],
       })),
-      popularSkins: popularSkins.map(skin => ({
+      popularSkins: popularSkins.map((skin) => ({
         ...skin,
-        previewImages: skin.previewImages ? 
-          (typeof skin.previewImages === 'string' ? JSON.parse(skin.previewImages) : skin.previewImages) 
-          : []
+        previewImages: skin.previewImages
+          ? typeof skin.previewImages === 'string'
+            ? JSON.parse(skin.previewImages)
+            : skin.previewImages
+          : [],
       })),
-      categories: categories.map(cat => ({
+      categories: categories.map((cat) => ({
         ...cat,
-        count: cat._count.customSkins
+        count: cat._count.customSkins,
       })),
-      champions: champions.map(champ => ({
+      champions: champions.map((champ) => ({
         ...champ,
-        skinCount: champ._count.customSkins
+        skinCount: champ._count.customSkins,
       })),
       statistics: {
         totalSkins,
         totalDownloads: totalDownloads._sum.downloadCount || 0,
-        totalAuthors: totalAuthors.length
-      }
+        totalAuthors: totalAuthors.length,
+      },
     }
   } catch (error) {
     console.error('Error fetching initial data:', error)
@@ -255,8 +267,8 @@ async function getInitialData() {
       statistics: {
         totalSkins: 0,
         totalDownloads: 0,
-        totalAuthors: 0
-      }
+        totalAuthors: 0,
+      },
     }
   }
 }
